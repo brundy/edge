@@ -180,6 +180,7 @@ class _MoreSettingsState extends State<MoreSettings> {
       // the pref — and the daily whole-database upload it authorises — did not.
       showHealthShare: kHealthDataContributionEnabled || app.healthShareConsent,
       healthShare: app.healthShareConsent,
+      companionUrl: app.companionUrl,
       healthStore: app.healthStoreName,
       healthSync: app.healthSyncEnabled,
       healthState: app.healthState,
@@ -213,6 +214,7 @@ class _MoreSettingsState extends State<MoreSettings> {
       onToggleTelemetry: () => app.setTelemetryConsent(!app.telemetryConsent),
       onToggleBarcodeLookup: () => _toggleBarcode(c),
       onToggleHealthShare: () => _toggleHealthShare(c, app),
+      onEditCompanionUrl: () => _editCompanionUrl(c, app),
       onToggleHealthSync: () => _toggleHealthSync(app),
       onToggleUpdateChecks: () =>
           app.setUpdateChecksEnabled(!app.updateChecksEnabled),
@@ -446,6 +448,80 @@ Future<void> _toggleHealthShare(BuildContext c, AppState app) async {
   if (ok == true) await app.setHealthShareConsent(true);
 }
 
+/// Where the daily upload goes. A runtime setting rather than only the
+/// build-time `COMPANION_URL`, so the address (which carries the server's
+/// secret path) is never baked into the APK, and moving the server is a
+/// settings change instead of a rebuild.
+Future<void> _editCompanionUrl(BuildContext c, AppState app) async {
+  final v = await showDialog<String>(
+    context: c,
+    builder: (_) => _CompanionUrlDialog(initial: app.companionUrl),
+  );
+  if (v != null) await app.setCompanionUrl(v);
+}
+
+class _CompanionUrlDialog extends StatefulWidget {
+  const _CompanionUrlDialog({required this.initial});
+  final String initial;
+
+  @override
+  State<_CompanionUrlDialog> createState() => _CompanionUrlDialogState();
+}
+
+class _CompanionUrlDialogState extends State<_CompanionUrlDialog> {
+  late final _url = TextEditingController(text: widget.initial);
+  String? _error;
+
+  @override
+  void dispose() {
+    _url.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final v = _url.text.trim();
+    // Empty clears it. Anything else must be https: Android refuses
+    // cleartext, so an http:// address would save fine and fail every night.
+    final uri = Uri.tryParse(v);
+    final https = uri != null && uri.scheme == 'https' && uri.host.isNotEmpty;
+    if (v.isNotEmpty && !https) {
+      setState(() => _error = 'Must start with https://');
+      return;
+    }
+    Navigator.of(context).pop(v);
+  }
+
+  @override
+  Widget build(BuildContext c) {
+    final l = AppLocalizations.of(c);
+    return AlertDialog(
+      title: const Text('Upload server'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text('The full address of your own server, including its '
+            'secret path. Leave empty to stop uploading anywhere.'),
+        TextField(
+          controller: _url,
+          autofocus: true,
+          autocorrect: false,
+          enableSuggestions: false,
+          keyboardType: TextInputType.url,
+          decoration: InputDecoration(
+            hintText: 'https://server.example/secret',
+            errorText: _error,
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      ]),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l?.actionCancel ?? 'Cancel')),
+        TextButton(onPressed: _submit, child: Text(l?.settingsOk ?? 'OK')),
+      ],
+    );
+  }
+}
+
 Future<void> _confirmReset(BuildContext c, AppState app) async {
   final l = AppLocalizations.of(c);
   final ok = await showDialog<bool>(
@@ -530,6 +606,10 @@ class MoreSettingsView extends StatelessWidget {
   /// build that has the feature, or an install that already said yes to it.
   final bool showHealthShare, healthShare;
 
+  /// Where that upload goes, '' when nowhere. Shown by host only: the path is
+  /// the server's secret.
+  final String companionUrl;
+
   /// The platform health EXPORT. `healthStore` names it — "Apple Health" or
   /// "Health Connect" — because "your health app" is not something a user can
   /// go and grant a permission in.
@@ -568,6 +648,7 @@ class MoreSettingsView extends StatelessWidget {
       onToggleBarcodeLookup,
       onToggleCycleTracking,
       onToggleHealthShare,
+      onEditCompanionUrl,
       onToggleHealthSync,
       onToggleUpdateChecks,
       onToggleZoneAlert,
@@ -592,6 +673,7 @@ class MoreSettingsView extends StatelessWidget {
     this.zoneAlertZone = 3,
     this.showHealthShare = false,
     this.healthShare = false,
+    this.companionUrl = '',
     this.showUpdateChecks = false,
     this.updateChecks = true,
     this.updateAvailable = false,
@@ -614,6 +696,7 @@ class MoreSettingsView extends StatelessWidget {
     this.onToggleBarcodeLookup,
     this.onToggleCycleTracking,
     this.onToggleHealthShare,
+    this.onEditCompanionUrl,
     this.onToggleHealthSync,
     this.onToggleUpdateChecks,
     this.onToggleZoneAlert,
@@ -779,6 +862,12 @@ class MoreSettingsView extends StatelessWidget {
                                 'Wi-Fi and charging, to improve the algorithms',
                         value: healthShare ? on : off,
                         onTap: onToggleHealthShare),
+                  if (showHealthShare)
+                    SetRow(LucideIcons.server, C.red, 'Upload server',
+                        sub: companionUrl.isEmpty
+                            ? 'Not set, so nothing is uploaded'
+                            : Uri.tryParse(companionUrl)?.host ?? companionUrl,
+                        onTap: onEditCompanionUrl),
                   if (showUpdateChecks)
                     SetRow(LucideIcons.refreshCw, C.blue,
                         l?.settingsCheckForUpdatesRowTitle ??

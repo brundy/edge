@@ -1,0 +1,80 @@
+name: personal-apk
+
+# A sideloadable APK for this fork, built on demand (Actions tab → personal-apk
+# → Run workflow). The upload to your own server is compiled in but off until
+# you set Settings › Privacy › Upload server and turn on the upload. No server
+# address is baked in, so the APK holds no secret and the artifact is safe to
+# download anywhere.
+#
+# SIGNING. Android only installs an update signed with the same key as the
+# installed app, so every build must use one fixed key. A runner's debug key
+# is new on every run, which would force an uninstall (and data loss) on each
+# update, so this refuses to build without the four secrets below.
+#   ANDROID_KEYSTORE_BASE64   base64 of the keystore file (PKCS12 or JKS)
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require a fixed signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for v in KEYSTORE_B64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Missing signing secret ($v). See the header of this workflow."
+              exit 1
+            fi
+          done
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.6'
+
+      - run: flutter pub get
+
+      - name: Build release APK
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: >-
+          flutter build apk --release
+          --dart-define=ENABLE_HEALTH_DATA_CONTRIBUTION=true
+
+      - name: Name the APK after the commit
+        id: rename
+        run: |
+          mkdir -p dist
+          apk="dist/whalternative-$(git rev-parse --short HEAD).apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "$apk"
+          echo "apk=$apk" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whalternative-apk
+          path: ${{ steps.rename.outputs.apk }}
+          retention-days: 30
