@@ -1,0 +1,18 @@
+[Unit]
+Description=Whalternative companion server (edge health uploads)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pi
+# WHALT_TOKEN lives here, not in this file: one line, WHALT_TOKEN=<secret>.
+EnvironmentFile=/etc/whalternative.env
+Environment=WHALT_DATA=/srv/whalternative
+Environment=WHALT_HOST=127.0.0.1
+Environment=WHALT_PORT=8787
+ExecStart=/usr/bin/python3 /opt/whalternative/server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
