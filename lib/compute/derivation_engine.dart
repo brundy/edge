@@ -2999,6 +2999,7 @@ class DerivationEngine {
     if (_running) return 0;
     _running = true;
     final startedAt = DateTime.now().millisecondsSinceEpoch;
+    _stageClock.start('scope');
     _diag
       ..['running'] = true
       ..['stage'] = 'scope'
@@ -3044,7 +3045,7 @@ class DerivationEngine {
       // history snapshot, so this very sweep prices strain on them. One-shot
       // (`compute_freshness`); a failure leaves the key unset and the next pass
       // retries — never fatal to the derive.
-      _diag['stage'] = 'quiet_hrr_seed';
+      _stage('quiet_hrr_seed');
       var seeded = 0;
       try {
         seeded = await seedQuietHrrHistoryOnce(
@@ -3059,7 +3060,7 @@ class DerivationEngine {
       // calibration reads, for the recent window only (bounded, decoded off
       // this isolate). The history-wide part and the re-score of days with
       // no substrate run after the sweep, in `finally`. One-shot.
-      _diag['stage'] = 'readiness_z_seed';
+      _stage('readiness_z_seed');
       try {
         final z = await seedRecentReadinessZ();
         if (z > 0) {
@@ -3086,7 +3087,7 @@ class DerivationEngine {
       // days they fill. One-shot and foreground-only: it can be a million
       // frames, which a short background budget should not take on.
       if ((heavy || force) && !background) {
-        _diag['stage'] = 'archive_redrive';
+        _stage('archive_redrive');
         try {
           final n = await LocalDb.redriveArchiveOnce();
           if (n > 0) _log('[derive] archive redrive: $n second(s) recovered');
@@ -3101,7 +3102,7 @@ class DerivationEngine {
           _log('[derive] nap cleanup failed (will retry): $e');
         }
       }
-      _diag['stage'] = 'scope';
+      _stage('scope');
       final scope = await _deriveScope(heavy: heavy, force: force);
       _diag
         ..['scope_days'] = scope.targetDays.length
@@ -3141,7 +3142,7 @@ class DerivationEngine {
         return rescored;
       }
       _diag['todo_days'] = todoDays.length;
-      _diag['stage'] = 'history';
+      _stage('history');
       final history = await _BaselineHistoryCache.load();
       _log(
         'derive: ${todoDays.length} day(s) '
@@ -3165,7 +3166,7 @@ class DerivationEngine {
       var completed = 0;
       var failures = 0;
       final activeDays = <String>{};
-      _diag['stage'] = 'per_day';
+      _stage('per_day');
       _diag['active_days'] = const <String>[];
 
       // One day's full prepare→compute→persist body (identical to the old
@@ -3181,8 +3182,10 @@ class DerivationEngine {
       Future<void> processDay(String dayId) async {
         activeDays.add(dayId);
         _diag['active_days'] = activeDays.toList();
+        final sw = Stopwatch()..start();
         try {
           final prepared = await _prepareTargetDay(dayId);
+          final prepareMs = sw.elapsedMilliseconds;
           // Override day whose raw has been pruned (≥14 d): re-deriving would
           // produce an empty/absent result and clobber the user's manual sleep.
           // Keep the existing locked result instead.
@@ -3195,6 +3198,7 @@ class DerivationEngine {
             await _derivePreparedDay(prepared, profile, dataNowSec, history);
             done++;
             _diag['done_days'] = done;
+            _logDayTiming('derive day', dayId, sw, prepareMs);
           } else {
             _log('derive day $dayId skipped: no bounded window payload');
             await _markDaySkipped(
@@ -3208,7 +3212,9 @@ class DerivationEngine {
             failures++;
           }
         } catch (e) {
-          _log('derive day $dayId FAILED/skipped: $e');
+          _prepareRows.remove(dayId);
+          _log('derive day $dayId FAILED/skipped after '
+              '${_secs(sw.elapsedMilliseconds)}: $e');
           final dayEndSec = _localNextDayLabelToSec(dayId);
           await _markDaySkipped(
             dayId,
@@ -3229,16 +3235,16 @@ class DerivationEngine {
       await runWithConcurrency(orderedDays, _deriveConcurrency, processDay);
       // BEFORE the prune below: a day still owed a strain score is re-scored
       // while its raw exists (and the prune holds it if this fails).
-      _diag['stage'] = 'quiet_repass';
+      _stage('quiet_repass');
       done += await _quietLevelRepass(profile, dataNowSec, scope.rawDays);
 
       // 4. Cross-day rollup + notifications (best-effort).
       if (done > 0) {
-        _diag['stage'] = 'baselines';
+        _stage('baselines');
         await _refreshBaselines();
-        _diag['stage'] = 'cross_day';
+        _stage('cross_day');
         await _runCrossDay(profile);
-        _diag['stage'] = 'notifications';
+        _stage('notifications');
         await _runNotifications();
       }
       // 5. Prune raw — never for a day still inside its raw window / not finalized.
@@ -3247,7 +3253,7 @@ class DerivationEngine {
       // fired only on a manual "Re-analyze data", so an ordinary install grew
       // ~12 MB/day without bound. `_pruneOldDecoded` is day-scoped and bounded,
       // so it is safe to run this often.
-      _diag['stage'] = 'prune';
+      _stage('prune');
       await _pruneOldDecoded(scope.rawDays, dataNowSec);
       // The timezone hold is a FULL-RESTAGE concept — only a restage actually
       // re-derives every held day — so clearing it stays behind fullHistory.
@@ -3278,7 +3284,7 @@ class DerivationEngine {
       // Storage housekeeping runs here, after everything, still holding
       // `_running`. See _runStorageHousekeeping — this is the only place every
       // entry path and every early return actually reaches.
-      _diag['stage'] = 'housekeeping';
+      _stage('housekeeping');
       await _runStorageHousekeeping();
       // ONE-SHOT: rescale stored strain onto the recalibrated scale. Days
       // inside the raw window re-derive from substrate above; everything older
@@ -3297,7 +3303,7 @@ class DerivationEngine {
       // FIRST cross-day rollup after the bump saw the rescaled history rather
       // than the next one. Still holds `_running`, so nothing else can be
       // reading day_result while it rewrites.
-      _diag['stage'] = 'strain_rescale';
+      _stage('strain_rescale');
       try {
         final rescaled = await backfillStrainScale(
           female: workoutSex(profile.sex) == 'female',
@@ -3317,7 +3323,7 @@ class DerivationEngine {
       // days, so the baselines and the cross-day rollup are refreshed here —
       // `finally` is reached by every early return, including "nothing to
       // derive" and "no decoded data".
-      _diag['stage'] = 'readiness_calibration';
+      _stage('readiness_calibration');
       try {
         final r = await backfillReadinessCalibration(
           // Both substrate sources, as `_deriveScope` reads them: a wearable
@@ -3357,7 +3363,19 @@ class DerivationEngine {
         ..['active_days'] = const <String>[]
         ..['finished_at'] = finishedAt
         ..['duration_ms'] = finishedAt - startedAt;
-      
+      // One line per pass with where the time went, so a slow "Crunching
+      // last night's numbers" can be read straight out of the sync log.
+      _log(formatPassTiming(
+        mode: _diag['mode']?.toString() ?? '?',
+        totalMs: finishedAt - startedAt,
+        stagesMs: _stageClock.finish(),
+        days: _diag['todo_days'] as int? ?? 0,
+        done: _diag['done_days'] as int? ?? 0,
+        skipped: _diag['skipped_days'] as int? ?? 0,
+        rawRows: _diag['raw_rows'] as int? ?? 0,
+        concurrency: _diag['concurrency'] as int? ?? 1,
+      ));
+
       try { await runTrace?.stop(); } catch (_) {}
     }
   }
@@ -3584,6 +3602,7 @@ class DerivationEngine {
     if (stats.rows > (_diag['max_day_raw_rows'] as int)) {
       _diag['max_day_raw_rows'] = stats.rows;
     }
+    _prepareRows[dayId] = stats.rows;
     // Tonight's sleep is the NEXT day's main sleep; it is only known once
     // that day has derived, and this day keeps re-deriving until it
     // finalizes, so it converges on the following pass.
@@ -4795,6 +4814,7 @@ class DerivationEngine {
   }) async {
     if (_running) return 0;
     _running = true;
+    final rescanClock = Stopwatch()..start();
     try {
       await refreshSessionSensorSources(); // as [run] does
       // Baseline gate: compute the CURRENT signature and compare to the stored
@@ -4864,14 +4884,19 @@ class DerivationEngine {
       var completed = 0;
 
       Future<void> processDay(String dayId) async {
+        final sw = Stopwatch()..start();
         try {
           final prepared = await _prepareTargetDay(dayId);
+          final prepareMs = sw.elapsedMilliseconds;
           if (prepared != null) {
             await _derivePreparedDay(prepared, profile, dataNowSec, history);
             done++;
+            _logDayTiming('rescan day', dayId, sw, prepareMs);
           }
         } catch (e) {
-          _log('rescan day $dayId FAILED/skipped: $e');
+          _prepareRows.remove(dayId);
+          _log('rescan day $dayId FAILED/skipped after '
+              '${_secs(sw.elapsedMilliseconds)}: $e');
           // Do NOT mark-skipped here — a finalized day already has a good row;
           // overwriting it with a skip marker would DISCARD real structure.
         }
@@ -4888,6 +4913,8 @@ class DerivationEngine {
       // Store the new signature so the next tick is a cheap no-op until it moves.
       await LocalDb.setCursor('baseline_sig', await _baselineSignature());
       await LocalDb.refreshComputeFreshness();
+      _log('rescan timing: ${_secs(rescanClock.elapsedMilliseconds)} total; '
+          'days=${orderedDays.length} done=$done lanes=$_deriveConcurrency');
       return done;
     } catch (e, st) {
       _log('rescan ERROR: $e\n$st');
@@ -10190,6 +10217,79 @@ class DerivationEngine {
     if (kDebugMode) debugPrint('[derive] $m');
     log?.call('[derive] $m');
   }
+
+  /// 1 Hz rows each day's prepare read, keyed by day; consumed by [_logDayTiming].
+  final Map<String, int> _prepareRows = {};
+
+  /// Wall-clock time per `run()` stage, logged once when the pass ends.
+  final PassStageClock _stageClock = PassStageClock();
+
+  void _stage(String name) {
+    _diag['stage'] = name;
+    _stageClock.start(name);
+  }
+
+  /// One line per derived day: time spent loading its substrate (and how many
+  /// 1 Hz rows that read) versus computing it. [sw] started before the prepare.
+  void _logDayTiming(String label, String dayId, Stopwatch sw, int prepareMs) {
+    _log('$label $dayId timing: prepare ${_secs(prepareMs)} '
+        '(${_prepareRows.remove(dayId) ?? 0} rows), '
+        'compute ${_secs(sw.elapsedMilliseconds - prepareMs)}');
+  }
+}
+
+String _secs(int ms) => '${(ms / 1000).toStringAsFixed(1)}s';
+
+/// Accumulates wall-clock milliseconds per named stage. [start] closes the
+/// stage in progress and opens [name]; a stage entered twice adds up.
+class PassStageClock {
+  final Map<String, int> _ms = {};
+  final Stopwatch _sw = Stopwatch();
+  String? _current;
+
+  void start(String name) {
+    _close();
+    _current = name;
+    _sw
+      ..reset()
+      ..start();
+  }
+
+  void _close() {
+    final c = _current;
+    if (c != null) _ms[c] = (_ms[c] ?? 0) + _sw.elapsedMilliseconds;
+    _current = null;
+  }
+
+  /// Closes the open stage and returns every stage's total, then resets.
+  Map<String, int> finish() {
+    _close();
+    final out = Map<String, int>.from(_ms);
+    _ms.clear();
+    return out;
+  }
+}
+
+/// The one-line pass summary written to the sync log. Stages under 50 ms are
+/// left out so the line stays readable.
+@visibleForTesting
+String formatPassTiming({
+  required String mode,
+  required int totalMs,
+  required Map<String, int> stagesMs,
+  required int days,
+  required int done,
+  required int skipped,
+  required int rawRows,
+  required int concurrency,
+}) {
+  final stages = [
+    for (final e in stagesMs.entries)
+      if (e.value >= 50) '${e.key}=${_secs(e.value)}',
+  ].join(' ');
+  return 'pass timing: $mode ${_secs(totalMs)} total; '
+      'days=$days done=$done skipped=$skipped rows=$rawRows '
+      'lanes=$concurrency; $stages';
 }
 
 /// Wrapper for a cancellable-isolate result, so a computation whose OWN result
