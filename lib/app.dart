@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'ai/briefing.dart' show BriefingPeriod;
 import 'coach/coach_config.dart';
+import 'data/db.dart';
 import 'l10n/app_localizations.dart';
 import 'notify/notification_service.dart';
 import 'notify/tap_router.dart';
@@ -46,16 +47,28 @@ class OpenStrapApp extends StatefulWidget {
   State<OpenStrapApp> createState() => _OpenStrapAppState();
 }
 
+/// Whether screen reads may use the reader connection at this lifecycle state.
+/// Null (no report yet) counts as visible; the observer corrects it on the
+/// first report.
+@visibleForTesting
+bool screenReadsForeground(AppLifecycleState? state) =>
+    state != AppLifecycleState.hidden &&
+    state != AppLifecycleState.paused &&
+    state != AppLifecycleState.detached;
+
 class _OpenStrapAppState extends State<OpenStrapApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(LocalDb.setForeground(
+        screenReadsForeground(WidgetsBinding.instance.lifecycleState)));
     // Hand the BYOK provider config to AppState (briefing generation + the
     // key-aware AI notification schedule live there).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<AppState>().attachCoachConfig(context.read<CoachConfig>());
+      context.read<AppState>().attachLocale(context.read<LocaleController>());
 
       final app = context.read<AppState>();
       if (app.isPaired) app.openSession();
@@ -79,6 +92,7 @@ class _OpenStrapAppState extends State<OpenStrapApp> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final app = context.read<AppState>();
     if (state == AppLifecycleState.resumed) {
+      unawaited(LocalDb.setForeground(true));
       // The user may have flipped our notification switch either way in OS
       // Settings while we were backgrounded. Drop the cached authorization
       // decision so the next present/schedule re-reads reality — a denial used
@@ -114,10 +128,16 @@ class _OpenStrapAppState extends State<OpenStrapApp> with WidgetsBindingObserver
       // a lock screen looking current.
       unawaited(WidgetService.refresh(app.repo));
       if (app.isPaired) app.openSession();
-    } else if (state == AppLifecycleState.paused) {
-      // Backgrounded: hand the band to the iOS restore path so it can wake-and-drain
-      // in the background (no-op on Android, where the foreground service holds it).
-      app.pauseForBackground();
+      app.startScaleWatcher();
+    } else if (state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      unawaited(LocalDb.setForeground(false));
+      if (state == AppLifecycleState.paused) {
+        // Backgrounded: hand the band to the iOS restore path so it can wake-and-drain
+        // in the background (no-op on Android, where the foreground service holds it).
+        app.pauseForBackground();
+      }
     }
   }
 
@@ -287,7 +307,8 @@ class _Gate extends StatelessWidget {
           AppRoute.failed => const _InitFailed(),
           AppRoute.welcome => const WelcomeScreen(),
           AppRoute.pairing => DevicePickerScreen(
-              onSkip: () => OnboardingBypass.mark(OnboardingBypass.kPairing)),
+              onSkip: () => OnboardingBypass.mark(OnboardingBypass.kPairing),
+              onBack: () => context.read<AppState>().backToWelcome()),
           AppRoute.profile => ProfileSetupScreen(
               onDone: () => OnboardingBypass.mark(OnboardingBypass.kProfile)),
           AppRoute.shell => const _Shell(),
