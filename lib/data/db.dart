@@ -11601,6 +11601,41 @@ class LocalDb {
   /// renames on the way through is exactly the situation a restore has to
   /// survive. Plain `.db` files (older backups, and `exportCopy` output) take
   /// the same path they always did.
+  /// True when [path] holds one of this app's own backups, judged by what is
+  /// IN the file rather than what it is called.
+  ///
+  /// The onboarding import routes `.db` / `.db.gz` names to [importFromDbFile]
+  /// and sends every other SQLite file to the NOOP importer. A backup saved
+  /// through Google Drive comes back as "OpenStrap database", with no
+  /// extension, so a user restoring their own export onto a new install was
+  /// told the file was not a NOOP backup. A gzip file is ours (NOOP never
+  /// writes one, and [importFromDbFile] checks what it inflates to); a SQLite
+  /// file is ours when it carries the `decoded_onehz` table.
+  static Future<bool> isOpenStrapBackup(String path) async {
+    final ImportContainer kind;
+    try {
+      kind = await sniffFile(path);
+    } catch (_) {
+      return false;
+    }
+    if (kind == ImportContainer.gzip) return true;
+    if (kind != ImportContainer.sqlite) return false;
+    Database? db;
+    try {
+      db = await openDatabase(path, readOnly: true, singleInstance: false);
+      final rows = await db.rawQuery(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='decoded_onehz'",
+      );
+      return rows.isNotEmpty;
+    } catch (_) {
+      return false;
+    } finally {
+      try {
+        await db?.close();
+      } catch (_) {}
+    }
+  }
+
   static Future<Map<String, int>> importFromDbFile(String path) async {
     if (!await File(path).exists()) {
       throw const FileSystemException('Backup file not found');

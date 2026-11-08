@@ -20,6 +20,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/db.dart';
 import '../../import/backup_crypto.dart';
 import '../../import/import_container.dart';
 import '../../import/journal_csv_import.dart';
@@ -411,7 +412,13 @@ Future<ImportOutcome> runImport(
   // multi-select and this used to return inside the winning branch, so a
   // backup selected alongside a vendor CSV imported the backup and threw the
   // CSV away without a word.
-  final db = [...plain.where(_isDbBackup), ...decrypted];
+  // A name check first, then the file's contents: a backup that went through
+  // a cloud drive can come back without its `.db` ([LocalDb.isOpenStrapBackup]).
+  final ownBackups = <String>[];
+  for (final p in plain) {
+    if (_isDbBackup(p) || await LocalDb.isOpenStrapBackup(p)) ownBackups.add(p);
+  }
+  final db = [...ownBackups, ...decrypted];
   // Raw-vs-vendor is decided by what the file HOLDS, not by what it is called.
   // See [isNoopExport]: routing on the extension sent NOOP's raw-sensor `.csv`
   // to the vendor importer and WHOOP's `.zip` to the NOOP one — both files
@@ -419,12 +426,12 @@ Future<ImportOutcome> runImport(
   final raw = <String>[];
   final csv = <String>[];
   for (final p in plain) {
-    if (_isDbBackup(p)) continue;
+    if (ownBackups.contains(p)) continue;
     (await isNoopExport(p) ? raw : csv).add(p);
   }
 
   if (decrypted.isNotEmpty) sources.add('Encrypted backup');
-  if (plain.any(_isDbBackup)) sources.add('OpenStrap backup');
+  if (ownBackups.isNotEmpty) sources.add('OpenStrap backup');
   try {
     for (final p in db) {
       days += await app.importEdgeBackup(p);
