@@ -281,6 +281,7 @@ class AppState extends ChangeNotifier {
     log: _log,
     background: _background,
     offloadActive: () => _deriveScheduler.offloadActive,
+    foregroundNow: () => !_background,
   );
   late final DeriveCoordinator _deriveCoordinator = DeriveCoordinator(
     derive: () => _derive,
@@ -3012,7 +3013,9 @@ class AppState extends ChangeNotifier {
 
   void _log(String line) {
     debugPrint('[OpenStrap] $line');
-    FileLog.write(line);
+    // Timestamped in the file only: without a clock on each line the log
+    // cannot say how long a derive pass or a sync actually took.
+    FileLog.write('${FileLog.stamp(DateTime.now())} $line');
     logLines.insert(0, line);
     if (logLines.length > 200) logLines.removeLast();
   }
