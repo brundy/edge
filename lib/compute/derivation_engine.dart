@@ -2911,7 +2911,23 @@ Future<int> debugAgingEdge(String? family, int dataNowSec) =>
     _agingEdgeFor(family, dataNowSec);
 
 class DerivationEngine {
-  DerivationEngine({this.log, this.background = false, this.offloadActive});
+  DerivationEngine({
+    this.log,
+    this.background = false,
+    this.offloadActive,
+    this.foregroundNow,
+  });
+
+  /// Live "is the app on screen right now", for an engine that outlives the
+  /// state it was built in. [AppState]'s engine is built once per process and
+  /// takes [background] from that moment: on Android the foreground service
+  /// keeps the process alive, so a process that STARTED headless (boot, a BLE
+  /// wake, a swipe-away that left the service running) derived on one lane
+  /// for its whole life, including every morning the user sat watching
+  /// "Crunching last night's numbers". When this returns true, a run takes the
+  /// foreground lane count. The per-day timeout still follows [background]:
+  /// the longer one is only slower to give up on a hung day, never wrong.
+  final bool Function()? foregroundNow;
   final void Function(String)? log;
 
   /// True while a band offload is draining. The scheduler never STARTS a
@@ -5013,7 +5029,10 @@ class DerivationEngine {
   /// lane; [DerivePacing] owns that decision and explains it.
   int get _deriveConcurrency {
     try {
-      return _pacing.concurrency(Platform.numberOfProcessors);
+      final onScreen = foregroundNow?.call() ?? false;
+      final pacing =
+          onScreen ? const DerivePacing(background: false) : _pacing;
+      return pacing.concurrency(Platform.numberOfProcessors);
     } catch (_) {
       return 1; // Platform unavailable on this target — sequential fallback
     }
