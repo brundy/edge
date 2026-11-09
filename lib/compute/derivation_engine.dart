@@ -2123,6 +2123,10 @@ const int _baselineWindowDays = 28;
 /// slightly later freeze for more safety margin.
 const int _headlineFreezeMarginSec = 60 * 60;
 
+/// [_headlineFreezeMarginSec], public so getToday can say WHEN a held night
+/// will settle instead of only that it is held.
+const int kOvernightSettleMarginSec = _headlineFreezeMarginSec;
+
 /// How long after a night's wake we stop waiting for the data edge to pass
 /// it. A strap that went quiet right after waking (flat battery, taken off and
 /// not recording) never moves the edge again, and the night we hold is then

@@ -7039,6 +7039,16 @@
   "@homeOvernightBuilding": {
     "description": "Home ring gap reason: last night's data is still being derived."
   },
+  "homeOvernightReadyAround": "กำลังคำนวณข้อมูลเมื่อคืน ค่าการฟื้นตัวน่าจะพร้อมราว {time}",
+  "@homeOvernightReadyAround": {
+    "description": "Home ring gap reason: last night is held until the band's data runs an hour past wake; {time} is when that happens.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "8:32 AM"
+      }
+    }
+  },
   "homeOvernightNothingYet": "ยังไม่มีข้อมูลเมื่อคืนมาถึงแอป",
   "@homeOvernightNothingYet": {
     "description": "Home ring gap reason: nothing from last night has synced yet."

@@ -398,10 +398,22 @@ String? heldOverNightOf(Map<String, dynamic> today) {
 String? staleOvernightNote(Map<String, dynamic> today, [AppLocalizations? l]) {
   if (heldOverNightOf(today) == null) return null;
   final st = today['status'];
-  return (st is Map ? st['overnight_state']?.toString() : null) == 'building'
-      ? l?.homeOvernightBuilding ?? 'Last night is still being worked out.'
-      : l?.homeOvernightNothingYet ??
-          'Nothing from last night has reached the app yet.';
+  if ((st is Map ? st['overnight_state']?.toString() : null) != 'building') {
+    return l?.homeOvernightNothingYet ??
+        'Nothing from last night has reached the app yet.';
+  }
+  // Held only until the band's data runs an hour past wake. Saying when
+  // keeps that hour from reading as a stuck sync. Past it (a strap that went
+  // quiet at wake), fall back to the plain sentence.
+  final readyAt = (st as Map)['overnight_ready_at'];
+  final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  if (readyAt is num && readyAt > nowSec) {
+    final time = clockOfTs(readyAt);
+    return l?.homeOvernightReadyAround(time) ??
+        'Last night is still being worked out. '
+            'Recovery should be ready around $time.';
+  }
+  return l?.homeOvernightBuilding ?? 'Last night is still being worked out.';
 }
 
 /// An overnight envelope, REFUSED when the night behind it is not today's.
