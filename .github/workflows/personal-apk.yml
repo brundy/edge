@@ -15,11 +15,24 @@ name: personal-apk
 #   ANDROID_KEY_ALIAS
 #   ANDROID_KEY_PASSWORD
 
+# UPDATES. Every push to main also publishes a GitHub Release holding the
+# APK, so an updater on the phone (Obtainium) can find and install it without
+# a GitHub login. The fork is public, so the release is public too; the APK
+# carries no server address or secret, only code that is already public.
+# The build number is 100000 + the run number, so it always rises and stays
+# above upstream's own numbers; Android and updaters compare on it.
+
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: personal-apk
+  cancel-in-progress: false
 
 jobs:
   android:
@@ -63,6 +76,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: >-
           flutter build apk --release
+          --build-number=$((100000 + GITHUB_RUN_NUMBER))
           --dart-define=ENABLE_HEALTH_DATA_CONTRIBUTION=true
 
       - name: Name the APK after the commit
@@ -78,3 +92,30 @@ jobs:
           name: whalternative-apk
           path: ${{ steps.rename.outputs.apk }}
           retention-days: 30
+
+      - name: Publish a release for updaters
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK: ${{ steps.rename.outputs.apk }}
+        run: |
+          build=$((100000 + GITHUB_RUN_NUMBER))
+          tag="build-$build"
+          gh release create "$tag" "$APK" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Whalternative build $build ($(git rev-parse --short HEAD))" \
+            --notes "$(git log -1 --format=%s)" \
+            --latest
+
+      - name: Keep only the 10 newest releases
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
+            --json tagName,createdAt --jq 'sort_by(.createdAt) | reverse | .[10:] | .[] | .tagName' \
+          | grep '^build-' \
+          | while read -r tag; do
+              gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+            done
