@@ -1,0 +1,62 @@
+name: upstream-check
+
+# Once a month, compare this fork with OpenStrap/edge and keep one open issue
+# that says how far behind main is. GitHub emails the owner when the issue is
+# opened or commented on, so this is the reminder to run a sync merge. Nothing
+# is merged automatically: a sync can conflict with this fork's own changes
+# and change scores, so it stays a reviewed PR.
+
+on:
+  schedule:
+    - cron: '0 15 1 * *' # 15:00 UTC on the 1st of each month
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compare with upstream
+        id: cmp
+        run: |
+          git remote add upstream https://github.com/OpenStrap/edge.git
+          git fetch --quiet upstream main
+          behind=$(git rev-list --count HEAD..upstream/main)
+          tip=$(git log -1 --format='%h %cs' upstream/main)
+          echo "behind=$behind" >> "$GITHUB_OUTPUT"
+          {
+            echo 'body<<EOF'
+            echo "main is **$behind** commit(s) behind OpenStrap/edge main (upstream tip: $tip)."
+            echo
+            echo "Recent upstream commits not in this fork:"
+            echo
+            git log --format='- %h %cs %s' HEAD..upstream/main | head -40
+            echo
+            echo "Files touched upstream that this fork also changed:"
+            echo
+            base=$(git merge-base HEAD upstream/main)
+            comm -12 <(git diff --name-only "$base" HEAD | sort) \
+                     <(git diff --name-only "$base" upstream/main | sort) \
+              | sed 's/^/- /'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+      - name: Open or update the reminder issue
+        if: steps.cmp.outputs.behind != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BODY: ${{ steps.cmp.outputs.body }}
+        run: |
+          title='Upstream OpenStrap/edge has new commits'
+          num=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+                  --search "in:title \"$title\"" --json number --jq '.[0].number')
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$BODY"
+          fi
