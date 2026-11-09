@@ -649,6 +649,7 @@ class LocalRepositoryImpl extends LocalRepository {
         'overnight_state': overnightState,
         'overnight_day': todayFresh?['overnight_day'],
         'overnight_computed_at': todayFresh?['overnight_computed_at'],
+        'overnight_ready_at': todayFresh?['overnight_ready_at'],
         'recovery_state': recoveryState,
         'showing_prior_overnight':
             todayFresh?['showing_prior_overnight'] == true,

@@ -34,6 +34,7 @@ import '../compute/derivation_engine.dart'
     show
         kAlgoVersion,
         kOvernightGiveUpSec,
+        kOvernightSettleMarginSec,
         kPinWakeToleranceSec,
         pinnableNight,
         overnightSettled,
@@ -13739,6 +13740,10 @@ class LocalDb {
     int? latestRecoveryComputedAt;
     Map<String, dynamic>? todayRow;
     int? overnightRecheckAt;
+    // When a held night will settle on its own: the first band data an hour
+    // past the detected wake. Home shows it as "ready around", since "still
+    // being worked out" alone reads as a stuck sync for the whole hour.
+    int? overnightReadyAt;
     String? recoveryState;
     for (final row in recent) {
       final dayId = row['day_id']?.toString();
@@ -13791,6 +13796,8 @@ class LocalDb {
         // When the give-up lands; getToday re-checks then, since a quiet
         // strap triggers no derive to do it.
         overnightRecheckAt = (wakeSec ?? edgeSec) + kOvernightGiveUpSec;
+        overnightReadyAt =
+            wakeSec == null ? null : wakeSec + kOvernightSettleMarginSec;
         continue;
       }
       final scalars = ((decoded['scalars'] as Map?) ?? const {})
@@ -13856,6 +13863,7 @@ class LocalDb {
         'overnight_state': overnightState,
         'overnight_computed_at': latestOvernightComputedAt,
         'overnight_recheck_at': overnightRecheckAt,
+        'overnight_ready_at': overnightReadyAt,
         // Today's own night: night_in_progress / provisional / final, or null
         // when today has no derived row yet. See [recoveryStateOf].
         'recovery_state': recoveryState,
