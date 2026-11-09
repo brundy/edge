@@ -7,6 +7,7 @@ import '../compute/derivation_engine.dart';
 import '../compute/derive_scheduler.dart';
 import '../compute/profile.dart';
 import '../data/local_repository.dart';
+import '../sync/cpu_wake.dart';
 import '../telemetry/health_uploader.dart';
 import '../telemetry/telemetry_service.dart';
 import '../widget/widget_service.dart';
@@ -71,8 +72,37 @@ class DeriveCoordinator {
     run: ({required DeriveJobKind kind}) =>
         afterDrain(heavy: kind == DeriveJobKind.heavy),
     log: _log,
-    onChanged: _notify,
+    onChanged: () {
+      _syncCpuWake();
+      _notify();
+    },
   );
+
+  /// Holds the CPU awake while a drain or derive is in flight (see [CpuWake]).
+  /// Swappable so tests can observe it without a platform channel.
+  late CpuWake cpuWake = CpuWake(log: _log);
+
+  /// Busy = an offload is draining, a pass is running, or one is queued and
+  /// only waiting on its settle timer. A pass parked behind a live workout
+  /// does not count: that hold can last hours and the workout's own
+  /// foreground service already covers capture.
+  void _syncCpuWake() {
+    // A snapshot refresh still in its DB await can call back after dispose;
+    // it must not re-arm the lock (or its refresh timer) on a dead owner.
+    if (_disposed) {
+      cpuWake.set(false);
+      return;
+    }
+    final s = scheduler;
+    final snap = s.snapshot();
+    final workoutHeld = snap['workout_active'] == true &&
+        snap['workout_hold_expired'] != true;
+    final backgroundHeld = snap['background'] == true;
+    final queued = (s.pendingLight || s.pendingHeavy) &&
+        !workoutHeld &&
+        !backgroundHeld;
+    cpuWake.set(s.offloadActive || s.running || queued);
+  }
 
   /// Bumped whenever stored insights change so listeners can re-query without a
   /// full ChangeNotifier repaint.
@@ -254,6 +284,7 @@ class DeriveCoordinator {
 
   void disposeScheduler() {
     scheduler.dispose();
+    cpuWake.dispose();
   }
 
   void disposeInsightsRevision() {

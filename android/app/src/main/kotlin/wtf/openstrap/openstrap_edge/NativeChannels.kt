@@ -87,7 +87,15 @@ object NativeChannels {
                         )
                         result.success(null)
                     }
+                    // CPU wake lock while a drain or derive is in flight, so the
+                    // work keeps running with the screen off (see CpuWake).
+                    "cpuWake" -> {
+                        result.success(
+                            CpuWake.set(app, call.argument<Boolean>("on") == true)
+                        )
+                    }
                     "stop" -> {
+                        CpuWake.set(app, false)
                         // Dart only sends this on unpair, so the watchdog has
                         // nothing left to keep alive.
                         KeepAliveWorker.cancel(app)
