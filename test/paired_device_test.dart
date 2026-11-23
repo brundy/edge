@@ -193,6 +193,28 @@ void main() {
     },
   );
 
+  test('a failed sensor upsert rolls back its initial insert', () async {
+    // WHY: pairing reports nothing saved if the second statement fails.
+    final db = await LocalDb.instance;
+    await db.execute(
+      'CREATE TEMP TRIGGER refuse_sensor_update BEFORE UPDATE ON device '
+      "WHEN NEW.id = 'ble_hrs:rollback' BEGIN "
+      "SELECT RAISE(ABORT, 'cannot update sensor'); END",
+    );
+    addTearDown(() => db.execute('DROP TRIGGER IF EXISTS refuse_sensor_update'));
+    addTearDown(() => LocalDb.deleteDevice('ble_hrs:rollback'));
+    await expectLater(LocalDb.upsertDevice(
+      id: 'ble_hrs:rollback', adapterId: 'ble_hrs', remoteId: 'sensor-uuid',
+      label: 'Chest strap', tier: 'beatToBeat'),
+      throwsA(isA<DatabaseException>()));
+    expect(await LocalDb.deviceRow('ble_hrs:rollback'), isNull);
+    // Positive control: once the refusal is gone, the same row saves normally.
+    await db.execute('DROP TRIGGER refuse_sensor_update');
+    await LocalDb.upsertDevice(id: 'ble_hrs:rollback', adapterId: 'ble_hrs',
+        remoteId: 'sensor-uuid', label: 'Chest strap', tier: 'beatToBeat');
+    expect((await LocalDb.deviceRow('ble_hrs:rollback'))?['remote_id'], 'sensor-uuid');
+  });
+
   test('a failed database update rolls back the initial insert', () async {
     final db = await LocalDb.instance;
     await db.execute(
@@ -313,6 +335,25 @@ void main() {
       tier: 'wristOptical',
     );
     expect((await PairedDevice.load())!.generation, isNull);
+  });
+
+  // The headless sync loads the pairing once, then connects. A forget that
+  // lands before its generation heal must not be undone by that heal.
+  test('an onlyIfPaired heal does not re-pair a forgotten band', () async {
+    await PairedDevice.save('AA:BB:CC:DD:EE:FF', '5AG0000001');
+    final stale = await PairedDevice.load();
+    await PairedDevice.clear();
+    await PairedDevice.save(stale!.remoteId, stale.serial,
+        generation: 'gen5', onlyIfPaired: true);
+    expect(await PairedDevice.load(), isNull);
+    expect((await SharedPreferences.getInstance()).getString('paired_remote_id'),
+        isNull);
+
+    // Still paired: the heal writes.
+    await PairedDevice.save('AA:BB:CC:DD:EE:FF', '5AG0000001');
+    await PairedDevice.save('AA:BB:CC:DD:EE:FF', '5AG0000001',
+        generation: 'gen5', onlyIfPaired: true);
+    expect((await PairedDevice.load())!.generation, 'gen5');
   });
 
   // The heal call sites are `unawaited(PairedDevice.save(...))`, so a save can

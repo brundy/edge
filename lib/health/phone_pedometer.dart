@@ -1,9 +1,11 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/db.dart';
 import '../data/day_label.dart';
+import '../sync/reset_gate.dart';
 
 /// Reads steps in `[from, to)`. Null means the READ FAILED — see [syncDay].
 typedef StepIntervalReader = Future<int?> Function(DateTime from, DateTime to);
@@ -211,6 +213,15 @@ class PhonePedometer {
     }
   }
 
+  /// Retire a read that has stopped answering, without touching the sensor.
+  ///
+  /// Bumps the same epoch [stop] does, so a `syncRecent` still parked on a
+  /// platform call ends at its next check and never banks a day it read before
+  /// a newer read replaced it. Unlike [stop] it leaves the counter running.
+  void abandonInFlight() {
+    _epoch++;
+  }
+
   /// One-time drop of the rows the OLD health-store read banked.
   ///
   /// Those rows are labelled `phone`, exactly like the ones our own sensor
@@ -261,9 +272,19 @@ class PhonePedometer {
   /// short read would LOWER a previously complete day. And because
   /// [LocalDb.liveStepsForDay] prefers phone rows outright, the truncated total
   /// would also keep suppressing the band fallback.
-  Future<int?> syncDay(DateTime dayStartLocal) async {
+  ///
+  /// [onWritten] runs right after the day's rows are committed, with the day
+  /// and whether its phone total moved. It runs even when the caller has since
+  /// stopped waiting for this read: the rows exist either way.
+  Future<int?> syncDay(
+    DateTime dayStartLocal, {
+    void Function(String dayId, bool changed)? onWritten,
+  }) async {
     final dayId = dayLabelOf(dayStartLocal);
     final epoch = _epoch;
+    // A reset wipes `live_coverage`; a read that started before it must not
+    // bank rows back into the fresh store.
+    final resetGen = ResetGate.generation;
     try {
       final windows = <({int startTs, int endTs, int steps})>[];
       var total = 0;
@@ -288,7 +309,7 @@ class PhonePedometer {
         // once up front, `now` went stale mid-loop and the current hour was
         // capped short — under-reporting today's most recent steps until some
         // later sync happened to re-read the day.
-        final now = DateTime.now();
+        final now = clock.now();
         final from = DateTime(dayStartLocal.year, dayStartLocal.month,
             dayStartLocal.day, h);
         if (!from.isBefore(nextMidnight)) break; // spring-forward short day
@@ -379,8 +400,30 @@ class PhonePedometer {
         return null;
       }
 
-      if (epoch != _epoch) return null; // stopped mid-walk, see [stop]
-      await LocalDb.replacePhoneCoverageForDay(dayId, windows);
+      bool valid() => epoch == _epoch && !ResetGate.changedSince(resetGen);
+      if (!valid()) return null; // stopped or reset mid-walk, see [stop]
+      final before = await LocalDb.phoneStepsForDay(dayId);
+      final beforeWindows = await LocalDb.phoneCoverageForDay(dayId);
+      final wrote = await LocalDb.replacePhoneCoverageForDay(dayId, windows,
+          stillValid: valid);
+      if (!wrote) return null;
+      // Same total with a different hourly spread still changes derived
+      // activity, so compare the windows too. A zero-step window vetoes band
+      // steps by overlap, so its endTs counts as well, except for the latest
+      // window: for today it ends at the capped "now" and differs every sync.
+      Set<(int, int, int)> keys(List<({int startTs, int endTs, int steps})> ws) {
+        final last = ws.fold<int>(0, (m, w) => w.startTs > m ? w.startTs : m);
+        return {
+          for (final w in ws)
+            (w.startTs, w.steps,
+                w.steps == 0 && w.startTs != last ? w.endTs : 0)
+        };
+      }
+
+      final moved = before != total ||
+          beforeWindows.length != windows.length ||
+          !keys(beforeWindows).containsAll(keys(windows));
+      onWritten?.call(dayId, moved);
       return total;
     } catch (e) {
       debugPrint('[phone_pedometer] syncDay $dayId: $e');
@@ -418,22 +461,30 @@ class PhonePedometer {
   /// success even when the user denied READ.
   Future<({int daysRead, int totalSteps})> syncRecent({
     int days = routineSyncDays,
+    void Function(String dayId, bool changed)? onDayBanked,
   }) async {
+    // Taken BEFORE the preparation below: a read retired (or a reset that ran)
+    // while it awaits would otherwise capture the NEW values on resuming and
+    // go on to bank days next to its replacement.
+    final epoch = _epoch;
+    final resetGen = ResetGate.generation;
+    bool current() => epoch == _epoch && !ResetGate.changedSince(resetGen);
     if (_stepReader == null) {
       await _purgeImportedHealthStoreRows();
+      if (!current()) return (daysRead: 0, totalSteps: 0);
       if (!await hasPermission()) return (daysRead: 0, totalSteps: 0);
+      if (!current()) return (daysRead: 0, totalSteps: 0);
     }
-    final now = DateTime.now();
-    final epoch = _epoch;
+    final now = clock.now();
     var ok = 0;
     var total = 0;
-    for (var d = 0; d < days && epoch == _epoch; d++) {
+    for (var d = 0; d < days && current(); d++) {
       // Calendar subtraction, NOT `Duration(days: d)` — the latter lands on
       // 23:00 or 01:00 across a DST transition rather than local midnight,
       // which would mislabel the day and start its hour walk at the wrong
       // offset. DateTime normalises an out-of-range day field for us.
       final day = DateTime(now.year, now.month, now.day - d);
-      final n = await syncDay(day);
+      final n = await syncDay(day, onWritten: onDayBanked);
       if (n != null) {
         ok++;
         total += n;

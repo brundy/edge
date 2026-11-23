@@ -96,7 +96,7 @@ class StartCard extends StatelessWidget {
     final card = Pressable(
       onTap: onTap,
       semanticLabel: label.toLowerCase(),
-      child: ClipRect(
+      child: GuideBox(card: true, child: ClipRect(
         child: Container(
           // A FLOOR, not a fixed height, so the copy can grow.
           constraints: const BoxConstraints(minHeight: 190),
@@ -115,7 +115,11 @@ class StartCard extends StatelessWidget {
                       ]),
             boxShadow: p.el(3),
           ),
-          child: Row(
+          // IntrinsicHeight: in a scrolling page the height is unbounded and
+          // the Spacer below would assert; this gives the Column the height
+          // its own copy needs (never under the 190 floor above).
+          child: IntrinsicHeight(
+           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
@@ -127,7 +131,10 @@ class StartCard extends StatelessWidget {
                         Text(label,
                             style: F.over.copyWith(
                                 color: C.white.withValues(alpha: .75))),
-                        const Spacer(),
+                        // No Spacer here: in the tabs' ListView this Column's height
+                        // is unbounded, and a Spacer there asserts in debug ("non-zero
+                        // flex but unbounded height") while release lays it out as 0.
+                        // Removing it keeps the shipped layout exactly.
                         Text('$count $noun',
                             style: F.t2.copyWith(color: C.white),
                             maxLines: 1,
@@ -161,9 +168,10 @@ class StartCard extends StatelessWidget {
                 ),
               ),
             ],
+           ),
           ),
         ),
-      ),
+      )),
     );
 
     return card;

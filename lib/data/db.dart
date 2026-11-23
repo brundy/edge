@@ -33,6 +33,7 @@ import '../coach/coach_db.dart' show CoachDb;
 import '../compute/derivation_engine.dart'
     show
         kAlgoVersion,
+        runCancellableIsolate,
         kOvernightGiveUpSec,
         kOvernightSettleMarginSec,
         kPinWakeToleranceSec,
@@ -49,6 +50,7 @@ import 'coverage_resolver.dart' show CoverageInterval;
 import 'day_label.dart';
 import 'activity_store.dart';
 import 'attach_copy.dart';
+import 'backup_extras.dart';
 import '../models/activity_suggestion.dart';
 import '../compute/accepted_naps.dart';
 import '../compute/nap_edits.dart' show NapEditKind;
@@ -58,6 +60,8 @@ import 'live_coverage_policy.dart';
 import '../compute/step_calibration_fit.dart';
 import 'step_calibration.dart';
 import '../sync/reset_gate.dart';
+import 'hyrox_store.dart';
+import 'triathlon_store.dart';
 import 'med_store.dart';
 import 'models.dart';
 import 'nutrition_store.dart';
@@ -65,12 +69,20 @@ import 'observation.dart';
 import 'series_codec.dart';
 import 'substrate_archive.dart';
 
+part 'db_input_revisions.dart';
+part 'db_session_ceiling_revisions.dart';
+
 /// The outcome of a database rebuild: why the old file would not open, where it
 /// was parked, and how many rows came back per table.
 typedef DbRebuild = ({
   String cause,
   String quarantinePath,
   Map<String, int> salvaged,
+});
+
+typedef SessionHrReads = ({
+  Map<String, Map<String, num>> stats,
+  Map<String, List<int>> samples,
 });
 
 // ── SUBSTRATE ADMISSION — the one predicate that decides what may become a
@@ -167,7 +179,13 @@ String derivableSourceSql([String col = 'source']) => kDerivableSources.isEmpty
 /// ponytail: on that gap the workout screen and the day disagree; give the
 /// band day the strap's window too (or drop the override there) once the
 /// owner decides whether a strap may fill a band gap.
-List<T> sessionWindowRows<T extends Map<String, Object?>>(List<T> rows) {
+List<T> sessionWindowRows<T extends Map<String, Object?>>(List<T> rows) =>
+    _sessionWindowRowsFor(rows, sensors: LocalDb.sessionSensorSources,
+        wearable: LocalDb.sessionWearableSource);
+
+// Workers receive the flags explicitly; isolate-local statics start empty.
+List<T> _sessionWindowRowsFor<T extends Map<String, Object?>>(
+    List<T> rows, {required Set<String> sensors, required String? wearable}) {
   bool derivable(Object? s) => s == null || kDerivableSources.contains(s);
   List<T> plain() => [
         for (final r in rows)
@@ -178,7 +196,7 @@ List<T> sessionWindowRows<T extends Map<String, Object?>>(List<T> rows) {
   for (final r in rows) {
     final s = r['source'];
     if (s == null) return plain();
-    if (LocalDb.sessionSensorSources.contains(s) && worn(r)) {
+    if (sensors.contains(s) && worn(r)) {
       n[s] = (n[s] ?? 0) + 1;
     }
   }
@@ -196,7 +214,6 @@ List<T> sessionWindowRows<T extends Map<String, Object?>>(List<T> rows) {
     if (lo == null || t < lo) lo = t;
     if (hi == null || t > hi) hi = t;
   }
-  final wearable = LocalDb.sessionWearableSource;
   return [
     for (final r in rows)
       if (r['source'] == owner ||
@@ -216,6 +233,13 @@ List<T> sessionWindowRows<T extends Map<String, Object?>>(List<T> rows) {
 /// operating system's health store under our name. A verified chest strap must
 /// widen [derivableSourceSql] and must NOT widen this one.
 const String kPrimaryBandSourceSql = 'source IS NULL';
+
+/// The keyset cursor's start when a restore pages a backup table by rowid.
+/// Below every rowid, not 0: a table keyed on its own INTEGER column has that
+/// column as its rowid, so a row can sit at 0 or below (alarm_schedule's
+/// Monday is weekday 0, and a legacy table can hold a zero counter), and a
+/// cursor that starts at `rowid > 0` never reads it.
+const int _kBeforeEveryRowid = -0x8000000000000000;
 
 class LocalDb {
   static Database? _db;
@@ -293,6 +317,8 @@ class LocalDb {
     'cycle_symptom',
     'sleep_override',
     'sleep_nap',
+    // The alarm schedule the user chose; a rebuild re-arms it like a restore.
+    'alarm_schedule',
     // A ring's own hypnogram. Nothing here can re-derive it.
     'vendor_sleep_epoch',
     'workout_suggestions',
@@ -312,6 +338,14 @@ class LocalDb {
     'imported_workout',
     'workout_route',
     'workout_split',
+    // A HYROX race is hand-marked at the band: the round boundaries exist
+    // nowhere else, and the plan was typed by the athlete.
+    'hyrox_session',
+    'hyrox_segment',
+    // A triathlon is hand-marked at the band: the boundaries exist nowhere
+    // else, and the plan (incl. indoor/outdoor) was typed by the athlete.
+    'triathlon_session',
+    'triathlon_segment',
     // The only copy of what a paired sensor measured during a session.
     'external_hr',
     'imported_measurement',
@@ -655,13 +689,78 @@ class LocalDb {
   /// pass it: sqflite throws `ArgumentError('onCreate must be null if no
   /// version is specified')` BEFORE opening anything when `onCreate` is given
   /// without `version` (sqflite_common database_mixin.dart).
-  static const int schemaVersion = 58;
+  static const int schemaVersion = 62;
+
+  /// In-memory cache identity, advanced after open, wipe or committed import.
+  /// It is local to this isolate; no cache survives a process restart.
+  static int _storeGeneration = 0;
+  static int get storeGeneration => _storeGeneration;
+
+  static void _markStoreReplaced() => _storeGeneration++;
+
+  /// Revisions over every absolute 15-minute bucket intersecting the local
+  /// calendar day. Legacy/missing buckets read zero without a raw-row backfill.
+  /// RR-only days participate, and all devices share these conservative buckets.
+  static Future<({int revisionSum, int revisionMax, int generation})>
+      inputDayFingerprint(String dayId) async {
+    final (lo, hi) = _localDayWindow(dayId);
+    final db = await instance;
+    final generation = storeGeneration;
+    final rows = await db.rawQuery(
+      'SELECT COALESCE(SUM(rev), 0) AS revision_sum, '
+      'COALESCE(MAX(rev), 0) AS revision_max FROM input_rev '
+      'WHERE bucket >= ? AND bucket <= ?',
+      [lo ~/ 900, (hi - 1) ~/ 900],
+    );
+    return (
+      revisionSum: (rows.single['revision_sum'] as num).toInt(),
+      revisionMax: (rows.single['revision_max'] as num).toInt(),
+      generation: generation,
+    );
+  }
+
+  /// Session identity/window writes invalidate ceiling reuse, including an
+  /// identical REPLACE or UPDATE. Derived score writes do not affect it.
+  static Future<int> sessionCeilingRevision() async {
+    final rows = await (await instance).query('session_ceiling_rev');
+    return rows.isEmpty ? 0 : (rows.single['rev'] as num).toInt();
+  }
+
+  @visibleForTesting
+  static Future<void> repairOpenSchemaForTest(Database db) =>
+      _repairOpenSchema(db);
 
   /// SQLite caps host parameters per statement (`SQLITE_MAX_VARIABLE_NUMBER` —
   /// only 999 on the builds shipped with older Android/iOS). Any `IN (?, ?, …)`
   /// built from row data MUST be chunked below this; a single day of
   /// `decoded_onehz` is 86 400 counters. Same reason `commitSyncBatch` chunks.
   static const int _maxSqlVars = 500;
+
+  /// HYROX day-window predicate, shared by day export and day delete so the
+  /// two paths cannot drift apart. A race belongs to a day when it STARTS that
+  /// day, or when one of its segments STARTS that day or OVERLAPS it. The
+  /// segment-start branch matters for a finalized DNF whose open cut segment
+  /// starts on the later day: its session start and closed-segment ends are
+  /// all on the earlier day, so without it the race would survive a privacy
+  /// delete of the later day. An open segment of a LIVE session only overlaps
+  /// the window while the session was written at or after the window start
+  /// (updated_at is epoch MILLISECONDS, window bounds are seconds); a
+  /// FINALIZED race (incl. an abandoned DNF) keeps the end-time bound
+  /// COALESCE(session.end_ts, session.start_ts) for the open branch.
+  /// Args: [startSec, endSec, endSec, startSec, startSec, endSec, startSec].
+  static const String _hyroxInWindowSql = '(SELECT id FROM hyrox_session '
+      'WHERE start_ts >= ? AND start_ts < ? '
+      'UNION SELECT session_id FROM hyrox_segment '
+      'WHERE start_ts IS NOT NULL AND start_ts < ? '
+      'AND ( start_ts >= ? '
+      '   OR (end_ts IS NOT NULL AND end_ts > ?) '
+      '   OR (end_ts IS NULL '
+      '   AND EXISTS (SELECT 1 FROM hyrox_session s '
+      '        WHERE s.id = hyrox_segment.session_id '
+      '        AND ( (s.status = \'finalized\' '
+      '               AND COALESCE(s.end_ts, s.start_ts, 0) > ?) '
+      '             OR (s.status <> \'finalized\' '
+      '               AND s.updated_at >= ? * 1000))))) )';
 
   /// THE PRIMARY BAND'S `device_id`, and it is reserved permanently.
   ///
@@ -716,7 +815,7 @@ class LocalDb {
   static Future<Database> _open() async {
     final dir = await getDatabasesPath();
     final path = p.join(dir, dbName);
-    return openDatabase(
+    final opened = await openDatabase(
       path,
       onConfigure: (db) async {
         // WRITE PERFORMANCE. The default rollback journal (journal_mode=delete)
@@ -1425,6 +1524,27 @@ class LocalDb {
           // A band's own hypnogram (`vendor_staged`). New table only.
           await _createVendorSleepEpoch(db);
         }
+        if (oldV < 59) {
+          // Triathlon/multisport: parent session + per-segment boundaries.
+          // New tables only, no backfill — there is no older data to move.
+          await createTriathlonTables(db);
+        }
+        if (oldV < 60) {
+          // HYROX: parent session + per-round boundaries. New tables only,
+          // no backfill — there is no older data to move. The reconcile
+          // exclusion column is part of the table from the start.
+          await createHyroxTables(db);
+        }
+        if (oldV < 61) {
+          // Additive revision counters only: no decoded scan or backfill.
+          // Attach after any earlier rung that rebuilds decoded tables.
+          await _createInputRev(db);
+          await _createSessionCeilingRev(db);
+        }
+        if (oldV < 62) {
+          await _createStoreIdentity(db);
+          await _createDayCheckpoint(db);
+        }
       },
       onOpen: (db) async {
         await _repairOpenSchema(db);
@@ -1440,6 +1560,8 @@ class LocalDb {
       },
       version: schemaVersion,
     );
+    _markStoreReplaced();
+    return opened;
   }
 
   static Future<void> _repairOpenSchema(Database db) async {
@@ -1542,11 +1664,75 @@ class LocalDb {
     await _addColumnIfMissing(db, 'device', 'battery_ts', 'INTEGER');
     await _createStepCalibration(db);
     await _ensureLiveStepCalibrationCounterVersion(db);
+    // A decoded-table rebuild above drops its triggers; attach them last.
+    await _createInputRev(db);
+    await _createSessionCeilingRev(db);
+    await _createStoreIdentity(db);
+    await _createDayCheckpoint(db);
     // Views LAST — they depend on metric_series / day_result / baselines / sessions
     // / notifications all existing. DROP+CREATE so a shape change takes effect.
     await _ensureCoachViews(db);
     await _dropRawStore(db);
   }
+
+  // Stable across opens, unique to this file's current input history. Neither
+  // restore nor salvage imports it: input_rev is local and can repeat on reset.
+  static Future<void> _createStoreIdentity(DatabaseExecutor db) async {
+    await db.execute('CREATE TABLE IF NOT EXISTS store_identity ('
+      'singleton INTEGER PRIMARY KEY CHECK(singleton = 1), id TEXT NOT NULL)');
+    await db.execute('INSERT OR IGNORE INTO store_identity(singleton, id) '
+      'VALUES(1, lower(hex(randomblob(16))))');
+  }
+
+  static Future<String> storeIdentity({DatabaseExecutor? executor}) async =>
+      (await (executor ?? await instance).rawQuery(
+        'SELECT id FROM store_identity WHERE singleton = 1')).single['id'] as String;
+
+  static Future<void> _rotateStoreIdentity(DatabaseExecutor db) async {
+    await db.execute('INSERT OR REPLACE INTO store_identity(singleton, id) '
+      'VALUES(1, lower(hex(randomblob(16))))');
+    await db.delete('day_checkpoint');
+  }
+
+  static Future<void> _createDayCheckpoint(Database db) async {
+    await db.execute('CREATE TABLE IF NOT EXISTS day_checkpoint ('
+      'day_id TEXT NOT NULL, algo_version INTEGER NOT NULL, '
+      'fmt INTEGER NOT NULL, ctx_sig TEXT NOT NULL, cp_rec_ts INTEGER NOT NULL, '
+      'rev_vec BLOB NOT NULL, state BLOB NOT NULL, night_ref TEXT, '
+      'computed_at INTEGER NOT NULL, PRIMARY KEY(day_id, algo_version))');
+  }
+
+  /// Chunk the disposable blob like substrate_archive: a whole night can
+  /// exceed Android's cursor window. A racing replacement fails codec checks.
+  static Future<Map<String, Object?>?> dayCheckpoint(
+      String day, int algorithm, {required int maxBytes}) async {
+    final db = await instance;
+    const where = 'day_id = ? AND algo_version = ?';
+    final rows = await db.rawQuery('SELECT day_id, algo_version, fmt, ctx_sig, '
+      'cp_rec_ts, rev_vec, night_ref, computed_at, length(state) AS state_length '
+      'FROM day_checkpoint WHERE $where', [day, algorithm]);
+    if (rows.isEmpty) return null;
+    final row = Map<String, Object?>.of(rows.single);
+    final length = row.remove('state_length') as int;
+    final bytes = Uint8List(length <= maxBytes ? length : 0);
+    row['state'] = bytes;
+    if (length > maxBytes) return row;
+    for (var off = 0; off < length; off += 128 * 1024) {
+      final parts = await db.rawQuery(
+        'SELECT substr(state, ?, ?) AS part FROM day_checkpoint WHERE $where',
+        [off + 1, 128 * 1024, day, algorithm]);
+      if (parts.isEmpty) return null;
+      final part = parts.single['part'] as Uint8List;
+      if (part.length > length - off) return null;
+      bytes.setRange(off, off + part.length, part);
+    }
+    return row;
+  }
+
+  /// One revision counter per absolute 15-minute input bucket, shared by the
+  /// canonical 1 Hz rows and sparse beats. Triggers cover every write path and
+  /// roll back with the input transaction. No raw rows are read at creation.
+  static Future<void> _createInputRev(Database db) => _ldbCreateInputRev(db);
 
   /// Older WHOOP CSV imports filed the export's absolute skin temp (°C) under
   /// `scalars.skin_temp_z`, which every reader treats as SDs off baseline, so
@@ -2162,12 +2348,30 @@ class LocalDb {
   /// to expire against, and they're rare enough to be self-limiting. Matches
   /// the retention semantics of the SharedPreferences fallback exactly.
   static Future<void> pruneNotifFired(String cutoffDate) async {
+    const date = "'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'";
     await _guardedWrite<int>(
       (db) => db.rawDelete(
         "DELETE FROM notif_fired "
-        "WHERE substr(key, 1, 10) GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' "
-        "AND substr(key, 1, 10) < ?",
-        [cutoffDate],
+        "WHERE (substr(key, 1, 10) GLOB $date AND substr(key, 1, 10) < ?) "
+        // The morning briefing's guards carry their date after a fixed prefix
+        // (FiredKeyStore.datedAfterPrefixes): 24 and 19 characters long.
+        "OR (key GLOB 'morning_brief_announced:*' "
+        "AND substr(key, 25, 10) GLOB $date AND substr(key, 25, 10) < ?) "
+        "OR (key GLOB 'morning_brief_slot:*' "
+        "AND substr(key, 20, 10) GLOB $date AND substr(key, 20, 10) < ?)",
+        [cutoffDate, cutoffDate, cutoffDate],
+      ),
+      bestEffort: true,
+    );
+  }
+
+  /// Delete every claim whose key starts with [prefix]. See
+  /// [FiredKeyStore.releasePrefix].
+  static Future<void> releaseNotifFiredPrefix(String prefix) async {
+    await _guardedWrite<int>(
+      (db) => db.rawDelete(
+        'DELETE FROM notif_fired WHERE substr(key, 1, ?) = ?',
+        [prefix.length, prefix],
       ),
       bestEffort: true,
     );
@@ -3323,7 +3527,15 @@ class LocalDb {
     bool clearAdapterId = false,
     DatabaseExecutor? executor,
   }) async {
-    final db = executor ?? await instance;
+    if (executor == null) {
+      final db = await instance;
+      // A failed UPDATE must not leave the initial INSERT behind.
+      await db.transaction((txn) => upsertDevice(id: id, adapterId: adapterId,
+          remoteId: remoteId, label: label, tier: tier,
+          clearAdapterId: clearAdapterId, executor: txn));
+      return;
+    }
+    final db = executor;
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await db.insert('device', {
       'id': id,
@@ -3351,7 +3563,11 @@ class LocalDb {
       'UPDATE device SET '
       '${blankAdapter ? 'adapter_id = NULL, ' : 'adapter_id = COALESCE(?, adapter_id), '}'
       'remote_id = COALESCE(?, remote_id), label = COALESCE(?, label), '
-      'tier = COALESCE(?, tier), last_seen = ? WHERE id = ?',
+      'tier = COALESCE(?, tier), '
+      // A re-pair or relabel of a paired sensor is not a sync: only
+      // markDeviceSynced moves its last_seen, so "recent data" stays honest.
+      'last_seen = CASE WHEN id = \'$kPrimaryDeviceId\' THEN ? ELSE last_seen END '
+      'WHERE id = ?',
       [
         if (!blankAdapter) adapterId,
         remoteId,
@@ -3661,12 +3877,14 @@ class LocalDb {
   /// lat/lng point of a removed import would stay on disk unreachable.
   static Future<void> deleteImportedWorkout(String uuid) async {
     final db = await instance;
-    await db.delete('imported_workout', where: 'uuid = ?', whereArgs: [uuid]);
-    await db.delete(
-      'workout_route',
-      where: 'session_id = ?',
-      whereArgs: [uuid],
-    );
+    // One transaction: a kill between the two deletes left the route behind
+    // with nothing pointing at it.
+    await db.transaction((txn) async {
+      await txn.delete('imported_workout',
+          where: 'uuid = ?', whereArgs: [uuid]);
+      await txn.delete('workout_route',
+          where: 'session_id = ?', whereArgs: [uuid]);
+    });
   }
 
   /// Replace an imported workout with the band session scored over its window
@@ -4241,17 +4459,24 @@ class LocalDb {
     // phone is the primary device's own pedometer, so it keeps `''` too —
     // `source` is what tells wrist from pocket.
     String deviceId = kPrimaryDeviceId,
+    // The generation when the caller's session began, before async reads.
+    int? resetGeneration,
   }) async {
+    final generation = resetGeneration ?? ResetGate.generation;
     final w = sanitizeCoverageWindow(startTs, endTs, steps);
     if (w == null) return;
-    final db = await instance;
-    await db.insert('live_coverage', {
-      'start_ts': w.startTs,
-      'end_ts': w.endTs,
-      'steps': steps,
-      'day': day,
-      'source': source,
-      'device_id': deviceId,
+    // The wipe uses this gate too: a check before queuing can still race it.
+    await _withCommitGate(() async {
+      _refuseAfterReset(generation);
+      final db = await instance;
+      await db.insert('live_coverage', {
+        'start_ts': w.startTs,
+        'end_ts': w.endTs,
+        'steps': steps,
+        'day': day,
+        'source': source,
+        'device_id': deviceId,
+      });
     });
   }
 
@@ -4267,27 +4492,36 @@ class LocalDb {
   /// `resolveDaySteps`'s confirmed-still check uses to veto a wrist
   /// false-positive over the same window. Only a negative count (never
   /// produced by the reader) or an inverted window is dropped.
-  static Future<void> replacePhoneCoverageForDay(
+  static Future<bool> replacePhoneCoverageForDay(
     String day,
-    List<({int startTs, int endTs, int steps})> windows,
-  ) async {
-    final db = await instance;
-    await db.transaction((txn) async {
-      await txn.delete(
-        'live_coverage',
-        where: 'day = ? AND source = ?',
-        whereArgs: [day, kStepSourcePhone],
-      );
-      for (final w in windows) {
-        if (w.steps < 0 || w.endTs <= w.startTs) continue;
-        await txn.insert('live_coverage', {
-          'start_ts': w.startTs,
-          'end_ts': w.endTs,
-          'steps': w.steps,
-          'day': day,
-          'source': kStepSourcePhone,
-        });
-      }
+    List<({int startTs, int endTs, int steps})> windows, {
+    bool Function()? stillValid,
+  }) {
+    // Through the commit gate the wipe also uses, and re-checked INSIDE it:
+    // a reset queued while this write waited for the database finishes first,
+    // and the check then refuses the write instead of repopulating the store.
+    return _withCommitGate(() async {
+      if (stillValid != null && !stillValid()) return false;
+      final db = await instance;
+      if (stillValid != null && !stillValid()) return false;
+      await db.transaction((txn) async {
+        await txn.delete(
+          'live_coverage',
+          where: 'day = ? AND source = ?',
+          whereArgs: [day, kStepSourcePhone],
+        );
+        for (final w in windows) {
+          if (w.steps < 0 || w.endTs <= w.startTs) continue;
+          await txn.insert('live_coverage', {
+            'start_ts': w.startTs,
+            'end_ts': w.endTs,
+            'steps': w.steps,
+            'day': day,
+            'source': kStepSourcePhone,
+          });
+        }
+      });
+      return true;
     });
   }
 
@@ -4420,6 +4654,9 @@ class LocalDb {
   /// import reporting success while banking nothing for those days. Band clips
   /// against band. Phone coverage needs no clipping at all: it is replaced
   /// wholesale per day (see [replacePhoneCoverageForDay]).
+  @visibleForTesting
+  static Future<void> Function()? debugAfterCoverageRead;
+
   static Future<List<List<int>>> coverageWindowsOverlapping(
     int loSec,
     int hiSec, {
@@ -4431,6 +4668,7 @@ class LocalDb {
       where: 'end_ts >= ? AND start_ts < ? AND source = ?',
       whereArgs: [loSec, hiSec, source],
     );
+    await debugAfterCoverageRead?.call();
     return [
       for (final r in rows)
         [(r['start_ts'] as num).toInt(), (r['end_ts'] as num).toInt()],
@@ -4547,12 +4785,39 @@ class LocalDb {
     return v == null ? null : int.tryParse(v);
   }
 
+  /// Whether the raw prune has already deleted [day]'s decoded recordings:
+  /// the whole day lies before the [kDecodedPrunedBeforeCursor] cut, which the
+  /// prune only ever sets at a local midnight (a day straddling it is not). False when nothing has been
+  /// pruned yet, so "no recordings" on a fresh install or an unworn night is
+  /// not mistaken for "deleted", and false for a day that was imported.
+  static Future<bool> decodedPrunedFor(String day) async {
+    final cut = await getCursorInt(kDecodedPrunedBeforeCursor);
+    final end = localDayEndSec(day);
+    if (cut == null || end == null || end > cut) return false;
+    // An imported day sits before the cut without ever having had recordings
+    // here, so there was nothing for the prune to remove.
+    return !(await importedDates()).contains(day);
+  }
+
   /// The primary device's durable record frontier (`rec_ts_hw`), or null when
   /// no record has been banked. Builds before the commit guard could persist
   /// '0' from a record-less commit, so a non-positive value reads as unset.
   static Future<int?> getRecordFrontier() async {
     final v = await getCursorInt('rec_ts_hw');
     return (v == null || v <= 0) ? null : v;
+  }
+
+  /// The primary band banked records the ingest gate refused for their time
+  /// (archived, never decoded, so `rec_ts_hw` never moved): data exists, its
+  /// timestamp does not. What a strap with a never-set clock leaves behind.
+  static Future<bool> hasGateDroppedArchive() async {
+    final db = await instance;
+    final rows = await db.rawQuery(
+      'SELECT 1 FROM $rawArchiveView WHERE reason = ? AND device_id = ? '
+      'LIMIT 1',
+      [kGateDroppedReason, kPrimaryDeviceId],
+    );
+    return rows.isNotEmpty;
   }
 
   /// Read a cursor int through a specific executor (used inside a transaction so
@@ -5595,6 +5860,26 @@ class LocalDb {
     });
   }
 
+  /// Replace the sets of one strength session, in log order. Deletes any
+  /// prior rows for this session before inserting the new list.
+  static Future<void> replaceStrengthSets(
+    String sessionId,
+    List<Map<String, Object?>> sets,
+  ) async {
+    final db = await instance;
+    await db.transaction((txn) async {
+      await txn.delete('strength_set',
+          where: 'session_id = ?', whereArgs: [sessionId]);
+      for (var i = 0; i < sets.length; i++) {
+        await txn.insert('strength_set', {
+          ...sets[i],
+          'session_id': sessionId,
+          'seq': i,
+        });
+      }
+    });
+  }
+
   static Future<List<Map<String, Object?>>> strengthSets(
     String sessionId,
   ) async {
@@ -5684,6 +5969,12 @@ class LocalDb {
     // DDL belongs next to the code that reads it, not two thousand lines away.
     await createNutritionTables(db);
     await createMedTables(db);
+    // HYROX sessions and their round segments: hand-recorded race data, so
+    // the creator lives here where onCreate, the onOpen repair pass and the
+    // export database all run it. CREATE IF NOT EXISTS, so re-running is free.
+    await createHyroxTables(db);
+    // Triathlon sessions and their segments, same reasoning.
+    await createTriathlonTables(db);
     // cycle_log — menstrual cycle markers; `kind` is 'start' (cycle start) etc.
     await db.execute('''
       CREATE TABLE IF NOT EXISTS cycle_log (
@@ -5746,6 +6037,10 @@ class LocalDb {
       )
     ''');
   }
+
+  // Schema 61 and every-open repair; no session scan or backfill.
+  static Future<void> _createSessionCeilingRev(Database db) =>
+      _ldbCreateSessionCeilingRev(db);
 
   static Future<void> _createSyncState(DatabaseExecutor db) async {
     await db.execute('''
@@ -9362,11 +9657,26 @@ class LocalDb {
       orderBy: 'rec_ts DESC, counter DESC',
       limit: 1,
     );
-    if (decodedRows.isNotEmpty) {
-      return Sample.fromDecodedRow(decodedRows.first);
-    }
-    final rows = await db.query('samples', orderBy: 'ts DESC', limit: 1);
-    return rows.isEmpty ? null : Sample.fromDbMap(rows.first);
+    final decoded =
+        decodedRows.isEmpty ? null : Sample.fromDecodedRow(decodedRows.first);
+    // Primary band only, same meaning as the decoded query above: without it
+    // the fallback could return a peripheral sensor's row, and callers that
+    // read this as "how fresh is the BAND" (e.g. the morning-briefing
+    // readiness gate) would be unlocked by a sensor with no band data. The
+    // samples table keys by device_id ('' = primary band), not `source`.
+    final rows = await db.query(
+      'samples',
+      where: 'device_id = ?',
+      whereArgs: [kPrimaryDeviceId],
+      orderBy: 'ts DESC',
+      limit: 1,
+    );
+    final plain = rows.isEmpty ? null : Sample.fromDbMap(rows.first);
+    // Newest across BOTH stores: decoded_onehz holding only yesterday while
+    // today's records already sit in `samples` must still read as today.
+    if (decoded == null) return plain;
+    if (plain == null) return decoded;
+    return plain.tsEpoch > decoded.tsEpoch ? plain : decoded;
   }
 
   static Future<Map<String, int>> counts() async {
@@ -9584,6 +9894,8 @@ class LocalDb {
         });
       }
     });
+    // AppState caches the hr1Hz order with the device rows.
+    deviceRowChanged.add('');
   }
 
   /// Back to physics for one signal. NOT a write of the computed order — that
@@ -9596,6 +9908,7 @@ class LocalDb {
       where: 'signal = ? AND user_set = 1',
       whereArgs: [signal.name],
     );
+    deviceRowChanged.add('');
   }
 
   /// The signals whose order the USER set by hand, so the editor can offer a
@@ -9947,6 +10260,19 @@ class LocalDb {
         return {'fw': fw, 'last_seen': now, 'history': kept};
       });
 
+  /// The firmware [noteBandFirmware] last recorded, or null when no band has
+  /// reported one on this install. Best-effort; never throws.
+  static Future<String?> bandFirmware() async {
+    try {
+      final raw = (await computeFreshness(kBandFirmwareKey))?['payload_json'];
+      final m = raw is String ? jsonDecode(raw) : null;
+      final fw = m is Map ? m['fw'] : null;
+      return fw is String && fw.isNotEmpty ? fw : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// `compute_freshness` key marking the raw-free next-night nap cleanup
   /// (compute/nap_overlap_cleanup.dart) as applied. Cleared by an import.
   /// v2: the v1 pass skipped every day the readiness backfill had restamped
@@ -10208,7 +10534,11 @@ class LocalDb {
     // The limit MUST follow skipped: a newer skip must neither consume a slot
     // nor fall back to an older non-skipped version of the same day.
     return db.rawQuery(
-      'SELECT r.day_id AS day_id, r.window_json AS window_json '
+      'SELECT r.day_id AS day_id, r.window_json AS window_json, '
+      // Legacy v9 rows keep window_json = '{}' and carry the offset in the
+      // payload; ship the payload only for those.
+      "CASE WHEN r.window_json LIKE '%offset_ms%' THEN NULL "
+      'ELSE r.payload_json END AS payload_json '
       'FROM ($_servedVersions ORDER BY day_id DESC) m '
       'CROSS JOIN day_result r $_servedOn '
       'WHERE r.skipped = 0 '
@@ -10282,6 +10612,9 @@ class LocalDb {
   /// bound navigation. Skips are excluded via the `skipped` column, which
   /// `_markDaySkipped` sets alongside the `{skipped:true}` payload.
   static Future<List<String>> availableDayIds({DatabaseExecutor? executor}) async {
+    // Only the writer builds the index: a screen read may be on the reader
+    // connection, which then uses it once it exists.
+    if (executor == null) await _ensureDayResultServedIndex(await instance);
     final db = executor ?? await instance;
     // Latest version per day (matches [dayResult]), then drop skip-markers.
     final rows = await db.rawQuery(
@@ -10306,6 +10639,7 @@ class LocalDb {
   /// data correctly.
   static Future<Set<String>> dayResultIds(int algoVersion) async {
     final db = await instance;
+    await _ensureDayResultServedIndex(db);
     final rows = await db.query(
       'day_result',
       columns: ['day_id'],
@@ -10313,6 +10647,26 @@ class LocalDb {
       whereArgs: [algoVersion],
     );
     return {for (final r in rows) r['day_id'] as String};
+  }
+
+  /// Covering index for [availableDayIds] and [dayResultIds]. `skipped` and
+  /// `partial` sit after `payload_json` in the row, so filtering on them
+  /// without it follows every bundle's overflow chain (tens of MB over a
+  /// long history) to return a list of day labels. Built on first use, off
+  /// `openDatabase`, so that one-time walk never runs under the launch
+  /// watchdog. A failure leaves the reads on the table, as before.
+  static Future<void> _ensureDayResultServedIndex(Database db) async {
+    try {
+      final have = await db.rawQuery(
+        "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?",
+        ['idx_day_result_served'],
+      );
+      if (have.isNotEmpty) return;
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_day_result_served '
+        'ON day_result(algo_version, day_id, skipped, partial)',
+      );
+    } catch (_) {}
   }
 
   /// Every stored input a derive of [dayId] reads, as one string, or null
@@ -10669,12 +11023,7 @@ class LocalDb {
   /// value, so a concurrent derive cannot race it. Any failure leaves the
   /// index absent and the caller on the old scan; the next call resumes.
   static Future<bool> _ensureDayResultImportedFlag(Database db) async {
-    Future<bool> ready() async => (await db.rawQuery(
-          "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?",
-          [_dayResultFinalizedIndex],
-        ))
-            .isNotEmpty;
-    if (await ready()) return true;
+    if (await _dayResultImportedFlagReady(db)) return true;
     try {
       if (!(await _columnsOf(db, 'day_result')).contains('imported')) {
         await _ensureDayResultImportedColumn(db);
@@ -10706,6 +11055,15 @@ class LocalDb {
     }
   }
 
+  /// True when [_ensureDayResultImportedFlag] has finished: a cheap check
+  /// that never backfills, for callers that may be inside a transaction.
+  static Future<bool> _dayResultImportedFlagReady(DatabaseExecutor db) async =>
+      (await db.rawQuery(
+        "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?",
+        [_dayResultFinalizedIndex],
+      ))
+          .isNotEmpty;
+
   /// Normalize a day_result row to also carry a `date` key (== day_id) so legacy
   /// readers that keyed on `date` keep working.
   static Map<String, dynamic> _withDate(Map<String, dynamic> row) {
@@ -10728,11 +11086,15 @@ class LocalDb {
   /// shrink it — a year of history would cost its full size five times over.
   /// A manual export keeps it, which is the lossless copy the user asked for.
   ///
+  /// [includePrefs] carries settings in export-only tables. Telemetry and
+  /// support exports pass false to keep settings and key signals private.
+  ///
   /// [into] puts the copy somewhere other than the temp root; the manual
   /// export uses its own folder so it can prune its old copies without
   /// touching snapshots other features are still working on.
   static Future<String> exportCopy({
     bool includeSubstrateArchive = true,
+    bool includePrefs = true,
     Directory? into,
   }) async {
     final db = await instance;
@@ -10767,6 +11129,7 @@ class LocalDb {
         await copy.close();
         copy = null;
       }
+      if (includePrefs) await writeBackupPrefs(dest);
     } catch (_) {
       // The caller never learns the path of a failed copy, so nobody else
       // could ever delete it: a full copy of the database left in temp.
@@ -11121,6 +11484,45 @@ class LocalDb {
         where: 'start_ts >= ? AND start_ts < ?',
         whereArgs: [startSec, endSec],
       );
+      // Same midnight rule as deleteDays (shared predicate _hyroxInWindowSql):
+      // a race is exported for a day when it starts that day OR one of its
+      // segments starts that day or overlaps it, and always whole.
+      await copyRows(
+        'hyrox_session',
+        where: 'id IN $_hyroxInWindowSql',
+        whereArgs: [startSec, endSec, endSec, startSec, startSec, endSec, startSec],
+      );
+      await copyRows(
+        'hyrox_segment',
+        where: 'session_id IN $_hyroxInWindowSql',
+        whereArgs: [startSec, endSec, endSec, startSec, startSec, endSec, startSec],
+      );
+      // Same midnight rule as deleteDays: a race is exported for a day when
+      // it starts that day OR one of its segments does, and always whole.
+      // An open segment only overlaps later days while the session is still
+      // live; a FINALIZED race (incl. an abandoned DNF with an open cut
+      // segment) is bounded by COALESCE(session.end_ts, session.start_ts),
+      // so it does not match every later day.
+      const triInWindow = '(SELECT id FROM triathlon_session '
+          'WHERE start_ts >= ? AND start_ts < ? '
+          'UNION SELECT session_id FROM triathlon_segment '
+          'WHERE start_ts IS NOT NULL AND start_ts < ? '
+          'AND ( (end_ts IS NOT NULL AND end_ts > ?) '
+          '   OR (end_ts IS NULL AND start_ts < ? '
+          '   AND EXISTS (SELECT 1 FROM triathlon_session s '
+          '        WHERE s.id = triathlon_segment.session_id '
+          '        AND (s.status <> \'finalized\' '
+          '             OR COALESCE(s.end_ts, s.start_ts, 0) > ?)))) )';
+      await copyRows(
+        'triathlon_session',
+        where: 'id IN $triInWindow',
+        whereArgs: [startSec, endSec, endSec, startSec, endSec, endSec],
+      );
+      await copyRows(
+        'triathlon_segment',
+        where: 'session_id IN $triInWindow',
+        whereArgs: [startSec, endSec, endSec, startSec, endSec, endSec],
+      );
       await copyRows(
         'live_coverage',
         where: 'end_ts > ? AND start_ts < ?',
@@ -11230,6 +11632,9 @@ class LocalDb {
     }
 
     await db.transaction((txn) async {
+      // Scratch prefixes can include an evening owned by another day label.
+      // Clear every copy atomically with deletion so deleted raw stays deleted.
+      await _rotateStoreIdentity(txn);
       // `raw_archive` frames are kept, but a later archive re-drive must not
       // decode them back into a day the user deleted: record the windows.
       final prevRow = await txn.query('compute_freshness',
@@ -11301,6 +11706,142 @@ class LocalDb {
             'DELETE FROM $child WHERE session_id IN '
             '(SELECT id FROM sessions WHERE start_ts >= ? AND start_ts < ?)',
             [startSec, endSec],
+          );
+        }
+        // HYROX rows are NOT children of `sessions`: their key is the hyrox
+        // session id, and a segment's `workout_id` merely points at one.
+        // Treating them as session children matched nothing (a privacy leak
+        // on delete) and could delete a race segment whose string id collided
+        // with a workout id.
+        //
+        // A race belongs to a day when it STARTS that day, or when one of its
+        // segments OVERLAPS it. Overlap is not "starts inside": a segment that
+        // began yesterday and is still open, or ends today, was recorded on
+        // this day too. An open segment has no end, so it overlaps every later
+        // window. Deleting either day takes the WHOLE race — half a race is a
+        // record nobody can read.
+        //
+        // The ids are read first and deleted second: deleting the segments
+        // before the parent statement would empty the very subquery the parent
+        // delete is built from, which is how a cross-midnight race used to
+        // survive its own deletion.
+        // An open segment only overlaps later days while the session is still
+        // live; a FINALIZED race (incl. an abandoned DNF with an open cut
+        // segment) is bounded by COALESCE(session.end_ts, session.start_ts).
+        // The predicate is the shared _hyroxInWindowSql so export and delete
+        // cannot drift apart.
+        final hyroxIds = <String>[
+          for (final r in await txn.query(
+            'hyrox_session',
+            columns: ['id'],
+            where: 'id IN $_hyroxInWindowSql',
+            whereArgs: [startSec, endSec, endSec, startSec, startSec, endSec, startSec],
+          ))
+            r['id'] as String,
+        ];
+        for (final chunk in _sqlVarChunks(hyroxIds)) {
+          final marks = List.filled(chunk.length, '?').join(',');
+          // Collect the linked workouts BEFORE the segment rows go: a segment
+          // deleted with its `sessions` row left behind would orphan the
+          // workout's route and splits on a day the user asked to delete.
+          final linked = await txn.query(
+            'hyrox_segment',
+            columns: ['workout_id'],
+            where: 'session_id IN ($marks) AND workout_id IS NOT NULL',
+            whereArgs: chunk,
+          );
+          for (final w in linked) {
+            final wid = w['workout_id'] as String;
+            await txn.delete('workout_route',
+                where: 'session_id = ?', whereArgs: [wid]);
+            await txn.delete('workout_split',
+                where: 'session_id = ?', whereArgs: [wid]);
+            await txn.delete('session_sensor',
+                where: 'session_id = ?', whereArgs: [wid]);
+            await txn.delete('strength_set',
+                where: 'session_id = ?', whereArgs: [wid]);
+            deleted += await txn.delete('sessions',
+                where: 'id = ?', whereArgs: [wid]);
+          }
+          deleted += await txn.rawDelete(
+            'DELETE FROM hyrox_segment WHERE session_id IN ($marks)',
+            chunk,
+          );
+          deleted += await txn.rawDelete(
+            'DELETE FROM hyrox_session WHERE id IN ($marks)',
+            chunk,
+          );
+        }
+        // Triathlon rows are NOT children of `sessions`: their key is the
+        // triathlon session id, and a segment's `workout_id` merely points at
+        // one. Treating them as session children matched nothing (a privacy
+        // leak on delete) and could delete a race segment whose string id
+        // collided with a workout id.
+        //
+        // A race belongs to a day when it STARTS that day, or when one of its
+        // segments OVERLAPS it. Overlap is not "starts inside": a segment that
+        // began yesterday and is still open, or ends today, was recorded on
+        // this day too. An open segment has no end, so it overlaps every later
+        // window. Deleting either day takes the WHOLE race — half a race is a
+        // record nobody can read.
+        //
+        // The ids are read first and deleted second: deleting the segments
+        // before the parent statement would empty the very subquery the parent
+        // delete is built from, which is how a cross-midnight race used to
+        // survive its own deletion.
+        // An open segment only overlaps later days while the session is still
+        // live; a FINALIZED race (incl. an abandoned DNF with an open cut
+        // segment) is bounded by COALESCE(session.end_ts, session.start_ts).
+        const triInWindow = '(SELECT id FROM triathlon_session '
+            'WHERE start_ts >= ? AND start_ts < ? '
+            'UNION SELECT session_id FROM triathlon_segment '
+            'WHERE start_ts IS NOT NULL AND start_ts < ? '
+            'AND ( (end_ts IS NOT NULL AND end_ts > ?) '
+            '   OR (end_ts IS NULL AND start_ts < ? '
+            '   AND EXISTS (SELECT 1 FROM triathlon_session s '
+            '        WHERE s.id = triathlon_segment.session_id '
+            '        AND (s.status <> \'finalized\' '
+            '             OR COALESCE(s.end_ts, s.start_ts, 0) > ?)))) )';
+        final triIds = <String>[
+          for (final r in await txn.query(
+            'triathlon_session',
+            columns: ['id'],
+            where: 'id IN $triInWindow',
+            whereArgs: [startSec, endSec, endSec, startSec, endSec, endSec],
+          ))
+            r['id'] as String,
+        ];
+        for (final chunk in _sqlVarChunks(triIds)) {
+          final marks = List.filled(chunk.length, '?').join(',');
+          // Collect the linked workouts BEFORE the segment rows go: a segment
+          // deleted with its `sessions` row left behind would orphan the
+          // workout's route and splits on a day the user asked to delete.
+          final linked = await txn.query(
+            'triathlon_segment',
+            columns: ['workout_id'],
+            where: 'session_id IN ($marks) AND workout_id IS NOT NULL',
+            whereArgs: chunk,
+          );
+          for (final w in linked) {
+            final wid = w['workout_id'] as String;
+            await txn.delete('workout_route',
+                where: 'session_id = ?', whereArgs: [wid]);
+            await txn.delete('workout_split',
+                where: 'session_id = ?', whereArgs: [wid]);
+            await txn.delete('session_sensor',
+                where: 'session_id = ?', whereArgs: [wid]);
+            await txn.delete('strength_set',
+                where: 'session_id = ?', whereArgs: [wid]);
+            deleted += await txn.delete('sessions',
+                where: 'id = ?', whereArgs: [wid]);
+          }
+          deleted += await txn.rawDelete(
+            'DELETE FROM triathlon_segment WHERE session_id IN ($marks)',
+            chunk,
+          );
+          deleted += await txn.rawDelete(
+            'DELETE FROM triathlon_session WHERE id IN ($marks)',
+            chunk,
           );
         }
         deleted += await txn.delete(
@@ -11388,7 +11929,9 @@ class LocalDb {
     final db = await instance;
     final rows = await db.rawQuery(
       "SELECT name FROM sqlite_master WHERE type = 'table' "
-      "AND name NOT LIKE 'sqlite_%' AND name != 'android_metadata'",
+      "AND name NOT LIKE 'sqlite_%' AND name != 'android_metadata' "
+      // Clear revisions after the decoded/session DELETE triggers have finished.
+      "ORDER BY name IN ('input_rev', 'session_ceiling_rev')",
     );
     var deleted = 0;
     await db.transaction((txn) async {
@@ -11396,7 +11939,9 @@ class LocalDb {
         final t = r['name'];
         if (t is String) deleted += await txn.delete(t);
       }
+      await _rotateStoreIdentity(txn);
     });
+    _markStoreReplaced();
     return deleted;
   }
 
@@ -11486,13 +12031,19 @@ class LocalDb {
   /// short of deleting the superseded row. `metric_series_version` needs no
   /// such guard: it is `PRIMARY KEY (date)` and the last writer replaces it,
   /// which is exactly why the stamp exists.
-  static const String _importedDatesSql =
+  static String _importedDatesSql(bool flagged) =>
       'SELECT date FROM metric_series_version '
       "WHERE date IS NOT NULL AND source IS NOT NULL AND source <> 'band' "
       'UNION '
       'SELECT r.day_id FROM day_result r '
       '$_servedDayJoin '
-      "WHERE r.day_id IS NOT NULL AND r.payload_json LIKE '%\"imported\":true%'";
+      'WHERE r.day_id IS NOT NULL AND ${_importedTest(flagged)}';
+
+  /// "Row r is an imported snapshot": the trigger-kept `imported` column once
+  /// [_dayResultImportedFlagReady], else the LIKE over the whole bundle it is
+  /// computed from (a database whose backfill has not run yet).
+  static String _importedTest(bool flagged) =>
+      flagged ? 'r.imported = 1' : 'r.payload_json LIKE $_importedPayloadLike';
 
   /// [_importedDatesSql] as a per-row test on the `metric_series` row being
   /// read: true when that row's day is NOT imported. Same two questions, same
@@ -11504,6 +12055,19 @@ class LocalDb {
   /// the days returned (plus any imported ones skipped on the way).
   @visibleForTesting
   static const String notImportedRowSql =
+      '$_notImportedRowHead'
+      "AND r.payload_json LIKE '%\"imported\":true%')";
+
+  /// [notImportedRowSql] reading `day_result.imported` instead of scanning a
+  /// bundle per walked row, once that column is trustworthy.
+  static const String _notImportedRowFlagSql =
+      '$_notImportedRowHead'
+      'AND r.imported = 1)';
+
+  static String _notImportedRowSqlFor(bool flagged) =>
+      flagged ? _notImportedRowFlagSql : notImportedRowSql;
+
+  static const String _notImportedRowHead =
       'metric_series.date IS NOT NULL '
       'AND NOT EXISTS (SELECT 1 FROM metric_series_version v '
       'WHERE v.date = metric_series.date AND v.source IS NOT NULL '
@@ -11512,8 +12076,7 @@ class LocalDb {
       'WHERE r.day_id = metric_series.date '
       'AND r.algo_version = (SELECT MAX(x.algo_version) FROM day_result x '
       'WHERE x.day_id = metric_series.date '
-      'AND x.algo_version <= $_servedAlgoCeiling) '
-      "AND r.payload_json LIKE '%\"imported\":true%')";
+      'AND x.algo_version <= $_servedAlgoCeiling) ';
 
   /// Day labels whose stored scalars are ANOTHER vendor's derived numbers.
   ///
@@ -11526,10 +12089,13 @@ class LocalDb {
   /// Returned as a set rather than applied inside each query on purpose: the
   /// scan behind it is over `day_result.payload_json` (whole day bundles), so
   /// a caller reading several series takes it ONCE and filters in Dart.
+  /// (Once the `imported` column is backfilled the scan is an indexed read.)
   static Future<Set<String>> importedDates() async {
     final db = await instance;
+    final flagged = await _ensureDayResultImportedFlag(db);
     return {
-      for (final r in await db.rawQuery(_importedDatesSql)) r['date'] as String,
+      for (final r in await db.rawQuery(_importedDatesSql(flagged)))
+        r['date'] as String,
     };
   }
 
@@ -11602,12 +12168,12 @@ class LocalDb {
   /// renames on the way through is exactly the situation a restore has to
   /// survive. Plain `.db` files (older backups, and `exportCopy` output) take
   /// the same path they always did.
-  static Future<Map<String, int>> importFromDbFile(String path) async {
+  static Future<ImportSummary> importFromDbFile(String path) async {
     if (!await File(path).exists()) {
       throw const FileSystemException('Backup file not found');
     }
     if (await sniffFile(path) != ImportContainer.gzip) {
-      return _mergeFromDbFile(path);
+      return _restoreFromDbFile(path);
     }
     final work = await Directory.systemTemp.createTemp('openstrap_restore_');
     try {
@@ -11618,7 +12184,7 @@ class LocalDb {
           'That file unpacked to something that is not an OpenStrap database.',
         );
       }
-      return await _mergeFromDbFile(inflated);
+      return await _restoreFromDbFile(inflated);
     } finally {
       // The inflated copy is a full second copy of the database, so it goes
       // whether the import worked or not.
@@ -11628,6 +12194,71 @@ class LocalDb {
         /* the OS reclaims the temp dir eventually */
       }
     }
+  }
+
+  /// Startup defaults alone do not establish an install. Setup, a successful
+  /// prior restore, or hand-entered/history rows do, even without a band.
+  static const _kSettingsImported = 'backup_settings_imported';
+
+  static Future<bool> _backupPrefsFreshInstall(Database db) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    if (prefs.getBool('onboard.completed') == true ||
+        prefs.containsKey('onboarding_choice') ||
+        prefs.containsKey('local_profile_json') ||
+        await getCursor(_kSettingsImported) != null) {
+      return false;
+    }
+    final candidates = {
+      ..._restoreEditedKeys.keys,
+      'decoded_onehz', 'decoded_rr', 'samples', 'day_result', 'observation',
+      'sessions', 'journal', 'substrate_archive', 'raw_archive',
+      'imported_workout', 'imported_measurement', 'lab_result', 'food_entry',
+      'med_dose', 'strength_set', 'cycle_log', 'breathing_session', 'sleep_nap',
+    };
+    // Some stores, including raw_archive, are created lazily.
+    final tables = {for (final row in await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table'")) row['name']};
+    final probes = [for (final table in candidates)
+        if (tables.contains(table)) 'EXISTS(SELECT 1 FROM $table)'];
+    if (probes.isEmpty) return true;
+    return (await db.rawQuery('SELECT ${probes.join(' OR ')} AS populated'))
+        .single['populated'] == 0;
+  }
+
+  static Future<ImportSummary> _restoreFromDbFile(String path) async {
+    final db = await instance;
+    // Old database-only backups need no preference store. Inspect the copy
+    // before merge, which can make a new phone look established.
+    final src = await openDatabase(path, readOnly: true, singleInstance: false);
+    final bool hasSettings;
+    final bool hasSchedule;
+    try {
+      hasSettings = await _objectType(src, 'backup_prefs') == 'table';
+      hasSchedule = await _objectType(src, 'alarm_schedule') == 'table' &&
+          (await src.rawQuery('SELECT 1 FROM alarm_schedule LIMIT 1'))
+              .isNotEmpty;
+    } finally {
+      await src.close();
+    }
+    final fresh = hasSettings && await _backupPrefsFreshInstall(db);
+    // Cancel-all deletes the schedule rows, so an empty table cannot tell
+    // "cancelled" from "never set": the marker says which, and a cancelled
+    // install keeps it empty. A fresh install has nothing to protect, and a
+    // backup with no schedule rows has nothing to bring back.
+    var cancelled = false;
+    if (hasSchedule && !fresh) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      cancelled = prefs.getBool('alarm_schedule_cleared') == true;
+    }
+    final counts = await _mergeFromDbFile(path,
+        skip: cancelled ? const {'alarm_schedule'} : const {});
+    final summary = await restoreBackupPrefs(path, counts, freshInstall: fresh);
+    // Persist only after settings restore succeeds, including a settings-only
+    // backup without an onboarding choice. A later restore keeps local edits.
+    if (hasSettings) await setCursor(_kSettingsImported, '1');
+    return summary;
   }
 
   /// Merge every table [tables] names from the database file at [path] into
@@ -11647,6 +12278,7 @@ class LocalDb {
       // banked. They were also simply MISSING here until now — nutrition,
       // medication, strength sets, symptoms and routes did not survive a
       // backup/restore round trip at all, the same omission `wipeAll` documents.
+      'alarm_schedule',
       'journal',
       'journal_metric',
       'journal_field_def',
@@ -11680,6 +12312,11 @@ class LocalDb {
       // Keep the decision merge after both kinds of accepted activity.
       'sessions',
       'session_sensor',
+      // The recorded round boundaries and their plans cannot be rebuilt.
+      'hyrox_session',
+      'hyrox_segment',
+      'triathlon_session',
+      'triathlon_segment',
       'activity_suggestions',
       'activity_review_meta',
       'activity_review_days',
@@ -11749,6 +12386,8 @@ class LocalDb {
   /// (one day's fields, one session's sets), because the app rewrites each
   /// as a whole and a row-by-row merge splices two versions together.
   static const Map<String, (List<String>, String?)> _restoreEditedKeys = {
+    // Keep configured weekdays; a restore fills only absent schedule slots.
+    'alarm_schedule': (['weekday'], null),
     'journal': (['date'], 'updated_at'),
     'journal_metric': (['date'], 'updated_at'),
     'lab_result': (['marker', 'taken_on'], 'updated_at'),
@@ -11777,7 +12416,10 @@ class LocalDb {
   /// file saved mid-move). Every row is rebuilt through [rawArchiveRow], so a
   /// frame already here, or in the backup twice, lands once. Paged on rowid,
   /// like every other table the merge reads. Returns rows offered.
-  static Future<int> _mergeRawArchive(Database src, Database db) async {
+  static Future<int> _mergeRawArchive(Database src, Database db, {
+    required Future<void> Function(Transaction) beforePageCommit,
+    required void Function() onPageCommitted,
+  }) async {
     var copied = 0;
     Future<void> pageFrom(String table, String hexSql) async {
       if (await _objectType(src, table) != 'table') return;
@@ -11786,7 +12428,7 @@ class LocalDb {
           .any((c) => c['name'] == 'device_id');
       final deviceSql =
           hasDevice ? 'device_id' : "'$kPrimaryDeviceId' AS device_id";
-      var after = 0;
+      var after = _kBeforeEveryRowid;
       while (true) {
         final page = await src.rawQuery(
           'SELECT rowid AS _r, $deviceSql, $hexSql AS hex, counter, '
@@ -11796,26 +12438,30 @@ class LocalDb {
         );
         if (page.isEmpty) return;
         after = (page.last['_r'] as num).toInt();
-        final batch = db.batch();
-        for (final r in page) {
-          final hex = r['hex'];
-          if (hex is! String) continue;
-          batch.insert(
-            rawArchiveTable,
-            rawArchiveRow(
-              deviceId: r['device_id'] as String? ?? kPrimaryDeviceId,
-              hex: hex,
-              counter: (r['counter'] as num?)?.toInt(),
-              packetType: (r['packet_type'] as num?)?.toInt() ?? 0,
-              recTs: (r['rec_ts'] as num?)?.toInt(),
-              capturedAt: (r['captured_at'] as num?)?.toInt() ?? 0,
-              reason: r['reason'] as String? ?? 'unknown',
-            ),
-            conflictAlgorithm: ConflictAlgorithm.ignore,
-          );
-          copied++;
-        }
-        await batch.commit(noResult: true);
+        await db.transaction((txn) async {
+          await beforePageCommit(txn);
+          final batch = txn.batch();
+          for (final r in page) {
+            final hex = r['hex'];
+            if (hex is! String) continue;
+            batch.insert(
+              rawArchiveTable,
+              rawArchiveRow(
+                deviceId: r['device_id'] as String? ?? kPrimaryDeviceId,
+                hex: hex,
+                counter: (r['counter'] as num?)?.toInt(),
+                packetType: (r['packet_type'] as num?)?.toInt() ?? 0,
+                recTs: (r['rec_ts'] as num?)?.toInt(),
+                capturedAt: (r['captured_at'] as num?)?.toInt() ?? 0,
+                reason: r['reason'] as String? ?? 'unknown',
+              ),
+              conflictAlgorithm: ConflictAlgorithm.ignore,
+            );
+            copied++;
+          }
+          await batch.commit(noResult: true);
+        });
+        onPageCommitted();
       }
     }
 
@@ -11850,13 +12496,45 @@ class LocalDb {
     String path, {
     List<String>? only,
     bool tolerant = false,
+    Set<String> skip = const {},
   }) => _withReaderInvalidated(() =>
-      _mergeFromDbFileImpl(path, only: only, tolerant: tolerant));
+      _mergeFromDbFileImpl(path, only: only, tolerant: tolerant, skip: skip));
 
   static Future<Map<String, int>> _mergeFromDbFileImpl(
     String path, {
     List<String>? only,
     bool tolerant = false,
+    Set<String> skip = const {},
+  }) async {
+    var pageCommitted = false;
+    try {
+      return await _mergeFromDbFileBody(path,
+        only: only,
+        tolerant: tolerant,
+        skip: skip,
+        beforePageCommit: (txn) async {
+          if (!pageCommitted) await _rotateStoreIdentity(txn);
+        },
+        onPageCommitted: () => pageCommitted = true,
+      );
+    } finally {
+      // A later page, source close or follow-up write can fail after a durable
+      // replacement. Invalidate on every such exit, but never on a rolled-back
+      // first page. Keep the flag local so concurrent merges cannot share it.
+      if (pageCommitted) {
+        _markStoreReplaced();
+        await (await instance).delete('day_checkpoint');
+      }
+    }
+  }
+
+  static Future<Map<String, int>> _mergeFromDbFileBody(
+    String path, {
+    List<String>? only,
+    bool tolerant = false,
+    required Future<void> Function(Transaction) beforePageCommit,
+    required void Function() onPageCommitted,
+    Set<String> skip = const {},
   }) async {
     final db = await instance;
     final src = await openDatabase(path, readOnly: true);
@@ -11906,6 +12584,139 @@ class LocalDb {
     // get the same protection, or trends and the rolling baselines would be
     // rebuilt from the other export's numbers while day detail serves ours.
     final finalizedDays = <String>{};
+    // A LOCAL race wins over an OLDER snapshot, but a NEWER backup must be
+    // able to advance it (e.g. the final boundaries recorded on another
+    // phone). `discarded` is an explicit local decision and always wins.
+    // Segments follow their parent's verdict, because they arrive as separate
+    // rows and would otherwise rewrite the boundaries of a skipped race.
+    final protectedHyrox = <String>{};
+    final hyroxLastEdit = <String, int>{};
+    // Session ids whose imported hyrox_session row the merge skipped (locally
+    // discarded or newer). Their segment rows must be skipped too: segments
+    // follow their parent's verdict, and hyrox_session is merged before
+    // hyrox_segment in _restoreTables, so the set is complete before the
+    // segment pass starts.
+    final skippedHyrox = <String>{};
+    try {
+      // A race arrives as a parent row plus its segment rows, and a replaced
+      // parent has its local segments cleared first. A restore cut off between
+      // the two leaves a parent with none or only some of its segments; if that
+      // parent counted as "local and current" the next restore would skip the
+      // segments for good. So a parent only earns the newer-than-snapshot
+      // protection once every segment its plan calls for is on disk.
+      final haveHyroxSegments = <String, int>{
+        for (final r in await db.rawQuery(
+          'SELECT session_id, COUNT(*) AS n FROM hyrox_segment '
+          'GROUP BY session_id',
+        ))
+          '${r['session_id']}': (r['n'] as num?)?.toInt() ?? 0,
+      };
+      int? plannedHyroxSegments(Object? planJson) {
+        try {
+          final j = jsonDecode('$planJson');
+          final segs = j is Map ? j['segments'] : null;
+          return segs is List ? segs.length : null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      for (final r in await db.query(
+        'hyrox_session',
+        columns: ['id', 'status', 'updated_at', 'finalized_at', 'plan_json'],
+        distinct: true,
+      )) {
+        final id = '${r['id']}';
+        // Finalization is one-way: a finalized local race is a record and is
+        // never replaced by an import, not even a newer backup's unfinalized
+        // copy. Discarded is an explicit local decision and always wins too.
+        if (r['status'] == 'discarded' || r['finalized_at'] != null) {
+          protectedHyrox.add(id);
+        }
+        final planned = plannedHyroxSegments(r['plan_json']);
+        if (planned == null || (haveHyroxSegments[id] ?? 0) < planned) {
+          continue; // an interrupted import: let the next one finish it
+        }
+        hyroxLastEdit[id] = (r['updated_at'] as num?)?.toInt() ?? 0;
+      }
+    } on DatabaseException {
+      /* table absent in an older build of this file — nothing to protect */
+    }
+    // A local race is protected from an import when the athlete explicitly
+    // discarded it, or when the local row was edited no earlier than the
+    // imported snapshot (a newer backup may still advance the race). [row] is
+    // the imported hyrox_session row, null for segment rows.
+    bool isHyroxProtected(String id, Map<String, Object?>? row) {
+      if (protectedHyrox.contains(id)) return true;
+      if (row == null) return false;
+      final local = hyroxLastEdit[id];
+      if (local == null) return false;
+      final theirs = (row['updated_at'] as num?)?.toInt() ?? 0;
+      return local >= theirs;
+    }
+    // A LOCAL race wins over an OLDER snapshot, but a NEWER backup must be
+    // able to advance it (e.g. the final boundaries recorded on another
+    // phone). `discarded` is an explicit local decision and always wins.
+    // Segments follow their parent's verdict, because they arrive as separate
+    // rows and would otherwise rewrite the boundaries of a skipped race.
+    final protectedTriathlons = <String>{};
+    final triLastEdit = <String, int>{};
+    final skippedTriathlons = <String>{};
+    // A local race is protected from an import when the athlete explicitly
+    // discarded it, or when the local row was edited no earlier than the
+    // imported snapshot (a newer backup may still advance the race). [row] is
+    // the imported triathlon_session row, null for segment rows.
+    bool triProtected(String id, Map<String, Object?>? row) {
+      if (protectedTriathlons.contains(id)) return true;
+      if (row == null) return false;
+      final local = triLastEdit[id];
+      if (local == null) return false;
+      final theirs = (row['updated_at'] as num?)?.toInt() ?? 0;
+      return local >= theirs;
+    }
+
+    try {
+      // A race arrives as a parent row and its segment rows, in separate
+      // statements. A restore cut off between the two leaves a parent with
+      // none or only some of its segments; if that parent counted as "local
+      // and current" the next restore would skip its segments for good. So a
+      // parent only earns the newer-than-snapshot protection once every
+      // segment its plan calls for is on disk.
+      final haveSegments = <String, int>{
+        for (final r in await db.rawQuery(
+          'SELECT session_id, COUNT(*) AS n FROM triathlon_segment '
+          'GROUP BY session_id',
+        ))
+          '${r['session_id']}': (r['n'] as num?)?.toInt() ?? 0,
+      };
+      int? plannedSegments(Object? planJson) {
+        try {
+          final j = jsonDecode('$planJson');
+          final segs = j is Map ? j['segments'] : null;
+          return segs is List ? segs.length : null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      for (final r in await db.query(
+        'triathlon_session',
+        columns: ['id', 'status', 'updated_at', 'plan_json'],
+        distinct: true,
+      )) {
+        final id = '${r['id']}';
+        if (r['status'] == 'discarded') {
+          protectedTriathlons.add(id);
+        }
+        final planned = plannedSegments(r['plan_json']);
+        if (planned == null || (haveSegments[id] ?? 0) < planned) {
+          continue; // an interrupted import: let the next one finish it
+        }
+        triLastEdit[id] = (r['updated_at'] as num?)?.toInt() ?? 0;
+      }
+    } on DatabaseException {
+      /* table absent in an older build of this file — nothing to protect */
+    }
     var archiveSkipped = 0;
     int? archiveEdgeSec;
     var impAttached = false;
@@ -11970,7 +12781,7 @@ class LocalDb {
       final maxRowid = Sqflite.firstIntValue(
         await db.rawQuery('SELECT MAX(rowid) FROM imp.${quoteSql(t)}'),
       );
-      if (maxRowid == null || maxRowid <= 0) {
+      if (maxRowid == null) {
         counts[t] = 0;
         return true;
       }
@@ -12086,7 +12897,7 @@ class LocalDb {
         // `rec_ts INTEGER PRIMARY KEY` table has rowids near 1.8e9, which
         // fixed 25k ranges walked as ~70k mostly empty transactions.
         final ends = <int>[];
-        for (var lo = 0;;) {
+        for (var lo = _kBeforeEveryRowid;;) {
           final hi = Sqflite.firstIntValue(await db.rawQuery(
             'SELECT MAX(r) FROM (SELECT rowid AS r FROM imp.${quoteSql(t)} '
             'WHERE rowid > ? ORDER BY rowid LIMIT $chunkRows)',
@@ -12123,13 +12934,14 @@ class LocalDb {
                       AND ${numericSql(sourceColumn('beat_index'))}
                     GROUP BY 1, 2) c
               LEFT JOIN temp._restore_rr_src_max x ON x.d = c.d AND x.k = c.k''',
-                [i == 0 ? 0 : ends[i - 1], ends[i]]);
+                [i == 0 ? _kBeforeEveryRowid : ends[i - 1], ends[i]]);
           }
         }
-        var lower = 0;
+        var lower = _kBeforeEveryRowid;
         for (final upper in ends) {
-          final first = lower == 0;
+          final first = lower == _kBeforeEveryRowid;
           await db.transaction((txn) async {
+            await beforePageCommit(txn);
             if (t == 'day_result' && first) {
               // Inside the first chunk's transaction, so a day the engine
               // finalizes while the restore runs is still protected.
@@ -12175,6 +12987,7 @@ class LocalDb {
               await txn.execute('DROP TABLE temp._restore_rr_carried');
             }
           });
+          onPageCommitted();
           lower = upper;
         }
         failed = false;
@@ -12245,9 +13058,15 @@ class LocalDb {
             : (srcEdge == null || localEdge > srcEdge ? localEdge : srcEdge);
       }
       for (final t in (only ?? tables)) {
+        if (skip.contains(t)) {
+          counts[t] = 0;
+          continue;
+        }
         if (t == 'raw_archive') {
           try {
-            counts[t] = await _mergeRawArchive(src, db);
+            counts[t] = await _mergeRawArchive(src, db,
+                beforePageCommit: beforePageCommit,
+                onPageCommitted: onPageCommitted);
           } catch (_) {
             if (!tolerant) rethrow;
             counts[t] = 0;
@@ -12283,7 +13102,7 @@ class LocalDb {
           final isArchive = t == SubstrateArchive.table;
           final pageSize = isArchive ? 8 : 2000;
           const rowidKey = '_rowid';
-          var lastRowid = 0;
+          var lastRowid = _kBeforeEveryRowid;
           final projection = isArchive
               ? SubstrateArchive.metaColumns.join(', ')
               : '*';
@@ -12451,6 +13270,9 @@ class LocalDb {
               }
             }
             await db.transaction((txn) async {
+              // Rotate atomically with the first committed page. A killed
+              // process must not leave old scratch valid after partial restore.
+              await beforePageCommit(txn);
               if (t == SubstrateArchive.table) {
                 final r = await SubstrateArchive.restoreRows(
                   txn,
@@ -12623,6 +13445,8 @@ class LocalDb {
                 }
                 if (t == 'sync_cursor') {
                   final name = '${row['name']}';
+                  // Only a successful restore on THIS install establishes it.
+                  if (name == _kSettingsImported) continue;
                   if (localCursors.containsKey(name)) {
                     if (name != kDecodedPrunedBeforeCursor) continue;
                     final mine = int.tryParse('${localCursors[name]}');
@@ -12631,6 +13455,43 @@ class LocalDb {
                       continue;
                     }
                   }
+                }
+                if (t == 'hyrox_session' &&
+                    isHyroxProtected('${row['id']}', row)) {
+                  skippedHyrox.add('${row['id']}');
+                  continue; // locally discarded/finalized, or newer than the snapshot
+                }
+                if (t == 'hyrox_session') {
+                  // The session pass runs before the segment pass and FKs are
+                  // off: a replaced parent would keep local segment rows the
+                  // backup does not carry. Delete them so the restored race
+                  // shows exactly the backup's segments. Skipped (protected)
+                  // sessions never reach here, so their segments stay protected.
+                  // MUST run on the transaction (txn), not db — calling db.*
+                  // inside db.transaction deadlocks.
+                  await txn.delete(
+                    'hyrox_segment',
+                    where: 'session_id = ?',
+                    whereArgs: ['${row['id']}'],
+                  );
+                }
+                if (t == 'hyrox_segment' &&
+                    (isHyroxProtected('${row['session_id']}', null) ||
+                        skippedHyrox.contains('${row['session_id']}'))) {
+                  continue; // parent skipped — the segments follow its verdict
+                }
+                if (t == 'triathlon_session' &&
+                    triProtected('${row['id']}', row)) {
+                  // Locally discarded, or newer than the snapshot. Its
+                  // segments are skipped with it: the parent table is merged
+                  // first, so the verdict is already known when they arrive.
+                  skippedTriathlons.add('${row['id']}');
+                  continue;
+                }
+                if (t == 'triathlon_segment' &&
+                    (protectedTriathlons.contains('${row['session_id']}') ||
+                        skippedTriathlons.contains('${row['session_id']}'))) {
+                  continue;
                 }
                 if (t == 'day_result') {
                   if (protectedKeys.contains(
@@ -12758,6 +13619,7 @@ class LocalDb {
               }
               await flush();
             });
+            onPageCommitted();
             // Advance past the last row this page actually delivered. Read the
             // cursor BEFORE dropping the page, and stop on a short page rather
             // than issuing one more query to discover the end.
@@ -13025,6 +13887,10 @@ class LocalDb {
       'signal_priority',
       'vendor_sleep_epoch',
       'substrate_archive',
+      'hyrox_session',
+      'hyrox_segment',
+      'triathlon_session',
+      'triathlon_segment',
     ];
 
     final missingTables = <String>[];
@@ -13272,14 +14138,19 @@ class LocalDb {
     String key, {
     int? limit,
     bool measuredOnly = false,
+    String? from,
     DatabaseExecutor? executor,
   }) async {
     final db = executor ?? await instance;
+    final flagged = measuredOnly && await _dayResultImportedFlagReady(db);
+    // `from` bounds the scan before the per-row imported mask runs: a 7-day
+    // reader should not pay one payload LIKE per stored day.
     return db.query(
       'metric_series',
-      where: 'key = ? AND value IS NOT NULL${_validSql(key)}'
-          '${measuredOnly ? ' AND $notImportedRowSql' : ''}',
-      whereArgs: [key],
+      where: 'key = ? AND value IS NOT NULL'
+          '${from != null ? ' AND date >= ?' : ''}${_validSql(key)}'
+          '${measuredOnly ? ' AND ${_notImportedRowSqlFor(flagged)}' : ''}',
+      whereArgs: [key, ?from],
       orderBy: 'date ASC',
       limit: limit,
     );
@@ -13312,15 +14183,18 @@ class LocalDb {
     int n, {
     bool measuredOnly = true,
     String? before,
+    String? since,
   }) async {
     final db = await instance;
+    final flagged = measuredOnly && await _ensureDayResultImportedFlag(db);
     final rows = await db.rawQuery(
       'SELECT value FROM metric_series '
       'WHERE key = ? AND value IS NOT NULL '
       '${before != null ? 'AND date < ? ' : ''}'
-      '${measuredOnly ? 'AND $notImportedRowSql ' : ''}'
+      '${since != null ? 'AND date >= ? ' : ''}'
+      '${measuredOnly ? 'AND ${_notImportedRowSqlFor(flagged)} ' : ''}'
       'ORDER BY date DESC LIMIT ?',
-      [key, ?before, n],
+      [key, ?before, ?since, n],
     );
     return [for (final r in rows.reversed) (r['value'] as num).toDouble()];
   }
@@ -13342,13 +14216,32 @@ class LocalDb {
   }
 
   /// A calculation started before a review must never publish over it.
-  static Future<bool> putReviewedBaseline(String key, String payloadJson, int expectedRevision) async {
+  /// [series], when given, is one `metric_series` row derived from this same
+  /// payload, written in the same transaction so the two can never disagree
+  /// (derivation runs in more than one isolate, so two builds can interleave).
+  static Future<bool> putReviewedBaseline(String key, String payloadJson, int expectedRevision,
+      {({String date, String key, double? value})? series}) async {
     return (await instance).transaction((tx) async {
       final rows = await tx.query('activity_review_meta', columns: ['revision']);
       final revision = rows.isEmpty ? 0 : rows.single['revision'] as int;
       if (revision != expectedRevision) return false;
       await tx.insert('baselines', {'key': key, 'payload_json': payloadJson,
         'updated_at': DateTime.now().millisecondsSinceEpoch}, conflictAlgorithm: ConflictAlgorithm.replace);
+      if (series != null) {
+        // An abstained value removes the day's row rather than storing a
+        // null: an absent row already reads "—", and a null row would be a
+        // stored fact about a day nothing measured.
+        final v = series.value;
+        if (v == null) {
+          await tx.delete('metric_series',
+              where: 'date = ? AND key = ?',
+              whereArgs: [series.date, series.key]);
+        } else {
+          await tx.insert('metric_series',
+              {'date': series.date, 'key': series.key, 'value': v},
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+      }
       return true;
     });
   }
@@ -13693,6 +14586,33 @@ class LocalDb {
     return rows.isEmpty ? null : rows.first['payload_json'];
   }
 
+  /// The four things [_refreshComputeFreshnessNow] reads from a past day's
+  /// bundle, as 1/0/null: `skipped`, `has_sleep` (a non-null
+  /// `sleep.accounting.value.tst_sec`), `no_sleep` (flagged NO_SLEEP_DETECTED
+  /// or SLEEP_REJECTED) and `readiness` (a numeric `scalars.readiness`).
+  /// Empty for a missing or malformed bundle, which decoded to `{}`.
+  static Future<Map<String, Object?>> _pastDayFreshnessFacts(
+    String dayId,
+    Object? algoVersion,
+  ) async {
+    final db = await instance;
+    final rows = await db.rawQuery(
+      "SELECT json_type(p, '\$.skipped') = 'true' AS skipped, "
+      "COALESCE(json_type(p, '\$.sleep.accounting.value.tst_sec'), 'null') "
+      "<> 'null' AS has_sleep, "
+      "CASE WHEN json_type(p, '\$.flags') = 'array' THEN EXISTS ("
+      "SELECT 1 FROM json_each(p, '\$.flags') "
+      "WHERE value IN ('NO_SLEEP_DETECTED', 'SLEEP_REJECTED')) END "
+      'AS no_sleep, '
+      "json_type(p, '\$.scalars.readiness') IN ('integer', 'real') "
+      'AS readiness '
+      'FROM (SELECT payload_json AS p FROM day_result '
+      'WHERE day_id = ? AND algo_version = ?) WHERE json_valid(p)',
+      [dayId, algoVersion],
+    );
+    return rows.isEmpty ? const {} : rows.first;
+  }
+
   /// The three [rawStats] fields freshness reads. [rawStats] also counts
   /// `samples` and takes MIN(rec_ts) for the diagnostics screen, which a
   /// derive pass has no use for.
@@ -13718,7 +14638,21 @@ class LocalDb {
     };
   }
 
-  static Future<void> refreshComputeFreshness() async {
+  /// Refreshes run one at a time. One that started before a derive settled
+  /// today's row could otherwise finish after the derive's own refresh and
+  /// overwrite the newer state with the older one, leaving a settled night
+  /// reading as still arriving. Queued calls each read the rows as they stand
+  /// when their turn comes. A failing refresh fails its own caller and never
+  /// blocks the ones behind it.
+  static Future<void> _freshnessQueue = Future<void>.value();
+
+  static Future<void> refreshComputeFreshness() {
+    final run = _freshnessQueue.then((_) => _refreshComputeFreshnessNow());
+    _freshnessQueue = run.then<void>((_) {}, onError: (Object _) {});
+    return run;
+  }
+
+  static Future<void> _refreshComputeFreshnessNow() async {
     final raw = await _freshnessRawStats();
     // Payload-free: this runs at the end of every derive pass, including the
     // light one after each BLE drain, on the UI isolate. The loop usually
@@ -13749,6 +14683,30 @@ class LocalDb {
       final dayId = row['day_id']?.toString();
       if (dayId == null || dayId.isEmpty) continue;
       if (dayId == today && todayRow == null) todayRow = row;
+      if (dayId != today) {
+        // A past day is only asked whether it had a night and a score, so
+        // SQLite answers from the bundle: no 88 KB payload over the channel,
+        // no decode here. Without this a user with no scored or no detected
+        // night decoded all 30 bundles on every pass.
+        final f = await _pastDayFreshnessFacts(dayId, row['algo_version']);
+        if (f['skipped'] == 1) continue;
+        if (latestOvernightDay == null &&
+            (f['has_sleep'] == 1 || f['no_sleep'] == 1)) {
+          latestOvernightDay = dayId;
+          latestOvernightComputedAt = (row['computed_at'] as num?)?.toInt();
+        }
+        if (latestRecoveryDay == null &&
+            ((row['readiness'] as num?) != null || f['readiness'] == 1)) {
+          latestRecoveryDay = dayId;
+          latestRecoveryComputedAt = (row['computed_at'] as num?)?.toInt();
+        }
+        if (latestOvernightDay != null &&
+            latestRecoveryDay != null &&
+            (todayRow != null || dayId.compareTo(today) < 0)) {
+          break;
+        }
+        continue;
+      }
       final decoded =
           SeriesCodec.decodePayloadJson(
             await _servedPayloadJson(dayId, row['algo_version']),
@@ -14628,6 +15586,34 @@ class LocalDb {
     });
   }
 
+  /// End a LIVE session at [endTs]. A targeted update, not `putSession`: a
+  /// finished row is left alone (re-ending it would stretch its window to now)
+  /// and a score written since the caller's read is not reverted. Returns the
+  /// number of rows changed.
+  static Future<int> endLiveSession(String id, int endTs) async {
+    final db = await instance;
+    return db.transaction((tx) async {
+      final rows = await tx.query('sessions',
+          columns: ['start_ts'],
+          where: "id = ? AND status = 'live'",
+          whereArgs: [id]);
+      if (rows.isEmpty) return 0;
+      await tx.update('sessions', {'status': 'done', 'end_ts': endTs},
+          where: 'id = ?', whereArgs: [id]);
+      final start = (rows.first['start_ts'] as num?)?.toInt();
+      if (start != null) {
+        await ActivityStore.supersede(tx, ActivityKind.workout, start, endTs);
+      }
+      return 1;
+    });
+  }
+
+  /// id/start/end of every session ever logged, and nothing else: the overlap
+  /// check needs the whole history but none of the score or trace columns.
+  static Future<List<Map<String, dynamic>>> sessionSpans() async =>
+      (await instance)
+          .query('sessions', columns: ['id', 'start_ts', 'end_ts']);
+
   /// Move a session's window. Not `putSession`: the row's type correction,
   /// RPE and private flag must survive. What was measured over the OLD window
   /// (the frozen HR trace, average HR, zone minutes) belongs to other seconds,
@@ -14808,6 +15794,47 @@ class LocalDb {
     ), executor: db);
   }
 
+  /// The most-used finished sessions' activity keys, most-used first — rows
+  /// of `{'type', 'n', 'last_ts'}` for the activity picker's quick row.
+  /// `type` comes back NORMALIZED exactly the way [activityByName] resolves
+  /// it (`lower(replace(type, ' ', '_'))`, the same rule as `Activity.typeKey`),
+  /// so 'Running' and 'running' count as one activity and can never rank an
+  /// activity low or show it twice. [sinceTs] bounds the window (the picker
+  /// passes 90 days so a seasonal sport does not stay pinned at the top
+  /// forever); null counts all history. Live sessions never count, and
+  /// `last_ts` breaks ties so a newly started sport does not sink below an
+  /// old habit. [limit] caps the ranked rows returned — a caller that drops
+  /// unresolvable types itself should fetch more than it displays, or
+  /// unknown types could crowd out every known one before the limit.
+  /// [toTs] bounds the window from above (defaults to now) so a future-dated
+  /// row (clock skew) cannot inflate a count. Only sessions this app started
+  /// count: scored imports (`scored_import`) and WHOOP exports (`whoop`) also
+  /// live in `sessions`, and the quick row's tiles START a session, so
+  /// someone else's recording must not outrank what this user does here.
+  static Future<List<Map<String, dynamic>>> mostUsedActivityTypes({
+    int? sinceTs,
+    int? toTs,
+    int limit = 6,
+  }) async {
+    final db = await instance;
+    final args = <Object?>[];
+    var where = "status = 'done' AND type IS NOT NULL AND type <> '' "
+        "AND source NOT IN ('scored_import', 'whoop') AND start_ts <= ?";
+    args.add(toTs ?? DateTime.now().millisecondsSinceEpoch ~/ 1000);
+    if (sinceTs != null) {
+      where += ' AND start_ts >= ?';
+      args.add(sinceTs);
+    }
+    args.add(limit);
+    return db.rawQuery(
+      "SELECT lower(replace(type, ' ', '_')) AS type, COUNT(*) AS n, "
+      'MAX(start_ts) AS last_ts FROM sessions '
+      'WHERE $where GROUP BY lower(replace(type, \' \', \'_\')) '
+      'ORDER BY n DESC, last_ts DESC, type ASC LIMIT ?',
+      args,
+    );
+  }
+
   /// What a session's sensor scored: served empty, not stored empty.
   static const List<String> _sensorScoreColumns = [
     'calories',
@@ -14915,18 +15942,28 @@ class LocalDb {
 
   static Future<void> deleteSession(String id) async {
     final db = await instance;
-    await db.delete('sessions', where: 'id = ?', whereArgs: [id]);
-    await db.delete('session_sensor',
-        where: 'session_id = ?', whereArgs: [id]);
-    // Cascade: a route belongs to its session (on-device only, no FK enforced).
-    await db.delete('workout_route', where: 'session_id = ?', whereArgs: [id]);
-    // …and its frozen per-km splits (CV-01), same reason.
-    await db.delete('workout_split', where: 'session_id = ?', whereArgs: [id]);
-    // …and so do its typed sets. These used to survive the delete, so a
-    // mistyped 200 kg set on a deleted workout kept coming back as "previous"
-    // and "best" on the strength screen (recentSetsFor reads strength_set with
-    // no session-existence filter) and kept exporting under a dead session_id.
-    await db.delete('strength_set', where: 'session_id = ?', whereArgs: [id]);
+    // One transaction: the children are found only through `sessions`, so a
+    // kill after the owner row went left them unreachable (a deleted
+    // workout's GPS trail kept riding along in every export).
+    await db.transaction((txn) async {
+      await txn.delete('sessions', where: 'id = ?', whereArgs: [id]);
+      await txn.delete('session_sensor',
+          where: 'session_id = ?', whereArgs: [id]);
+      // Cascade: a route belongs to its session (on-device only, no FK
+      // enforced).
+      await txn.delete('workout_route',
+          where: 'session_id = ?', whereArgs: [id]);
+      // …and its frozen per-km splits (CV-01), same reason.
+      await txn.delete('workout_split',
+          where: 'session_id = ?', whereArgs: [id]);
+      // …and so do its typed sets. These used to survive the delete, so a
+      // mistyped 200 kg set on a deleted workout kept coming back as
+      // "previous" and "best" on the strength screen (recentSetsFor reads
+      // strength_set with no session-existence filter) and kept exporting
+      // under a dead session_id.
+      await txn.delete('strength_set',
+          where: 'session_id = ?', whereArgs: [id]);
+    });
   }
 
   // ── workout GPS routes (run/ride/walk) I/O ─────────────────────────────────
@@ -15108,13 +16145,38 @@ class LocalDb {
     ];
   }
 
+  @visibleForTesting
+  static bool debugDisableSessionWindowsWorker = false;
+  @visibleForTesting
+  static void Function(String)? debugOnSessionWindowsConstruction;
+
+  // Test forwarding seam for the production combined read.
+  @visibleForTesting
+  static Future<SessionHrReads> sessionHrReadsForTest(int from, int to,
+          {int maxHrCeiling = 0, int minHrFloor = 0}) =>
+      sessionHrReads(from, to,
+          maxHrCeiling: maxHrCeiling, minHrFloor: minHrFloor);
+
+  /// Both HR reads for the workout list. With a sensor enabled, fetch each
+  /// window once and construct its stats and samples together in a worker.
+  static Future<SessionHrReads> sessionHrReads(int from, int to,
+      {int maxHrCeiling = 0, int minHrFloor = 0}) async {
+    if (sessionSensorSources.isEmpty) {
+      return (stats: await _sessionHrStatsSql(from, to, maxHrCeiling, minHrFloor),
+          samples: await _sessionHrSamplesSql(from, to));
+    }
+    return _sessionWindows(from, to, maxHrCeiling, minHrFloor);
+  }
+
   /// Every session in [fromTs, toTs] (epoch SECONDS) with the worn rows of
   /// its window a session read keeps ([sessionWindowRows]), ascending. Only
   /// with a workout sensor flagged on; a session with none is absent, as from
   /// the band-only joins.
-  static Future<Map<String, List<Map<String, Object?>>>> _sessionWindows(
+  static Future<SessionHrReads> _sessionWindows(
     int fromTs,
     int toTs,
+    int maxHrCeiling,
+    int minHrFloor,
   ) async {
     final db = await instance;
     final rows = await db.rawQuery(
@@ -15126,20 +16188,53 @@ class LocalDb {
       'ORDER BY s.id, d.rec_ts ASC',
       [fromTs, toTs],
     );
+    final sensors = {...sessionSensorSources};
+    final wearable = sessionWearableSource;
+    (SessionHrReads, String) construct() => _prepareSessionWindows(
+        rows, sensors, wearable, maxHrCeiling, minHrFloor);
+    final result = debugDisableSessionWindowsWorker
+        ? construct()
+        : await runCancellableIsolate(construct, const Duration(seconds: 30),
+            label: 'session windows');
+    debugOnSessionWindowsConstruction?.call(result.$2);
+    return result.$1;
+  }
+
+  static (SessionHrReads, String) _prepareSessionWindows(
+      List<Map<String, Object?>> rows, Set<String> sensors, String? wearable,
+      int maxHrCeiling, int minHrFloor) {
     final by = <String, List<Map<String, Object?>>>{};
     for (final r in rows) {
       final id = r['id'] as String?;
       if (id != null) (by[id] ??= []).add(r);
     }
-    return {
-      for (final MapEntry(key: id, value: rs) in by.entries)
-        if ([
-          for (final r in sessionWindowRows(rs))
-            if (((r['hr'] as num?) ?? 0) > 0) r,
-        ]
-            case final kept when kept.isNotEmpty)
-          id: kept,
-    };
+    final stats = <String, Map<String, num>>{};
+    final samples = <String, List<int>>{};
+    for (final MapEntry(key: id, value: rs) in by.entries) {
+      final hr = [
+        for (final r in _sessionWindowRowsFor(rs,
+            sensors: sensors, wearable: wearable))
+          if (((r['hr'] as num?) ?? 0) > 0) (r['hr'] as num).toInt(),
+      ];
+      if (hr.isEmpty) continue;
+      samples[id] = hr;
+      final low = [
+        for (final h in hr)
+          if (minHrFloor <= 0 || h >= minHrFloor) h,
+      ];
+      final high = [
+        for (final h in hr)
+          if (maxHrCeiling <= 0 || h <= maxHrCeiling) h,
+      ];
+      stats[id] = <String, num>{
+        'n': hr.length,
+        'avg_hr': hr.fold<int>(0, (a, b) => a + b) / hr.length,
+        'min_hr': low.isEmpty ? 0 : low.reduce((a, b) => a < b ? a : b),
+        'max_hr': high.isEmpty ? 0 : high.reduce((a, b) => a > b ? a : b),
+      };
+    }
+    return ((stats: stats, samples: samples),
+        Isolate.current.debugName ?? 'unnamed');
   }
 
   /// Per-session HR aggregates over the 1 Hz substrate for every session in
@@ -15159,28 +16254,14 @@ class LocalDb {
     int minHrFloor = 0,
   }) async {
     if (sessionSensorSources.isNotEmpty) {
-      return {
-        for (final MapEntry(key: id, value: rs)
-            in (await _sessionWindows(fromTs, toTs)).entries)
-          id: () {
-            final hr = [for (final r in rs) (r['hr'] as num).toInt()];
-            final low = [
-              for (final h in hr)
-                if (minHrFloor <= 0 || h >= minHrFloor) h,
-            ];
-            final high = [
-              for (final h in hr)
-                if (maxHrCeiling <= 0 || h <= maxHrCeiling) h,
-            ];
-            return <String, num>{
-              'n': hr.length,
-              'avg_hr': hr.fold<int>(0, (a, b) => a + b) / hr.length,
-              'min_hr': low.isEmpty ? 0 : low.reduce((a, b) => a < b ? a : b),
-              'max_hr': high.isEmpty ? 0 : high.reduce((a, b) => a > b ? a : b),
-            };
-          }(),
-      };
+      return (await sessionHrReads(fromTs, toTs,
+          maxHrCeiling: maxHrCeiling, minHrFloor: minHrFloor)).stats;
     }
+    return _sessionHrStatsSql(fromTs, toTs, maxHrCeiling, minHrFloor);
+  }
+
+  static Future<Map<String, Map<String, num>>> _sessionHrStatsSql(
+      int fromTs, int toTs, int maxHrCeiling, int minHrFloor) async {
     final db = await instance;
     final ceilClause = maxHrCeiling > 0 ? 'AND d.hr <= $maxHrCeiling ' : '';
     final floorClause = minHrFloor > 0 ? 'AND d.hr >= $minHrFloor ' : '';
@@ -15222,12 +16303,13 @@ class LocalDb {
     int toTs,
   ) async {
     if (sessionSensorSources.isNotEmpty) {
-      return {
-        for (final MapEntry(key: id, value: rs)
-            in (await _sessionWindows(fromTs, toTs)).entries)
-          id: [for (final r in rs) (r['hr'] as num).toInt()],
-      };
+      return (await sessionHrReads(fromTs, toTs)).samples;
     }
+    return _sessionHrSamplesSql(fromTs, toTs);
+  }
+
+  static Future<Map<String, List<int>>> _sessionHrSamplesSql(
+      int fromTs, int toTs) async {
     final db = await instance;
     final rows = await db.rawQuery(
       'SELECT s.id AS id, d.hr AS hr '
@@ -15338,8 +16420,7 @@ class LocalDb {
   /// through [SubstrateArchive.archiveAndDeleteBefore] first: one transaction
   /// per (device_id, utc_day) bucket, deleted only once its compressed copy
   /// has been written and read back. A bucket that fails stays live for the
-  /// next pass unless it lies wholly behind [hardFloorSec] (the end of the
-  /// bounded raw hold), where it is deleted unarchived as before. Rows with
+  /// next pass, whatever its age. Rows with
   /// `rec_ts <= 0` cannot be placed on any day and are deleted unarchived.
   /// [log] receives the per-bucket failures (this file has no logger).
   /// [shouldYield] stops the archive step for this pass (see
@@ -15353,7 +16434,6 @@ class LocalDb {
     int cutoffSec, {
     String? cursorName,
     SubstrateArchivePolicy? archive,
-    int? hardFloorSec,
     void Function(String message)? log,
     bool Function()? shouldYield,
     int? maxArchiveBuckets,
@@ -15368,7 +16448,6 @@ class LocalDb {
       deleted += await SubstrateArchive.archiveAndDeleteBefore(
         db,
         cutoffSec,
-        hardFloorSec: hardFloorSec,
         log: log,
         shouldYield: shouldYield,
         maxBuckets: maxArchiveBuckets,
@@ -15423,15 +16502,31 @@ class LocalDb {
       // on the three real exports these four ids are 87, 22 and 12 rows across
       // 8 to 11 days — a few thousand a year. Event 33 alone is ~1900 A DAY,
       // which is why the exemption is four ids and not the whole table.
+      //
+      // The double-taps (event 14) that mark a triathlon's or a HYROX race's
+      // boundaries are also kept while a race is still armed or active: the
+      // reconcilers rebuild the boundaries from them, and a race left
+      // unreconciled past the cutoff would otherwise lose the only record of
+      // where its segments change.
       deleted += await txn.delete(
         'band_events',
-        where: 'ts < ? AND event_id NOT IN (?, ?, ?, ?)',
+        where: 'ts < ? AND event_id NOT IN (?, ?, ?, ?) '
+            'AND NOT (event_id = ? AND ts >= COALESCE('
+            '(SELECT MIN(c) FROM ('
+            'SELECT MIN(created_at) / 1000 - ? AS c FROM triathlon_session '
+            "WHERE status IN ('armed', 'active') "
+            'UNION ALL '
+            'SELECT MIN(created_at) / 1000 - ? FROM hyrox_session '
+            "WHERE status IN ('armed', 'active'))), 9223372036854775807))",
         whereArgs: [
           cutoffSec,
           proto.EventId.chargingOn,
           proto.EventId.chargingOff,
           proto.EventId.wristOn,
           proto.EventId.wristOff,
+          kTriathlonDoubleTapEventId,
+          kTriathlonClockDriftSec,
+          kTriathlonClockDriftSec,
         ],
       );
       // THE UNDECODABLE ARCHIVE IS THINNED, NOT KEPT WHOLE. See

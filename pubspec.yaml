@@ -6,7 +6,7 @@ publish_to: 'none'
 # Watch App" targets in ios/Runner.xcodeproj/project.pbxproj — they aren't wired
 # to FLUTTER_BUILD_NAME/FLUTTER_BUILD_NUMBER. See guides/IOS_INSTALLATION.md
 # "Version Numbers".
-version: 0.11.3+78
+version: 0.12.2+81
 
 environment:
   sdk: ^3.11.4
@@ -268,7 +268,8 @@ dependencies:
       # (R10 gated on packet type, hello/battery parsing, reassembler
       # truncation semantics, removal of deprecated gen5 APIs). #81 sits on top
       # of #82, so it cannot be pinned alone.
-      ref: b4fde6ab5589e53154b808f8b2bbb4d01d9c15b5
+      # protocol main @ #85 merge (image update payload builders).
+      ref: fbadb5bd055965d9400e266d6cf42748992ba950
   openstrap_analytics:
     git:
       url: https://github.com/OpenStrap/analytics.git
@@ -521,7 +522,11 @@ dependencies:
       # analytics main @ 3a7ca34: adds #101 (HRV/readiness/wellness fixes), #100
       # (sleep staging and naps), #97 (stride-periodicity step counter) and #98
       # (a mid-session rest stays inside one workout).
-      ref: 3a7ca34d30233ff11e6c2877083f319a907ccb31
+      # analytics main @ a438df4: merged #102-#108 incremental APIs and review
+      # fixes, retaining #98's workout rest bridge, plus #110 (each recorded night
+      # observation carries the window it was staged over). Clock refusal, uncertainty
+      # and cosinor policies require kAlgoVersion 124.
+      ref: a438df40b38a4586a52a68ab7e1c100fca111ccd
 
   # BLE — flutter_blue_plus is the maintained cross-platform GATT client.
   flutter_blue_plus: ^1.36.8
@@ -676,6 +681,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # DB part guards inspect declarations and SQL arguments through the Dart AST.
+  analyzer: ^10.0.1
   test: ^1.25.8
   # no_runtime_font_fetch_test parses pubspec.yaml to assert every family the
   # type scale uses is bundled rather than fetched at runtime.

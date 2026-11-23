@@ -7,13 +7,16 @@ import 'package:provider/provider.dart';
 import 'ai/briefing.dart' show BriefingPeriod;
 import 'coach/coach_config.dart';
 import 'data/db.dart';
+import 'data/backup_extras.dart' show settingsRestoredSignal;
 import 'l10n/app_localizations.dart';
 import 'notify/notification_service.dart';
 import 'notify/tap_router.dart';
+import 'platform/activity_relaunch.dart';
 import 'state/app_state.dart';
 import 'state/clock_format.dart';
 import 'state/locale_controller.dart';
 import 'state/prefs.dart';
+import 'state/units_controller.dart';
 import 'telemetry/telemetry_service.dart';
 import 'theme/theme_controller.dart';
 import 'theme/theme_switcher.dart';
@@ -40,6 +43,10 @@ import 'ui2/screens/sleep_tab.dart';
 import 'ui2/screens/wellness_screen.dart';
 import 'ui2/screens/workout_screen.dart';
 import 'ui2/ui2.dart';
+import 'ui2/guides/guide_runner.dart';
+import 'ui2/profile/settings.dart' show MoreSettings;
+import 'ui2/guides/guide_dim.dart';
+import 'ui2/skeleton/unit_paint.dart' show GuideScrollBehavior;
 
 class OpenStrapApp extends StatefulWidget {
   const OpenStrapApp({super.key});
@@ -57,10 +64,13 @@ bool screenReadsForeground(AppLifecycleState? state) =>
     state != AppLifecycleState.detached;
 
 class _OpenStrapAppState extends State<OpenStrapApp> with WidgetsBindingObserver {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  late final _guideRunner = GuideRunner(navigatorKey: _navigatorKey);
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    settingsRestoredSignal.addListener(_onSettingsRestored);
     unawaited(LocalDb.setForeground(
         screenReadsForeground(WidgetsBinding.instance.lifecycleState)));
     // Hand the BYOK provider config to AppState (briefing generation + the
@@ -75,9 +85,36 @@ class _OpenStrapAppState extends State<OpenStrapApp> with WidgetsBindingObserver
     });
   }
 
+  void _onSettingsRestored() {
+    if (!mounted) return;
+    unawaited(_reloadRestoredSetting('theme_choice',
+        context.read<ThemeController>().reloadFromPrefs));
+    unawaited(_reloadRestoredSetting('locale_override',
+        context.read<LocaleController>().reloadFromPrefs));
+    unawaited(_reloadRestoredSetting('units_system',
+        context.read<UnitsController>().reloadFromPrefs));
+    unawaited(_reloadRestoredSetting('clock_format',
+        context.read<ClockFormatController>().reloadFromPrefs));
+  }
+
+  Future<void> _reloadRestoredSetting(
+      String key, Future<void> Function() reload) async {
+    try {
+      await reload();
+    } catch (error, stack) {
+      // Controllers parse before replacing their value, so a malformed pref
+      // leaves the current/default choice active while other reloads continue.
+      debugPrint('[import] $key reload failed: $error');
+      TelemetryService.instance.recordNonFatal(error, stack,
+          reason: 'restored $key reload failed');
+    }
+  }
+
   @override
   void dispose() {
+    settingsRestoredSignal.removeListener(_onSettingsRestored);
     WidgetsBinding.instance.removeObserver(this);
+    _guideRunner.dispose();
     super.dispose();
   }
 
@@ -89,10 +126,16 @@ class _OpenStrapAppState extends State<OpenStrapApp> with WidgetsBindingObserver
   }
 
   @override
+  void didHaveMemoryPressure() {
+    context.read<AppState>().handleMemoryPressure();
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final app = context.read<AppState>();
     if (state == AppLifecycleState.resumed) {
       unawaited(LocalDb.setForeground(true));
+      app.resumeDerivationRetention();
       // The user may have flipped our notification switch either way in OS
       // Settings while we were backgrounded. Drop the cached authorization
       // decision so the next present/schedule re-reads reality — a denial used
@@ -148,7 +191,13 @@ class _OpenStrapAppState extends State<OpenStrapApp> with WidgetsBindingObserver
     locale.useForPresentation();
     final twelveHour = !context.watch<ClockFormatController>().resolve24h(
         MediaQuery.alwaysUse24HourFormatOf(context));
-    return MaterialApp(
+    return ChangeNotifierProvider<GuideRunner>.value(
+      value: _guideRunner,
+      // A guide run's dim and skeleton are painted by the components themselves;
+      // the scope carries the plan (guides/guide_dim.dart).
+      child: GuideDimScope(controller: _guideRunner.dim, child: MaterialApp(
+      scrollBehavior: const GuideScrollBehavior(),
+      navigatorKey: _navigatorKey,
       title: 'OpenStrap',
       debugShowCheckedModeBanner: false,
       // The palette is the design system's, the CHOICE is still the user's.
@@ -184,9 +233,9 @@ class _OpenStrapAppState extends State<OpenStrapApp> with WidgetsBindingObserver
       },
       builder: (context, child) => _ClockScope(
           child: ThemeSwitchOverlay(key: themeSwitchKey, child: child!)),
-      navigatorObservers: [TelemetryNavigatorObserver()],
+      navigatorObservers: [TelemetryNavigatorObserver(), _guideRunner.routes],
       home: const _Gate(),
-    );
+    )));
   }
 }
 
@@ -311,7 +360,7 @@ class _Gate extends StatelessWidget {
               onBack: () => context.read<AppState>().backToWelcome()),
           AppRoute.profile => ProfileSetupScreen(
               onDone: () => OnboardingBypass.mark(OnboardingBypass.kProfile)),
-          AppRoute.shell => const _Shell(),
+          AppRoute.shell => const AppMainShell(),
         };
         // Cold-start splash: covers the whole loading phase and cross-fades out
         // the instant AppState finishes initializing, even mid-play. Shown once
@@ -437,14 +486,18 @@ ShellDomain domainForRoute(String route) => switch (routePath(route)) {
       // Water is a journal field logged beside food, and food is a section of
       // Activity.
       kRouteWater => ShellDomain.activity,
-      // The movement/sedentary nudges, recovery-ready and step-goal notes,
-      // and the detected-activity reviews: all about what is on Today.
+      // The movement/sedentary nudges, recovery-ready and step-goal notes:
+      // all about what is on Today.
       kRouteMovement ||
       kRouteRecovery ||
       kRouteSteps ||
-      kRouteDetectedActivities ||
       kRouteWorkoutSuggestion =>
         ShellDomain.today,
+      // The detected-activity reviews (naps and workouts alike). The
+      // suggestion cards they are about live on the Activity tab, so the
+      // pushed review sits over Activity — the tap lands where the content
+      // is, not on Home (issue #113's promise, extended to naps).
+      kRouteDetectedActivities => ShellDomain.activity,
       // The forgotten-workout nudge. Activity is the destination itself — the
       // live session bar with its finish control is pinned to the shell there
       // — so screenForRoute stays null for it.
@@ -508,25 +561,29 @@ Widget? screenForRoute(String route) => switch (routePath(route)) {
       _ => null,
     };
 
-class _Shell extends StatefulWidget {
-  const _Shell();
+/// The signed-in app: [AppShell] with the four real tabs, the deep-link
+/// plumbing and the running-workout bar. Public so integration tests (live
+/// guides) mount the very shell the app runs, not a copy of its tab mapping.
+class AppMainShell extends StatefulWidget {
+  const AppMainShell({super.key});
   @override
-  State<_Shell> createState() => _ShellState();
+  State<AppMainShell> createState() => _ShellState();
 }
 
-class _ShellState extends State<_Shell> {
+class _ShellState extends State<AppMainShell> implements GuideShellLink {
   /// Restore the last-selected tab so a relaunch lands where the user left off.
   late ShellDomain _domain = restoredShellTab();
 
   /// AppShell owns its own selection and takes only an `initial`, so a
-  /// programmatic jump re-keys it.
-  // ponytail: re-keying rebuilds the tab stack, so a deep link loses the
-  // scroll position of whatever tab was open. Deep links are rare and arrive
-  // from outside the app; give AppShell an external controller if that ever
-  // stops being true.
-  int _rev = 0;
+  /// programmatic jump drives it through this notifier instead of re-keying:
+  /// recreating AppShell would rebuild the tab stack and lose every visited
+  /// tab's state (scroll position included) on a notification deep link.
+  late final ValueNotifier<ShellDomain> _selection;
 
   AppState? _app;
+  GuideRunner? _guideRunner;
+  GuideShellLink? _guideShell;
+  bool _persistSelection = true;
 
   @override
   void initState() {
@@ -534,8 +591,16 @@ class _ShellState extends State<_Shell> {
     // A tapped notification asks for a tab via AppState.navRequest. Jump there,
     // then clear the request so it isn't replayed on rebuild.
     _app = context.read<AppState>();
+    _selection = ValueNotifier(_domain);
+    _guideRunner = context.read<GuideRunner?>();
+    // Guide navigation is temporary; only the user's own tab changes persist.
+    _guideShell = this;
+    _guideRunner?.attachShell(_guideShell!);
     _app!.navRequest.addListener(_consumeSoon);
     _app!.screenRequest.addListener(_consumeSoon);
+    // Android relaunch from the launcher: close screens left open on the
+    // engine that outlived the closed Activity (#650).
+    ActivityRelaunch.listen(_relaunchNavigator);
     // Cold launch from a tapped notification: the route may already be set
     // before this shell mounted (so the listener never fired). Consume it once
     // attached.
@@ -547,6 +612,9 @@ class _ShellState extends State<_Shell> {
       _consume();
     });
   }
+
+  NavigatorState? _relaunchNavigator() =>
+      mounted ? Navigator.of(context) : null;
 
   bool _pending = false;
 
@@ -589,19 +657,36 @@ class _ShellState extends State<_Shell> {
     if (tab >= 0) _go(domainForTab(tab));
   }
 
-  void _go(ShellDomain d) {
+  @override
+  void selectTab(ShellDomain tab) => _go(tab, persist: false);
+
+  @override
+  Future<void> openSettings() async {
+    if (mounted) await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const MoreSettings()));
+  }
+
+  void _go(ShellDomain d, {bool persist = true}) {
     if (d == _domain) return;
-    setState(() {
-      _domain = d;
-      _rev++;
-    });
-    Prefs.setInt(Prefs.shellTabV2, d.index);
+    setState(() => _domain = d);
+    if (persist) Prefs.setInt(Prefs.shellTabV2, d.index);
+    // AppShell reports notifier-driven changes through onSelect as well.
+    // Keep guide write suppression scoped to that synchronous notification.
+    final previous = _persistSelection;
+    _persistSelection = persist;
+    try {
+      _selection.value = d;
+    } finally {
+      _persistSelection = previous;
+    }
   }
 
   @override
   void dispose() {
+    if (_guideShell != null) _guideRunner?.detachShell(_guideShell!);
     _app?.navRequest.removeListener(_consumeSoon);
     _app?.screenRequest.removeListener(_consumeSoon);
+    ActivityRelaunch.stop(_relaunchNavigator);
+    _selection.dispose();
     super.dispose();
   }
 
@@ -611,12 +696,16 @@ class _ShellState extends State<_Shell> {
     // AppState tick.
     final live = context.select<AppState, bool>((a) => a.activeWorkout != null);
     return AppShell(
-      key: ValueKey(_rev),
       initial: _domain,
+      selection: _selection,
       banner: live ? const _LiveSessionBar() : null,
       onSelect: (d) {
         _domain = d;
-        Prefs.setInt(Prefs.shellTabV2, d.index);
+        if (_persistSelection) Prefs.setInt(Prefs.shellTabV2, d.index);
+        // Manual tab changes (and Back) must update the notifier too:
+        // otherwise it goes stale and a later _go to that stale value fires
+        // no change event, so AppShell would not follow the deep link.
+        _selection.value = d;
       },
       builder: (c, d) => switch (d) {
         ShellDomain.today => const HomeScreen(),
@@ -664,7 +753,7 @@ class _LiveSessionBar extends StatelessWidget {
     final history = await loadSetHistory();
     await nav.push(MaterialPageRoute<void>(
       builder: (_) => liveFor(a,
-          private: draft?.private ?? false,
+          private: draft?.private,
           weightKg: draft?.weightKg,
           host: activityHost(app, history: history)),
     ));

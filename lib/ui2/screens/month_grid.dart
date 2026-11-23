@@ -25,11 +25,14 @@ import '../../l10n/display_text.dart';
 
 import 'package:flutter/material.dart';
 
+import '../../data/day_label.dart' show calendarDaysBetween;
 import '../../data/local_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../ui2.dart';
 import 'home_screen.dart' show ChartPoint, denseDays, pointsOf;
 import 'metric_detail.dart' show MetricSpec, specOf;
+import 'slot_scrub.dart';
+import '../skeleton/guide_plot.dart';
 
 /// Days on screen. One month, and the same window every trend card uses.
 const int kGridDays = 30;
@@ -53,10 +56,14 @@ class GridRow {
     required this.have,
     required this.historyDays,
     required this.ranged,
+    required this.anchor,
   });
 
   final MetricSpec spec;
   final String key;
+
+  /// The calendar day of the last cell: the day the row was built.
+  final DateTime anchor;
 
   /// Per day, oldest first: where the day sat against the usual range, or null
   /// for a day with no value or a row with no range.
@@ -86,10 +93,22 @@ List<Side?> sideCells(List<double?> window, UsualRange? band) => [
       for (final v in window) band == null || v == null ? null : band.side(v),
     ];
 
-/// Build one domain's row from its stored points.
-GridRow gridRow(String key, List<ChartPoint> points) {
-  final window = denseDays(points, kGridDays);
-  final history = [for (final p in points) p.v];
+/// Build one domain's row from its stored points, as of [asOf] (default
+/// today): the window ends on that day and the usual range is built only from
+/// days up to it, so a past day is read against what was known then.
+GridRow gridRow(String key, List<ChartPoint> points, {DateTime? asOf}) {
+  final anchor = asOf ?? DateTime.now();
+  final known = asOf == null
+      ? points
+      : [
+          for (final p in points)
+            if (calendarDaysBetween(
+                    DateTime.fromMillisecondsSinceEpoch(p.t * 1000), asOf) >=
+                0)
+              p,
+        ];
+  final window = denseDays(known, kGridDays, asOf: asOf);
+  final history = [for (final p in known) p.v];
   final band = usualRangeFor(key, history, null);
   return GridRow(
     spec: specOf(key),
@@ -98,16 +117,20 @@ GridRow gridRow(String key, List<ChartPoint> points) {
     have: window.where((v) => v != null).length,
     historyDays: history.length,
     ranged: band != null,
+    anchor: anchor,
   );
 }
 
 /// Every row, loaded. One `getChart` per domain — the same read the trend
 /// cards already do.
-Future<List<GridRow>> loadGridRows(LocalRepository repo) async {
+Future<List<GridRow>> loadGridRows(LocalRepository repo,
+    {DateTime? asOf}) async {
   final out = <GridRow>[];
   for (final key in kGridMetrics) {
     try {
-      out.add(gridRow(key, pointsOf(await repo.getChart(specOf(key).chartKey))));
+      out.add(gridRow(
+          key, pointsOf(await repo.getChart(specOf(key).chartKey)),
+          asOf: asOf));
     } catch (_) {/* a series we cannot read is a row we do not draw */}
   }
   return out;
@@ -124,7 +147,9 @@ Color _cellInk(P p, GridRow r, Side s) {
 /// One row of cells. Above-range cells carry a bar on the top edge and
 /// below-range cells on the bottom edge, so the direction survives any
 /// palette and any colour vision.
-class _SideStrip extends CustomPainter {
+class _SideStrip extends CustomPainter implements GuidePlot {
+  @override
+  Color get guideLineColor => mark;
   _SideStrip(this.cells, this.ink, this.track, this.mark);
 
   final List<Side?> cells;
@@ -250,16 +275,43 @@ class MonthGrid extends StatelessWidget {
                             'value. ${r.cells.where((s) => s == Side.below).length} '
                             'below and ${r.cells.where((s) => s == Side.above).length} '
                             'above your usual range.',
-                    child: SizedBox(
-                      height: 22,
-                      child: CustomPaint(
-                        size: Size.infinite,
-                        painter: _SideStrip(
-                          r.cells,
-                          (s) => _cellInk(p, r, s),
-                          p.line,
-                          p.ink,
-                        ),
+                    // A cell is a day: the finger reads where that day sat
+                    // against the usual range, in the panel under the strip.
+                    // The strip is 22 pt; its hit area is a full tap target.
+                    child: SlotScrub(
+                      key: ValueKey('grid-scrub:${r.key}'),
+                      series: [for (final s in r.cells) s?.index.toDouble()],
+                      anchor: r.anchor,
+                      bars: true,
+                      label: uiText(c, r.spec.title),
+                      color: p.on(r.spec.color),
+                      format: (v) => usualWord(l, Side.values[v.round()]),
+                      builder: (c, pick, scrub, panel) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // The finger gets a full tap target; only the
+                          // painted strip is 22 pt, centred inside it.
+                          SizedBox(
+                            height: S.tap,
+                            child: scrub(Center(
+                              child: SizedBox(
+                                height: 22,
+                                width: double.infinity,
+                                child: CustomPaint(
+                                  size: Size.infinite,
+                                  painter: _SideStrip(
+                                    r.cells,
+                                    (s) => _cellInk(p, r, s),
+                                    p.line,
+                                    p.ink,
+                                  ),
+                                ),
+                              ),
+                            )),
+                          ),
+                          const SizedBox(height: S.x2),
+                          panel,
+                        ],
                       ),
                     ),
                   ),

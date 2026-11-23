@@ -223,7 +223,9 @@ class LiveDraft {
   /// The catalogue key of the activity being done, so the bar that reopens a
   /// minimised session knows which screen to build.
   final String activityKey;
-  final bool private;
+  /// Null: an unversioned draft saved as false, which only meant "toggle off
+  /// at setup" back when a private-by-default activity stayed private anyway.
+  final bool? private;
   final double? weightKg;
   final DateTime startedAt;
 
@@ -246,7 +248,7 @@ class LiveDraft {
 
   LiveDraft._(this.activityKey,
       {required this.startedAt,
-      this.private = false,
+      this.private,
       this.weightKg,
       this.workSec,
       this.restSec,
@@ -336,6 +338,7 @@ class LiveDraft {
         _key,
         jsonEncode({
           'a': d.activityKey,
+          'v': 2,
           'private': d.private,
           'weight': d.weightKg,
           'work_sec': d.workSec,
@@ -359,7 +362,9 @@ class LiveDraft {
       return LiveDraft._(
         key,
         startedAt: DateTime.fromMillisecondsSinceEpoch(start.toInt()),
-        private: m['private'] == true,
+        private: m['v'] == 2
+            ? m['private'] == true
+            : (m['private'] == true ? true : null),
         weightKg: (m['weight'] as num?)?.toDouble(),
         workSec: (m['work_sec'] as num?)?.toInt(),
         restSec: (m['rest_sec'] as num?)?.toInt(),
@@ -382,7 +387,9 @@ class LiveDraft {
 /// journey, power and basic all measure rather than ask, so they share one.
 Widget liveFor(
   Activity a, {
-  bool private = false,
+  /// Null means the catalogue default. An explicit false wins over a
+  /// private-by-default activity: the setup toggle flips either way.
+  bool? private,
   double? weightKg,
   ActivityHost host = ActivityHost.none,
 
@@ -394,7 +401,7 @@ Widget liveFor(
   int? intervalRestSec,
   int? intervalRounds,
 }) {
-  final p = private || a.private;
+  final p = private ?? a.private;
   final feed = host.feed;
   final history = host.history;
   final onFinish = host.onFinish;
@@ -407,6 +414,9 @@ Widget liveFor(
         onFinish: onFinish,
         onSets: host.onSets),
     Arch.laps => LiveSwim(a,
+        feed: feed, weightKg: weightKg, private: p, onFinish: onFinish),
+    // MT-08: heat and cold have no poses, so no pose screen either.
+    Arch.flow when thermalActivities.contains(a.name) => LiveMeasured(a,
         feed: feed, weightKg: weightKg, private: p, onFinish: onFinish),
     Arch.flow => LiveFlow(a,
         feed: feed, weightKg: weightKg, private: p, onFinish: onFinish),
@@ -531,15 +541,27 @@ class LiveShellState extends State<LiveShell> {
     // losing the screen is worse — but it is told, so it can say so and offer
     // the retry instead of drawing a plausible summary of nothing.
     final onFinish = widget.onFinish;
+    final mine = LiveDraft.current;
     Future<ActivityResult> Function()? retrySave;
     try {
       result = await onFinish?.call(draft) ?? draft;
     } catch (_) {
       result = draft;
-      retrySave = onFinish == null ? null : () => onFinish(draft);
+      // Freeze its clock: left running, a later resume would read hours.
+      mine?.setPaused(true);
+      // The draft stays: it is the only durable copy of a session that is not
+      // in the database. A retry that lands clears it.
+      retrySave = onFinish == null
+          ? null
+          : () async {
+              final saved = await onFinish(draft);
+              // Only the draft this session owned; a newer session's stays.
+              if (identical(LiveDraft.current, mine)) LiveDraft.clear();
+              return saved;
+            };
     }
-    // The session is over: no draft to reopen, and no resume bar.
-    LiveDraft.clear();
+    // Saved: the session is over, no draft to reopen and no resume bar.
+    if (retrySave == null) LiveDraft.clear();
     if (!mounted) return;
     // Everything under the summary belongs to setting this session up —
     // picker, setup, the live screen itself. Back from a summary used to land
@@ -1179,7 +1201,9 @@ class _LiveStrengthState extends State<LiveStrength> {
 
   double kg = 40;
   int reps = 8;
-  int rpe = 7;
+  /// Null until the lifter picks one; a pre-selected default would be stored
+  /// on every set as a self-report nobody gave.
+  int? rpe;
   bool bodyweight = false;
 
   final logged = <LoggedSet>[];
@@ -1237,6 +1261,8 @@ class _LiveStrengthState extends State<LiveStrength> {
           loadKg: (e['kg'] as num?)?.toDouble(),
           rpe: (e['rpe'] as num?)?.toInt(),
           restSec: (e['rest'] as num?)?.toInt(),
+          holdSec: (e['hold'] as num?)?.toInt(),
+          note: (e['note'] as String?) ?? '',
           at: DateTime.fromMillisecondsSinceEpoch(
               (e['at'] as num?)?.toInt() ?? 0),
         ));
@@ -1265,6 +1291,8 @@ class _LiveStrengthState extends State<LiveStrength> {
           'kg': s.loadKg,
           'rpe': s.rpe,
           'rest': s.restSec,
+          'hold': s.holdSec,
+          'note': s.note,
           'at': s.at.millisecondsSinceEpoch,
         },
     ]);
@@ -1318,6 +1346,8 @@ class _LiveStrengthState extends State<LiveStrength> {
           rpe: rpe,
           restSec: prior == null ? null : now.difference(prior).inSeconds,
           at: now));
+      // A self-report belongs to the set it was given for.
+      rpe = null;
     });
     restLeft.value = restTarget;
     _persist();
@@ -1621,43 +1651,49 @@ class _LiveStrengthState extends State<LiveStrength> {
           pad: const EdgeInsets.symmetric(horizontal: S.x4),
           child: Column(children: [
             for (var i = 0; i < setsHere.length; i++) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: S.x3),
-                child: Row(children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                        color: p.wash(C.purple), borderRadius: R.rSm),
-                    child: Text('${i + 1}',
-                        style: F.over.copyWith(color: p.on(C.purple))),
-                  ),
-                  const SizedBox(width: S.x3),
-                  Expanded(
-                    child: Text(
+              Pressable(
+                onTap: () => _editLoggedSet(c, setsHere[i], u, setNumber: i + 1),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: S.x3),
+                  child: Row(children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                          color: p.wash(C.purple), borderRadius: R.rSm),
+                      child: Text('${i + 1}',
+                          style: F.over.copyWith(color: p.on(C.purple))),
+                    ),
+                    const SizedBox(width: S.x3),
+                    Expanded(
+                      child: Text(
                         setsHere[i].loadKg == null
                             ? (l?.activityLiveRepsBodyweightRow(
                                     setsHere[i].reps) ??
                                 '${setsHere[i].reps} reps · bodyweight')
-                                : '${_fmt(setsHere[i].loadKg!, u)} '
-                                      '${uiText(c, u?.weightUnit ?? 'kg')} × '
-                                      '${setsHere[i].reps}',
-                            style: F.body.copyWith(color: p.ink),
-                          ),
-                        ),
-                  if (setsHere[i].rpe != null)
-                    Text('RPE ${setsHere[i].rpe}',
-                        style: F.cap.copyWith(color: p.ink3)),
-                        if (setsHere[i].volume != null) ...[
-                          const SizedBox(width: S.x3),
-                          Text(
-                            '${grouped(u?.weightValue(setsHere[i].volume!) ?? setsHere[i].volume!)} '
-                            '${uiText(c, u?.weightUnit ?? 'kg')}',
+                            : '${_fmt(setsHere[i].loadKg!, u)} '
+                                '${uiText(c, u?.weightUnit ?? 'kg')} × '
+                                '${setsHere[i].reps}',
+                        style: F.body.copyWith(color: p.ink),
+                      ),
+                    ),
+                    if (setsHere[i].rpe != null)
+                      Text('RPE ${setsHere[i].rpe}',
+                          style: F.cap.copyWith(color: p.ink3)),
+                    if (setsHere[i].volume != null) ...[
+                      const SizedBox(width: S.x3),
+                      Text(
+                        '${grouped(u?.weightValue(setsHere[i].volume!) ?? setsHere[i].volume!)} '
+                        '${uiText(c, u?.weightUnit ?? 'kg')}',
                         style: F.cap.copyWith(
-                            color: p.ink2, fontWeight: FontWeight.w600)),
-                  ],
-                ]),
+                            color: p.ink2, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                    const SizedBox(width: S.x2),
+                    Icon(LucideIcons.pencil, size: 13, color: p.ink3),
+                  ]),
+                ),
               ),
               if (i < setsHere.length - 1) Divider(color: p.line, height: 1),
             ],
@@ -1694,22 +1730,48 @@ class _LiveStrengthState extends State<LiveStrength> {
             l?.activityLiveWeightLabel ?? 'WEIGHT',
             bodyweight ? (l?.activityLiveBwAbbrev ?? 'BW') : _fmt(kg, u),
             bodyweight ? '' : (u?.weightUnit ?? 'kg'),
-            () => setState(() => kg = (kg - stepKg).clamp(0, 500).toDouble()),
-            () => setState(() => kg = kg + stepKg)),
+            () => _stepLoad(c, -stepKg, u),
+            () => _stepLoad(c, stepKg, u),
+            onTapValue: () => _editWeight(c, u)),
         const SizedBox(height: S.x3),
-        Pressable(
-          onTap: () => setState(() => bodyweight = !bodyweight),
-          child: Text(
-              bodyweight
-                  ? (l?.activityLiveBodyweightExcludedNote ??
-                      'Bodyweight — left out of volume')
-                  : (l?.activityLiveLogAsBodyweight ?? 'Log as bodyweight'),
-              style: F.cap.copyWith(color: p.on(C.purple))),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (!bodyweight) ...[
+              Pressable(
+                onTap: () => _editWeight(c, u),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(LucideIcons.pencil, size: 13, color: p.on(C.purple)),
+                  const SizedBox(width: S.x1),
+                  Text(uiText(c, 'Custom weight'),
+                      style: F.cap.copyWith(color: p.on(C.purple))),
+                ]),
+              ),
+              const SizedBox(width: S.x3),
+              Text('·', style: F.cap.copyWith(color: p.ink3)),
+              const SizedBox(width: S.x3),
+            ],
+            Pressable(
+              onTap: () => setState(() => bodyweight = !bodyweight),
+              child: Text(
+                  bodyweight
+                      ? (l?.activityLiveBodyweightExcludedNote ??
+                          'Bodyweight — left out of volume')
+                      : (l?.activityLiveLogAsBodyweight ?? 'Log as bodyweight'),
+                  style: F.cap.copyWith(color: p.on(C.purple))),
+            ),
+          ],
         ),
         const SizedBox(height: S.x5),
-        _stepper(c, p, l?.activityLiveRepsLabel ?? 'REPS', '$reps', '',
-            () => setState(() => reps = (reps - 1).clamp(1, 100)),
-            () => setState(() => reps = reps + 1)),
+        _stepper(
+            c,
+            p,
+            l?.activityLiveRepsLabel ?? 'REPS',
+            '$reps',
+            '',
+            () => _stepReps(c, -1),
+            () => _stepReps(c, 1),
+            onTapValue: () => _editReps(c)),
         const SizedBox(height: S.x5),
         Align(
             alignment: Alignment.centerLeft,
@@ -1724,7 +1786,7 @@ class _LiveStrengthState extends State<LiveStrength> {
             return Expanded(
               child: Pressable(
                 semanticLabel: 'RPE $v',
-                onTap: () => setState(() => rpe = v),
+                onTap: () => setState(() => rpe = on ? null : v),
                 child: Container(
                   margin: EdgeInsets.only(right: i == 4 ? 0 : S.x2),
                   height: 44,
@@ -1761,32 +1823,263 @@ class _LiveStrengthState extends State<LiveStrength> {
             Column(mainAxisSize: MainAxisSize.min, children: [
               Text(clock(restLeft.value), style: F.n34.copyWith(color: p.ink)),
               if (logged.isNotEmpty)
-                Text(
-                    logged.last.loadKg == null
-                        ? (l?.activityLiveRepsLoggedBodyweight(
-                                logged.last.reps) ??
-                            '${logged.last.reps} reps logged')
-                          : (u?.isImperial == true
-                                ? (l?.presentationWeightRepsLogged(
-                                        _fmt(logged.last.loadKg!, u),
-                                        uiText(c, u!.weightUnit),
-                                        logged.last.reps,
-                                      ) ??
-                                      '${_fmt(logged.last.loadKg!, u)} ${u!.weightUnit} × ${logged.last.reps} logged')
-                                : (l?.activityLiveWeightRepsLogged(
-                                    _fmt(logged.last.loadKg!),
-                                    logged.last.reps) ??
-                                '${_fmt(logged.last.loadKg!)} kg × '
-                                    '${logged.last.reps} logged')),
-                    style: F.cap.copyWith(color: p.ink3)),
+                Pressable(
+                  onTap: () => _editLoggedSet(c, logged.last, u,
+                      setNumber: setsHere.length),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: S.x2, vertical: S.x1),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            logged.last.loadKg == null
+                                ? (l?.activityLiveRepsLoggedBodyweight(
+                                        logged.last.reps) ??
+                                    '${logged.last.reps} reps logged')
+                                : (u?.isImperial == true
+                                    ? (l?.presentationWeightRepsLogged(
+                                            _fmt(logged.last.loadKg!, u),
+                                            uiText(c, u!.weightUnit),
+                                            logged.last.reps,
+                                          ) ??
+                                        '${_fmt(logged.last.loadKg!, u)} ${u!.weightUnit} × ${logged.last.reps} logged')
+                                    : (l?.activityLiveWeightRepsLogged(
+                                            _fmt(logged.last.loadKg!),
+                                            logged.last.reps) ??
+                                        '${_fmt(logged.last.loadKg!)} kg × '
+                                            '${logged.last.reps} logged')),
+                            style: F.cap.copyWith(color: p.ink3),
+                          ),
+                        ),
+                        const SizedBox(width: S.x1),
+                        Icon(LucideIcons.pencil, size: 12, color: p.on(C.teal)),
+                      ],
+                    ),
+                  ),
+                ),
             ]),
           ]),
         ),
+        const SizedBox(height: S.x3),
+        if (logged.isNotEmpty)
+          Pressable(
+            onTap: () => _editLoggedSet(c, logged.last, u,
+                setNumber: setsHere.length),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(LucideIcons.pencil, size: 13, color: p.on(C.teal)),
+                const SizedBox(width: S.x1),
+                Text(
+                  uiText(c, 'Edit set'),
+                  style: F.cap.copyWith(
+                    color: p.on(C.teal),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ]);
   }
 
+  Future<void> _editLoggedSet(
+      BuildContext c, LoggedSet targetSet, UnitsController? u,
+      {int setNumber = 1}) async {
+    final res = await showEditSetDialog(
+      c,
+      set: targetSet,
+      setIndex: setNumber,
+      units: u,
+    );
+    if (!mounted || res == null) return;
+    setState(() {
+      if (res.deleted) {
+        logged.remove(targetSet);
+      } else {
+        final idx = logged.indexOf(targetSet);
+        final isLatest = idx >= 0 && idx == logged.length - 1;
+        if (idx >= 0) {
+          logged[idx] = targetSet.copyWith(
+            loadKg: res.loadKg,
+            clearLoadKg: res.loadKg == null,
+            reps: res.reps,
+            rpe: res.rpe,
+            clearRpe: res.rpe == null,
+          );
+        }
+        if (isLatest) {
+          if (res.loadKg != null) {
+            kg = res.loadKg!;
+            bodyweight = false;
+          } else {
+            bodyweight = true;
+          }
+          reps = res.reps;
+        }
+      }
+    });
+    _persist();
+  }
+
+  /// Clamped by [stepStrengthLoad]; says so when a press hits a limit.
+  void _stepLoad(BuildContext c, double delta, UnitsController? u) {
+    final next = stepStrengthLoad(kg, delta, u);
+    if (delta != 0 && (delta > 0 ? next <= kg : next >= kg)) {
+      _limitHint(c, strengthLoadRangeText(c, u));
+    }
+    setState(() => kg = next);
+  }
+
+  void _stepReps(BuildContext c, int delta) {
+    final next = (reps + delta).clamp(1, kMaxStrengthReps);
+    if (next == reps) _limitHint(c, uiText(c, 'Must be 1–200 reps'));
+    setState(() => reps = next);
+  }
+
+  void _limitHint(BuildContext c, String msg) {
+    HapticFeedback.selectionClick();
+    ScaffoldMessenger.maybeOf(c)
+      ?..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// One text-field dialog for both weight and reps. [check] returns the value
+  /// to accept or an error to show under the field (never a silent clamp).
+  Future<T?> _numberDialog<T>(
+    BuildContext c, {
+    required String title,
+    required String initial,
+    required bool decimal,
+    String? suffix,
+    String? hint,
+    required ({T? value, String? error}) Function(String text) check,
+  }) async {
+    final ctrl = TextEditingController(text: initial);
+    final p = P.of(c);
+    final l = AppLocalizations.of(c);
+    String? errorText;
+    final picked = await showDialog<T>(
+      context: c,
+      builder: (dc) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          void submit() {
+            final r = check(ctrl.text.trim());
+            if (r.error != null) {
+              setDialogState(() => errorText = r.error);
+              return;
+            }
+            Navigator.of(dc).pop(r.value);
+          }
+
+          return AlertDialog(
+            backgroundColor: p.card,
+            title: Text(title, style: F.head.copyWith(color: p.ink)),
+            content: TextField(
+              controller: ctrl,
+              autofocus: true,
+              keyboardType: decimal
+                  ? const TextInputType.numberWithOptions(decimal: true)
+                  : TextInputType.number,
+              style: F.body.copyWith(color: p.ink),
+              cursorColor: p.on(C.purple),
+              decoration: InputDecoration(
+                labelText: suffix == null ? title : '$title ($suffix)',
+                labelStyle: F.over.copyWith(color: p.ink3),
+                hintText: hint,
+                hintStyle: F.body.copyWith(color: p.ink3),
+                suffixText: suffix,
+                suffixStyle: F.body.copyWith(color: p.ink3),
+                errorText: errorText,
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: p.line),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: p.on(C.purple)),
+                ),
+              ),
+              onSubmitted: (_) => submit(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dc).pop(),
+                child: Text(
+                  l?.actionCancel ?? 'Cancel',
+                  style: F.body.copyWith(color: p.ink2),
+                ),
+              ),
+              TextButton(
+                onPressed: submit,
+                child: Text(
+                  l?.actionDone ?? 'Done',
+                  style: F.body.copyWith(
+                    color: p.on(C.purple),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    // Not disposed: the dialog's exit animation still builds the field after
+    // this returns, and a bare controller holds nothing once the field is gone.
+    return picked;
+  }
+
+  Future<void> _editWeight(BuildContext c, UnitsController? u) async {
+    final currentText = bodyweight ? '' : _fmt(kg, u);
+    final picked = await _numberDialog<double>(
+      c,
+      title: AppLocalizations.of(c)?.activityLiveWeightLabel ?? 'Weight',
+      initial: currentText,
+      decimal: true,
+      suffix: u?.weightUnit ?? 'kg',
+      hint: (u?.isImperial ?? false) ? '135' : '60',
+      check: (text) {
+        if (text.isEmpty) return (value: null, error: uiText(c, 'Enter a value'));
+        if (text == currentText) return (value: kg, error: null);
+        final parsed = u != null ? u.weightToKg(text) : parseTypedNumber(text);
+        if (parsed == null) {
+          return (value: null, error: uiText(c, 'Invalid number'));
+        }
+        if (!strengthLoadInRange(parsed, u)) {
+          return (value: null, error: strengthLoadRangeText(c, u));
+        }
+        return (value: parsed, error: null);
+      },
+    );
+    if (!mounted || picked == null) return;
+    setState(() {
+      kg = picked;
+      bodyweight = false;
+    });
+  }
+
+  Future<void> _editReps(BuildContext c) async {
+    final picked = await _numberDialog<int>(
+      c,
+      title: AppLocalizations.of(c)?.activityLiveRepsLabel ?? 'Reps',
+      initial: '$reps',
+      decimal: false,
+      check: (text) {
+        final n = int.tryParse(text);
+        if (n == null || n < 1 || n > kMaxStrengthReps) {
+          return (value: null, error: uiText(c, 'Must be 1–200 reps'));
+        }
+        return (value: n, error: null);
+      },
+    );
+    if (!mounted || picked == null) return;
+    setState(() => reps = picked);
+  }
+
   Widget _stepper(BuildContext c, P p, String label, String value,
-          String unit, VoidCallback minus, VoidCallback plus) {
+          String unit, VoidCallback minus, VoidCallback plus,
+          {VoidCallback? onTapValue}) {
     final l = AppLocalizations.of(c);
     return Column(children: [
         Text(label, style: F.over.copyWith(color: p.ink3)),
@@ -1794,7 +2087,18 @@ class _LiveStrengthState extends State<LiveStrength> {
         Row(children: [
           counterButton(p, LucideIcons.minus, p.ink,
               l?.activityLiveDecrease(label) ?? '$label down', minus),
-          Expanded(child: bigNum(p, value, unit)),
+          Expanded(
+            child: onTapValue == null
+                ? bigNum(p, value, unit)
+                : Pressable(
+                    semanticLabel: label,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTapValue();
+                    },
+                    child: bigNum(p, value, unit),
+                  ),
+          ),
           counterButton(p, LucideIcons.plus, p.ink,
               l?.activityLiveIncrease(label) ?? '$label up', plus),
         ]),
@@ -1840,9 +2144,14 @@ class _LiveStrengthState extends State<LiveStrength> {
   /// [d] is always in kg (storage unit); [u] converts + rounds for display
   /// the same way its edit-field does. Null [u] (a golden, or no unit
   /// context) shows metric untouched.
-  String _fmt(double d, [UnitsController? u]) =>
-      u?.weightField(d) ??
-      (d == d.roundToDouble() ? d.round().toString() : d.toStringAsFixed(1));
+  String _fmt(double d, [UnitsController? u]) {
+    final imperial = u?.isImperial ?? false;
+    final v = imperial ? roundLbHalf(u!.weightValue(d)) : (u?.weightValue(d) ?? d);
+    final s = v.toStringAsFixed(2);
+    final r = double.parse(s);
+    if (r == r.roundToDouble()) return r.round().toString();
+    return s.endsWith('0') ? r.toStringAsFixed(1) : s;
+  }
 }
 
 // ══════════════ SWIMMING — laps are counted, not measured ══════════════
@@ -2159,7 +2468,9 @@ class _LiveFlowState extends State<LiveFlow>
       result: (elapsed) => _baseResult(widget.a,
           widget.feed?.call() ?? LiveFeed.none, widget.weightKg, elapsed,
           widget.private,
-          poses: poses.sublist(0, reached + 1)),
+          // Never stepped through the sequence = no poses we know of, not
+          // one 'Mountain' nobody did.
+          poses: reached == 0 ? const [] : poses.sublist(0, reached + 1)),
       body: (ctx, elapsed) {
         final p = P.of(ctx);
         final l = AppLocalizations.of(ctx);
@@ -2431,11 +2742,10 @@ class LiveInterval extends StatefulWidget {
 }
 
 class _LiveIntervalState extends State<LiveInterval> {
-  // ponytail: the round position is not written to the draft — minimising a
-  // HIIT session restarts it at round 1. Nothing here is typed, so nothing is
-  // LOST; it is a timer, and a timer that keeps running while the screen is
-  // gone needs the countdown to live on the draft's clock. Do that if anyone
-  // actually minimises intervals.
+  // ponytail: the round position lives on the draft (written on every phase
+  // flip and on dispose), so a minimise resumes where it left off. The
+  // countdown does not run while the screen is gone; derive it from the
+  // draft's clock if that ever matters.
   /// [widget.rounds] is how many pips the row starts with, NOT a plan the
   /// session runs to: nothing stops this timer at that round, so a session
   /// that keeps going simply grows the row.
@@ -2454,6 +2764,20 @@ class _LiveIntervalState extends State<LiveInterval> {
   void initState() {
     super.initState();
     left = widget.workSec;
+    final saved = LiveDraft.current?.data['interval'];
+    if (saved is Map) {
+      round = (saved['round'] as num?)?.toInt() ?? round;
+      work = saved['work'] != false;
+      left = (saved['left'] as num?)?.toInt() ?? left;
+      for (final h in (saved['hr'] as List?) ?? const []) {
+        if (h is num) _roundHr.add(h.toInt());
+      }
+      for (final x in (saved['done'] as List?) ?? const []) {
+        if (x is! List || x.length < 2) continue;
+        done.add(IntervalRound((x[0] as num).toInt(), (x[1] as num).toInt(),
+            avgHr: (x.length > 2 ? x[2] as num? : null)?.toInt()));
+      }
+    }
     _t = Timer.periodic(Motion.tick, (_) {
       if (!mounted) return;
       // PAUSE STOPS THE INTERVAL ENGINE. Without this the countdown kept
@@ -2470,10 +2794,9 @@ class _LiveIntervalState extends State<LiveInterval> {
       final hr = widget.feed?.call().hr;
       if (hr != null && hr > 0) _roundHr.add(hr);
       setState(() {
-        if (left > 0) {
-          left--;
-          return;
-        }
+        // Flip on the tick that reaches zero: a 45 s phase is 45 ticks, not
+        // 45 plus a second parked on 00:00.
+        if (--left > 0) return;
         HapticFeedback.mediumImpact();
         final l = AppLocalizations.of(context);
         say(
@@ -2501,12 +2824,28 @@ class _LiveIntervalState extends State<LiveInterval> {
           round++;
         }
       });
+      // Phase flips and every fifth second: a kill replays at most 4 s, and
+      // the whole draft is not re-encoded and written on every tick.
+      if (left % 5 == 0 || left == (work ? widget.workSec : widget.restSec)) {
+        _persist();
+      }
     });
   }
+
+  void _persist() => LiveDraft.current?.put('interval', {
+        'round': round,
+        'work': work,
+        'left': left,
+        'hr': _roundHr,
+        'done': [
+          for (final x in done) [x.workSec, x.restSec, x.avgHr]
+        ],
+      });
 
   @override
   void dispose() {
     _t?.cancel();
+    _persist();
     super.dispose();
   }
 

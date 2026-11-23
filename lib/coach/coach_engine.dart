@@ -28,6 +28,7 @@ import 'coach_actions.dart';
 import 'coach_chat_completions.dart';
 import 'coach_chatgpt.dart';
 import 'coach_config.dart';
+import 'coach_apple.dart';
 import 'coach_db.dart';
 import 'coach_prompt.dart';
 import 'coach_responses.dart';
@@ -66,9 +67,13 @@ class ChartSpec {
     if (v is String) {
       final d = double.tryParse(v.trim());
       if (d != null) return d;
-      // tolerate "62 ms", units glued on, etc. — take the first number found.
-      final m = RegExp(r'-?\d+(\.\d+)?').firstMatch(v);
-      return m == null ? null : double.tryParse(m.group(0)!);
+      // tolerate "62 ms" / "62ms": one number, then unit text with no more
+      // digits. "12,345", "7:30", "2h 15m" and "1.2k" are not a single plain
+      // number, so they read as absent rather than as 12, 7, 2 or 1.2.
+      final m = RegExp(r'^\s*(-?\d+(?:\.\d+)?)\s*([^\d,.:]*)$').firstMatch(v);
+      if (m == null) return null;
+      if (RegExp(r'^[kKMB]$').hasMatch(m.group(2)!.trim())) return null;
+      return double.tryParse(m.group(1)!);
     }
     if (v is Map) return _asNum(v['value'] ?? v['y'] ?? v['v']); // {value:62}/{y:62}
     return null;
@@ -165,6 +170,14 @@ class CoachSessionMeta {
 }
 
 // ── engine ───────────────────────────────────────────────────────────────────
+
+/// Read-only tools with nothing required to ask for. A provider that sends NO
+/// arguments at all for one of these (an empty string, or no `arguments` key)
+/// is making a valid call, so it runs with `{}`. Refusing it would leave the
+/// coach unable to read today's data on a provider that never sends `"{}"`.
+/// Everything that writes is NOT here: an empty or missing argument for those
+/// would run on fabricated defaults. Malformed text still refuses for all.
+const kNoArgumentReadTools = {'get_today', 'get_medications', 'get_nutrition'};
 
 class CoachEngine {
   final CoachConfig config;
@@ -415,7 +428,7 @@ class CoachEngine {
     await for (final e in dir.list(followLinks: false)) {
       if (e is! File) continue;
       final name = e.uri.pathSegments.last;
-      if (!name.endsWith('.json')) continue;
+      if (!name.endsWith('.json') && !name.endsWith('.json.tmp')) continue;
       if (!name.startsWith('coach_s_') && !name.startsWith('coach_idx_')) continue;
       try {
         await e.delete();
@@ -436,8 +449,42 @@ class CoachEngine {
       list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       return list;
     } catch (_) {
-      return [];
+      // Unreadable index (e.g. truncated by a kill mid-write): rebuild it from
+      // the chat files instead of returning [] — the next save would rewrite
+      // the index with only the current chat and orphan every other one.
+      return _sessionsFromFiles();
     }
+  }
+
+  Future<List<CoachSessionMeta>> _sessionsFromFiles() async {
+    final out = <CoachSessionMeta>[];
+    try {
+      final prefix = 'coach_s_${storageKey}_';
+      final idPattern = RegExp(r'^\d+(-[0-9a-f]+)?$');
+      await for (final e in (await _dir()).list(followLinks: false)) {
+        if (e is! File) continue;
+        final name = e.uri.pathSegments.last;
+        if (!name.startsWith(prefix) || !name.endsWith('.json')) continue;
+        final id = name.substring(prefix.length, name.length - 5);
+        if (!idPattern.hasMatch(id)) continue;
+        try {
+          final j = jsonDecode(await e.readAsString()) as Map<String, dynamic>;
+          out.add(CoachSessionMeta(id, (j['title'] ?? '').toString(),
+              (j['updatedAt'] as num?)?.toInt() ?? 0, ''));
+        } catch (_) {}
+      }
+    } catch (_) {}
+    out.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return out;
+  }
+
+  /// Write to a temp file then rename, so a kill mid-write can't leave a
+  /// truncated index behind.
+  Future<void> _writeIndex(List<CoachSessionMeta> metas) async {
+    final f = await _indexFile();
+    final tmp = File('${f.path}.tmp');
+    await tmp.writeAsString(jsonEncode(metas.map((m) => m.toJson()).toList()), flush: true);
+    await tmp.rename(f.path);
   }
 
   /// On open: resume the most recent session, or start fresh if none.
@@ -529,8 +576,7 @@ class CoachEngine {
       } catch (_) {}
     }
     try {
-      final f = await _indexFile();
-      await f.writeAsString(jsonEncode(keep.map((m) => m.toJson()).toList()));
+      await _writeIndex(keep);
     } catch (_) {}
   }
 
@@ -546,8 +592,7 @@ class CoachEngine {
     } catch (_) {}
     final metas = await listSessions()..removeWhere((m) => m.id == id);
     try {
-      final f = await _indexFile();
-      await f.writeAsString(jsonEncode(metas.map((m) => m.toJson()).toList()));
+      await _writeIndex(metas);
     } catch (_) {}
     if (id == _sessionId) newSession();
   }
@@ -689,14 +734,46 @@ class CoachEngine {
         final fn = (tc['function'] as Map?) ?? const {};
         final name = fn['name']?.toString() ?? '';
         Map<String, dynamic> args = {};
+        var argsParsed = false;
         try {
           final a = fn['arguments'];
-          if (a is String && a.isNotEmpty) {
-            args = jsonDecode(a) as Map<String, dynamic>;
-          } else if (a is Map) {
+          if (a is Map) {
             args = a.cast<String, dynamic>();
+            argsParsed = true;
+          } else if (a is String && a.isNotEmpty) {
+            final decoded = jsonDecode(a);
+            if (decoded is Map) {
+              args = decoded.cast<String, dynamic>();
+              argsParsed = true;
+            }
           }
-        } catch (_) {}
+        } catch (_) {
+          argsParsed = false;
+        }
+        // No arguments at all is a valid call for a read tool that asks for none.
+        if (!argsParsed && kNoArgumentReadTools.contains(name)) {
+          final raw = fn['arguments'];
+          if (raw == null || (raw is String && raw.trim().isEmpty)) {
+            argsParsed = true;
+          }
+        }
+        // Only an OBJECT is a valid argument map. Empty/missing strings,
+        // arrays and numbers are normal failures from OpenAI-compatible
+        // providers. Running the tool with `{}` built the confirmation from
+        // fabricated defaults (and on confirm wrote them: `log_period` logged
+        // today, `start_workout` started `other`). Tell the model instead, so
+        // it can re-issue a complete call.
+        if (!argsParsed) {
+          _history.add({
+            'role': 'tool',
+            'tool_call_id': id,
+            'name': name,
+            'content': 'Error: the "$name" arguments were not a complete JSON '
+                'object, so the tool was NOT run and nothing was written. '
+                'Call it again with valid JSON arguments.',
+          });
+          continue;
+        }
 
         onStatus(_statusFor(name, args));
         final result = await _runTool(name, args, onItem: emit, confirm: confirm);
@@ -756,7 +833,7 @@ class CoachEngine {
         'tools': _toolDefs,
         'tool_choice': 'auto',
         'temperature': 0.3,
-      }, client: _http);
+      }, client: _http, appleToday: _todayReadiness);
 
   /// True when [model] names a Claude version that rejects OpenAI sampling
   /// params (temperature/top_p/top_k) with a 400: Opus >= 4.7, Sonnet and
@@ -798,7 +875,16 @@ class CoachEngine {
     CoachConfig config,
     Map<String, dynamic> body, {
     http.Client? client,
+    Future<({String day, num? readiness})?> Function()? appleToday,
   }) async {
+    // Apple's on-device model: no HTTP, nothing leaves the phone.
+    if (config.usesApple) {
+      try {
+        return await AppleOnDevice.reply(body, today: appleToday);
+      } on StateError catch (e) {
+        throw CoachException(e.message);
+      }
+    }
     final c = client ?? http.Client();
     final model = body['model'] as String? ?? '';
     final api = config.api;
@@ -1025,10 +1111,20 @@ class CoachEngine {
             summary: 'Start a ${args['type'] ?? 'workout'} session now.', args: args,
           ), () async { final r = await api.startWorkout('${args['type'] ?? 'other'}'); return _enc(r); });
         case 'end_workout':
+          final workoutId = args['workout_id'];
+          if (workoutId is! String || workoutId.trim().isEmpty) {
+            return 'end_workout needs the workout_id that start_workout returned.';
+          }
           return await _action(confirm, ActionRequest(
             tool: name, title: 'End workout',
             summary: 'End the active workout.', args: args,
-          ), () async { final r = await api.endWorkout('${args['workout_id']}'); return _enc(r); });
+          ), () async {
+            final r = await api.endWorkout(workoutId);
+            if (r['ended'] == false) {
+              return 'No workout with id $workoutId; nothing was ended.';
+            }
+            return _enc(r);
+          });
         case 'log_food':
           return await _action(confirm, ActionRequest(
             tool: name, title: 'Log food',
@@ -1310,7 +1406,7 @@ class CoachEngine {
         {
           'name': {'type': 'string'},
           'date': {'type': 'string', 'description': 'YYYY-MM-DD, default today'},
-          'time': {'type': 'string', 'description': 'HH:MM of the slot; default the first'},
+          'time': {'type': 'string', 'description': 'HH:MM of the scheduled slot, not when it was taken; default the first that day'},
           'state': {'type': 'string', 'enum': ['taken', 'skipped', 'not_taken']},
         }, ['name', 'state']),
     _fn('log_journal', 'Log a journal entry (asks the user to confirm).', {

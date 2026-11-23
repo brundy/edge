@@ -1,5 +1,17 @@
 {
   "@@locale": "en",
+  "whoopFirmwareWarningTitle": "WHOOP users: do not reconnect to the WHOOP app",
+  "@whoopFirmwareWarningTitle": {
+    "description": "Prominent WHOOP firmware warning shared by connection and pairing screens."
+  },
+  "whoopFirmwareWarningAction": "If you use OpenStrap or another open-source app, or plan to switch to one later, do not connect your band to the official WHOOP app again. It can install firmware updates automatically. Uninstall or disable the WHOOP app to prevent it from updating your band.",
+  "@whoopFirmwareWarningAction": {
+    "description": "Prominent WHOOP firmware warning shared by connection and pairing screens."
+  },
+  "whoopFirmwareWarningDetails": "Reports on WHOOP 5.0 / MG firmware 50.43.1.0 and 50.43.2.0 describe blocked data access. Bluetooth may still connect. OpenStrap cannot issue the WHOOP-signed membership token needed to unlock affected bands. We are working on a solution, but no fix is available yet.",
+  "@whoopFirmwareWarningDetails": {
+    "description": "Prominent WHOOP firmware warning shared by connection and pairing screens."
+  },
   "appTitle": "OpenStrap",
   "@appTitle": {
     "description": "App name shown in the OS task switcher / MaterialApp title."
@@ -19,6 +31,94 @@
   "languageSystemDefault": "System default",
   "@languageSystemDefault": {
     "description": "Option in the language picker that follows the OS locale."
+  },
+  "alarmSavedNotOnBand": "Saved, but the band hasn't taken it yet — it's sent again on the next sync",
+  "@alarmSavedNotOnBand": {
+    "description": "Alarm screen: the alarm is saved but the band has not taken it yet."
+  },
+  "coachChatgptUsingPlanShort": "Using ChatGPT plan",
+  "@coachChatgptUsingPlanShort": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptSharingNotAllowed": "Signed in, but ChatGPT plan usage was not allowed. Continue with ChatGPT again and allow it to use your plan here.",
+  "@coachChatgptSharingNotAllowed": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptSignedOut": "Signed out of ChatGPT.",
+  "@coachChatgptSignedOut": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptSignOutUnconfirmed": "Signed out here, but ChatGPT did not confirm it. You can also disconnect OpenStrap in ChatGPT settings.",
+  "@coachChatgptSignOutUnconfirmed": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptWelcomeTitle": "You’re using your ChatGPT plan",
+  "@coachChatgptWelcomeTitle": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptWelcomeBody": "Eligible usage in this app uses your ChatGPT plan. Manage usage in your ChatGPT settings.",
+  "@coachChatgptWelcomeBody": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptGotIt": "Got it",
+  "@coachChatgptGotIt": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptUseTitle": "Use your ChatGPT plan",
+  "@coachChatgptUseTitle": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptUsingTitle": "Using your ChatGPT plan",
+  "@coachChatgptUsingTitle": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptNotAllowedTitle": "Plan usage not allowed",
+  "@coachChatgptNotAllowedTitle": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptBlurb": "Complete eligible AI requests in this app with usage included in your ChatGPT plan or credits balance. OpenStrap never charges for this.",
+  "@coachChatgptBlurb": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptCancelSignIn": "Cancel sign-in",
+  "@coachChatgptCancelSignIn": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptContinue": "Continue with ChatGPT",
+  "@coachChatgptContinue": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptManageUsage": "Manage usage",
+  "@coachChatgptManageUsage": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptSignOut": "Sign out of ChatGPT",
+  "@coachChatgptSignOut": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptPrivacy": "Your questions and the rows the coach reads are sent to OpenAI under your ChatGPT account, where your ChatGPT data controls, including model training, may apply. Check them in ChatGPT settings. See exactly what is sent on \"What was sent\".",
+  "@coachChatgptPrivacy": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptTermsTitle": "Before you sign in",
+  "@coachChatgptTermsTitle": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptTermsBody": "Signing in uses your own ChatGPT account and plan. Your use of it here is covered by OpenAI’s Terms of Use and Usage Policies, so please read them before you continue.",
+  "@coachChatgptTermsBody": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptTermsLink": "OpenAI Terms of Use",
+  "@coachChatgptTermsLink": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptPoliciesLink": "OpenAI Usage Policies",
+  "@coachChatgptPoliciesLink": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
+  },
+  "coachChatgptTermsAccept": "I’ve read them, continue",
+  "@coachChatgptTermsAccept": {
+    "description": "Coach, ChatGPT sign-in: shown while signing in or out with ChatGPT."
   },
   "actionCancel": "Cancel",
   "@actionCancel": {
@@ -293,9 +393,9 @@
   "@alarmCancelTheAlarm": {
     "description": "Button: cancel the alarm."
   },
-  "alarmBuzzingTheBand": "Buzzing the band",
+  "alarmBuzzingTheBand": "Buzz sent to the band",
   "@alarmBuzzingTheBand": {
-    "description": "Snackbar: testing the buzz."
+    "description": "Snackbar: the test buzz command reached the band. The app gets no signal when the buzz ends, so this must not claim the band is still buzzing."
   },
   "alarmCancelled": "Alarm cancelled",
   "@alarmCancelled": {
@@ -912,6 +1012,14 @@
   "@devicesNothingBankedYet": {
     "description": "Row sub: no data yet."
   },
+  "devicesTimeUnknown": "Time unknown",
+  "@devicesTimeUnknown": {
+    "description": "Last-data value when the strap banked records but its clock was never set, so the timestamp is unusable."
+  },
+  "devicesClockNotSetSub": "The strap recorded data but its clock is not set",
+  "@devicesClockNotSetSub": {
+    "description": "Sub-label under 'Time unknown' explaining why the last-data time is missing."
+  },
   "devicesSyncNow": "Sync now",
   "@devicesSyncNow": {
     "description": "Row title: manual sync."
@@ -944,6 +1052,58 @@
   "@devicesBatteryPack": {
     "description": "Row title: the charge left in the external battery pack sitting on the band."
   },
+  "devicesBatteryUnderAnHourLeft": "under an hour left",
+  "@devicesBatteryUnderAnHourLeft": {
+    "description": "Band page battery/calibration row sub-line."
+  },
+  "devicesBatteryHoursLeft": "about {hours} h left",
+  "@devicesBatteryHoursLeft": {
+    "description": "Band page battery/calibration row sub-line.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesBatteryDaysLeft": "about {days} days left",
+  "@devicesBatteryDaysLeft": {
+    "description": "Band page battery/calibration row sub-line.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesChargesLogged": "{n, plural, =1{1 charge logged} other{{n} charges logged}}",
+  "@devicesChargesLogged": {
+    "description": "Band page battery/calibration row sub-line.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesChargeUpToMv": "up to {mv} mV",
+  "@devicesChargeUpToMv": {
+    "description": "Band page battery/calibration row sub-line.",
+    "placeholders": {
+      "mv": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesCalibrationSub": "Metrics that depend on the sensor use this band’s own constants, so two different bands can land on different tiers for the same physiology.",
+  "@devicesCalibrationSub": {
+    "description": "Band page battery/calibration row sub-line."
+  },
+  "devicesCalibrationNotStated": "Not stated yet",
+  "@devicesCalibrationNotStated": {
+    "description": "Band page battery/calibration row sub-line."
+  },
+  "devicesCalibrationNotStatedSub": "This band has not said which generation it is, and imported or older days never will. Metrics that depend on the sensor abstain rather than borrow another band’s numbers.",
+  "@devicesCalibrationNotStatedSub": {
+    "description": "Band page battery/calibration row sub-line."
+  },
   "devicesBatteryPackSub": "Reported by the band about every 10 minutes",
   "@devicesBatteryPackSub": {
     "description": "Row sub under the battery-pack charge: where the number comes from and how often it updates."
@@ -975,6 +1135,166 @@
   "devicesFindItByFeel": "Find it by feel",
   "@devicesFindItByFeel": {
     "description": "Row sub."
+  },
+  "devicesInstallImage": "Install an image",
+  "@devicesInstallImage": {
+    "description": "Row title on a WHOOP 5 band's device page: install an image file the user supplies."
+  },
+  "devicesInstallImageSub": "Use at your own risk",
+  "@devicesInstallImageSub": {
+    "description": "Row sub: the user takes the risk."
+  },
+  "flashWarning": "Installing an image you supply yourself can permanently damage your strap, void its warranty and stop it working. It cannot be undone from this app. OpenStrap does not provide, review or endorse any image, and OpenStrap and its contributors accept no responsibility or liability for any loss or damage. You do this entirely at your own risk.",
+  "@flashWarning": {
+    "description": "Install-an-image screen (WHOOP 5): Warning"
+  },
+  "flashAccept": "I understand and accept the risk",
+  "@flashAccept": {
+    "description": "Install-an-image screen (WHOOP 5): Accept"
+  },
+  "flashFileInfo": "{name}\n{bytes} bytes\nsha256 {sha}",
+  "@flashFileInfo": {
+    "description": "Install-an-image screen (WHOOP 5): FileInfo",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "bytes": {
+        "type": "int"
+      },
+      "sha": {
+        "type": "String"
+      }
+    }
+  },
+  "flashChoose": "Choose image file",
+  "@flashChoose": {
+    "description": "Install-an-image screen (WHOOP 5): Choose"
+  },
+  "flashChooseAnother": "Choose another",
+  "@flashChooseAnother": {
+    "description": "Install-an-image screen (WHOOP 5): ChooseAnother"
+  },
+  "flashSend": "Send to strap",
+  "@flashSend": {
+    "description": "Install-an-image screen (WHOOP 5): Send"
+  },
+  "flashStop": "Stop",
+  "@flashStop": {
+    "description": "Install-an-image screen (WHOOP 5): Stop"
+  },
+  "flashProgress": "{done} of {total} blocks sent. Keep the app open and the strap close.",
+  "@flashProgress": {
+    "description": "Install-an-image screen (WHOOP 5): Progress",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "flashCommitting": "Sending the commit…",
+  "@flashCommitting": {
+    "description": "Install-an-image screen (WHOOP 5): Committing"
+  },
+  "flashCommitted": "The strap accepted the image. That does not confirm it is running. Check the strap's firmware version after it restarts.",
+  "@flashCommitted": {
+    "description": "Install-an-image screen (WHOOP 5): Committed"
+  },
+  "flashCommitUnknown": "The commit was sent but the strap did not answer. It may or may not have been applied. Do not try again. Check the strap's firmware version after it restarts.",
+  "@flashCommitUnknown": {
+    "description": "Install-an-image screen (WHOOP 5): CommitUnknown"
+  },
+  "flashBlockNoImage": "Choose an image file first.",
+  "@flashBlockNoImage": {
+    "description": "Install-an-image screen (WHOOP 5): BlockNoImage"
+  },
+  "flashBlockTooLarge": "That file is too large for an image.",
+  "@flashBlockTooLarge": {
+    "description": "Install-an-image screen (WHOOP 5): BlockTooLarge"
+  },
+  "flashBlockNoLink": "Connect a WHOOP 5 and wait for any sync to finish.",
+  "@flashBlockNoLink": {
+    "description": "Install-an-image screen (WHOOP 5): BlockNoLink"
+  },
+  "flashBlockBatteryUnknown": "Battery level unknown. Wait for it to be read.",
+  "@flashBlockBatteryUnknown": {
+    "description": "Install-an-image screen (WHOOP 5): BlockBatteryUnknown"
+  },
+  "flashBlockBatteryLow": "Battery is {pct}%. Charge to at least {min}% first.",
+  "@flashBlockBatteryLow": {
+    "description": "Install-an-image screen (WHOOP 5): BlockBatteryLow",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "flashFailTakeover": "Could not take over the connection.",
+  "@flashFailTakeover": {
+    "description": "Install-an-image screen (WHOOP 5): FailTakeover"
+  },
+  "flashFailStart": "The strap did not accept the start of the update.",
+  "@flashFailStart": {
+    "description": "Install-an-image screen (WHOOP 5): FailStart"
+  },
+  "flashFailData": "The strap rejected data at byte {offset}. Nothing was committed.",
+  "@flashFailData": {
+    "description": "Install-an-image screen (WHOOP 5): FailData",
+    "placeholders": {
+      "offset": {
+        "type": "int"
+      }
+    }
+  },
+  "flashFailVerify": "The strap did not verify the image. Nothing was committed.",
+  "@flashFailVerify": {
+    "description": "Install-an-image screen (WHOOP 5): FailVerify"
+  },
+  "flashFailCancelled": "Cancelled. Nothing was committed.",
+  "@flashFailCancelled": {
+    "description": "Install-an-image screen (WHOOP 5): FailCancelled"
+  },
+  "flashFailCommitRejected": "The strap did not accept the commit.",
+  "@flashFailCommitRejected": {
+    "description": "Install-an-image screen (WHOOP 5): FailCommitRejected"
+  },
+  "flashPickUnreadable": "That file could not be read.",
+  "@flashPickUnreadable": {
+    "description": "Install-an-image screen (WHOOP 5): PickUnreadable"
+  },
+  "flashConfirmTitle": "Install this image?",
+  "@flashConfirmTitle": {
+    "description": "Install-an-image screen (WHOOP 5): ConfirmTitle"
+  },
+  "flashConfirmBody": "The strap has the file and verified it. Nothing is installed until you press Sure, and that cannot be undone.\n\n{name}\nsha256 {sha}",
+  "@flashConfirmBody": {
+    "description": "Install-an-image screen (WHOOP 5): ConfirmBody",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "sha": {
+        "type": "String"
+      }
+    }
+  },
+  "flashConfirmSure": "Sure",
+  "@flashConfirmSure": {
+    "description": "Install-an-image screen (WHOOP 5): ConfirmSure"
+  },
+  "flashConfirmCancel": "Cancel",
+  "@flashConfirmCancel": {
+    "description": "Install-an-image screen (WHOOP 5): ConfirmCancel"
+  },
+  "flashAcknowledge": "I checked the firmware version. Allow another install.",
+  "@flashAcknowledge": {
+    "description": "Install-an-image screen: after an unanswered commit, the user confirms they checked the firmware version."
   },
   "devicesForgetThisBand": "Forget this band",
   "@devicesForgetThisBand": {
@@ -1075,6 +1395,14 @@
   "devicePickerBlurbMiband234": "Mi Band 2 or 3: heart rate, steps and sleep. Unpair it from Mi Fit or Zepp first, or reset it. Tap the band if it buzzes. Mi Band 4 isn’t supported.",
   "@devicePickerBlurbMiband234": {
     "description": "Category row subtitle for a Mi Band 2/3."
+  },
+  "devicePickerBlurbGarmin": "A Garmin watch. Syncs heart rate, steps, sleep and HRV. Experimental.",
+  "@devicePickerBlurbGarmin": {
+    "description": "Category row subtitle for a Garmin watch."
+  },
+  "devicePickerNoMatch": "Nothing nearby matches that search.",
+  "@devicePickerNoMatch": {
+    "description": "Shown in place of the Nearby list when the search box hides every found device."
   },
   "devicePickerBlurbColmi": "A Colmi ring. Syncs heart rate, sleep stages, steps, SpO2, HRV and stress; values the ring computes itself are labelled as Colmi's. Experimental.",
   "@devicePickerBlurbColmi": {
@@ -1943,9 +2271,9 @@
   "@napsWokeUpHelp": {
     "description": "Time picker helper text for logging when a manual nap ended."
   },
-  "napsInvalidWindow": "A nap is between 5 minutes and 6 hours. Anything longer is a sleep, and it belongs in the night where the stages can be read.",
+  "napsInvalidWindow": "A nap is between 5 minutes and 3 hours. Anything longer is a sleep, and it belongs in the night where the stages can be read.",
   "@napsInvalidWindow": {
-    "description": "Validation error when a manually logged nap window is outside 5 minutes to 6 hours."
+    "description": "Validation error when a manually logged nap window is outside 5 minutes to 3 hours."
   },
   "napsOverlap": "That overlaps a nap already on this day. Remove that one first, rather than counting the same hour twice.",
   "@napsOverlap": {
@@ -3846,7 +4174,7 @@
   "@journalComposeSevenDayTrend": {
     "description": "Title of the weight trend chart."
   },
-  "journalComposeTrendFootnote": "Entered by you. Days with no entry are left empty.",
+  "journalComposeTrendFootnote": "Entered by you or your scale. Days with no entry are left empty.",
   "@journalComposeTrendFootnote": {
     "description": "Footnote under the weight trend chart."
   },
@@ -4980,7 +5308,7 @@
   "@investigateNeedsSeveralNights": {
     "description": "Status card fallback body: needs several qualifying nights"
   },
-  "investigateDroppedIrregular": "{count, plural, one{# night left out because the irregular-rhythm screen flagged it} other{# nights left out because the irregular-rhythm screen flagged them}}",
+  "investigateDroppedIrregular": "{count, plural, one{{count} night left out because the irregular-rhythm screen flagged it} other{{count} nights left out because the irregular-rhythm screen flagged them}}",
   "@investigateDroppedIrregular": {
     "description": "Note listing nights excluded because the irregular-rhythm screen flagged them",
     "placeholders": {
@@ -4989,7 +5317,7 @@
       }
     }
   },
-  "investigateDroppedThin": "{count, plural, one{# night left out for too few observed hours} other{# nights left out for too few observed hours}}",
+  "investigateDroppedThin": "{count, plural, one{{count} night left out for too few observed hours} other{{count} nights left out for too few observed hours}}",
   "@investigateDroppedThin": {
     "description": "Note listing nights excluded for too few observed hours",
     "placeholders": {
@@ -5195,7 +5523,7 @@
   "@calmBreathingHowLong": {
     "description": "Section title for choosing session length"
   },
-  "calmBreathingMinutesSemantic": "{m, plural, one{# minute} other{# minutes}}",
+  "calmBreathingMinutesSemantic": "{m, plural, one{{m} minute} other{{m} minutes}}",
   "@calmBreathingMinutesSemantic": {
     "description": "Semantic label for a minute-duration option button",
     "placeholders": {
@@ -5589,6 +5917,18 @@
       }
     }
   },
+  "investigateMethodHrvRmssd": "The mean of RMSSD across every 5-minute window of the detected sleep session that holds at least 20 clean successive differences. Beats outside 300–2000 ms, and beats more than 20% from their local median, are dropped first. On a night whose beat timing looks noisy, only windows that pass the jitter check on their own, or that sit on a steady breathing line, count; a window, or a night, whose beats add up to more time than passed is left out. Older nights whose raw beats are gone keep the value an earlier version of this method gave them. Pulse-derived, so this is PRV: real and trendable, but not ECG HRV.",
+  "@investigateMethodHrvRmssd": {
+    "description": "Investigate: how the nightly HRV (RMSSD) figure is computed."
+  },
+  "investigateMethodRespRate": "Breathing rate recovered from respiratory sinus arrhythmia — the periodic modulation breathing imposes on beat timing. The spectral peak is found in overlapping five-minute stretches of clean beats (Lomb–Scargle on native beat times) and the night's rate is their median, reported only when most stretches agree. At a sleeping heart rate near or below 48 bpm the beats are too slow to resolve normal breathing, and the rate is withheld.",
+  "@investigateMethodRespRate": {
+    "description": "Investigate: how the nightly respiratory rate is computed."
+  },
+  "investigateMethodHrvStability": "Within one night: the standard deviation of the night's beat intervals after artifact correction (SDNN) as a percentage of their mean. The chart shows how that per-night figure moves across nights; it is not a night-to-night coefficient of variation.",
+  "@investigateMethodHrvStability": {
+    "description": "Investigate: how the within-night HRV stability figure (SDNN as % of mean NN) is computed."
+  },
   "metricDetailSlotWithValue": "{day}, {value} {unit}",
   "@metricDetailSlotWithValue": {
     "description": "Screen-reader readout for a chart slot with a value, when scrubbing the trend line.",
@@ -5667,6 +6007,22 @@
         "type": "String"
       }
     }
+  },
+  "chartPanelLatest": "LATEST",
+  "@chartPanelLatest": {
+    "description": "Caption prefix on the panel under a chart when nothing is selected: the newest reading. Shown upper-case where the script has case. It is not a judgement such as best."
+  },
+  "chartPanelSelected": "SELECTED",
+  "@chartPanelSelected": {
+    "description": "Caption prefix on the panel under a chart while a finger is on the chart: the reading the finger is on."
+  },
+  "chartPanelSevenDayAvg": "7-day avg",
+  "@chartPanelSevenDayAvg": {
+    "description": "Metric-detail panel stat: the last 7 days up to today, the same figure whichever day is shown."
+  },
+  "chartPanelVsAvg": "vs avg",
+  "@chartPanelVsAvg": {
+    "description": "Metric-detail panel stat: the shown value minus that 7-day average."
   },
   "metricDetailNoRecordLabel": "No record",
   "@metricDetailNoRecordLabel": {
@@ -7213,7 +7569,7 @@
   "@homeDriverTemp": {
     "description": "Readiness driver name: skin temperature, shown in the Why? row on Home."
   },
-  "homeDbRebuiltTitle": "Your database was rebuilt to start the app",
+  "homeDbRebuiltTitle": "Your database was rebuilt",
   "@homeDbRebuiltTitle": {
     "description": "Title of the card shown when the local database had to be rebuilt to start the app."
   },
@@ -7255,15 +7611,15 @@
   "@homeWorkoutHoldTitle": {
     "description": "Title of the card shown on Home while a workout session is live and derivation is paused."
   },
-  "homeWorkoutHoldBody": "Today is paused while a workout runs. The band keeps recording; finish the workout from the bar below and today fills in.",
+  "homeWorkoutHoldBody": "Today fills in when you finish the workout.",
   "@homeWorkoutHoldBody": {
     "description": "Body of the card shown on Home while a workout session is live and derivation is paused."
   },
-  "homeInsightsRebuildingTitle": "Your cross-day insights are being rebuilt",
+  "homeInsightsRebuildingTitle": "Updating your trends",
   "@homeInsightsRebuildingTitle": {
     "description": "Title of the card shown when the cross-day insights rollup was withheld rather than shown."
   },
-  "homeInsightsRebuildingAlgoVersion": "How these are computed changed with the last update.",
+  "homeInsightsRebuildingAlgoVersion": "Updating after the latest app update.",
   "@homeInsightsRebuildingAlgoVersion": {
     "description": "Reason the cross-day rollup is being rebuilt: the algorithm version changed."
   },
@@ -7288,10 +7644,6 @@
   "homeSyncBand": "Sync the band",
   "@homeSyncBand": {
     "description": "Call-to-action button label: sync the band."
-  },
-  "homeWhyLabel": "Why?",
-  "@homeWhyLabel": {
-    "description": "Short label introducing the readiness driver list on Home."
   },
   "homeCalibrating": "Learning your usual",
   "@homeCalibrating": {
@@ -7321,7 +7673,7 @@
       }
     }
   },
-  "homeGapNoReason": "Nothing recorded says why this is missing.",
+  "homeGapNoReason": "No reason recorded.",
   "@homeGapNoReason": {
     "description": "Fallback reason shown when a ring is empty and nothing explains why."
   },
@@ -7349,23 +7701,123 @@
   "@homeSleepGapFallback": {
     "description": "Fallback reason the sleep ring is empty: no night long enough to score."
   },
+  "homeSleepPctOf": "{pct}% of {target}",
+  "@homeSleepPctOf": {
+    "description": "Sleep ring subtitle once a night is scored: percent of the learned sleep need.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String",
+        "example": "8h 00m"
+      }
+    }
+  },
+  "homeSleepPctOfDefault": "{pct}% of {target} (default)",
+  "@homeSleepPctOfDefault": {
+    "description": "Sleep ring subtitle once a night is scored, when no need has been learned yet: percent of the 8 h default target, labelled as a default.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String",
+        "example": "8h 00m"
+      }
+    }
+  },
+  "homeSleepPctCompact": "{pct}% of {target}",
+  "@homeSleepPctCompact": {
+    "description": "Short sleep caption against a learned target.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSleepPctDefaultCompact": "{pct}% of {target} · default target",
+  "@homeSleepPctDefaultCompact": {
+    "description": "Short sleep caption that keeps an explicit default-target qualifier.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSleepPctDefaultTight": "{pct}% of default {target}",
+  "@homeSleepPctDefaultTight": {
+    "description": "Tightest sleep caption when the target is the default: still names the target as the default.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWhyRecoveryTitle": "Recovery is low",
+  "@homeWhyRecoveryTitle": {
+    "description": "Title of the Home card row that explains a low recovery score."
+  },
+  "homeWhyRecoveryPlain": "Recovery {score} of 100",
+  "@homeWhyRecoveryPlain": {
+    "description": "Body of the low-recovery row when no input is known to drag the score: just the score out of 100.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "homeWhySleepTitle": "Sleep is short of need",
+  "@homeWhySleepTitle": {
+    "description": "Title of the Home card row shown when sleep is well short of the person's need."
+  },
+  "homeWhySleepBody": "Your scored sleep was below your need.",
+  "@homeWhySleepBody": {
+    "description": "Body of the short-sleep row when the time asleep or the need is not available to quote."
+  },
+  "homeWhySleepDetail": "{asleep} asleep, {gap} under your {need} need.",
+  "@homeWhySleepDetail": {
+    "description": "Body of the short-sleep row: time asleep and how far under the need it was.",
+    "placeholders": {
+      "asleep": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      },
+      "need": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWhyStrainTitle": "Strain is above target",
+  "@homeWhyStrainTitle": {
+    "description": "Title of the Home card row shown when strain is above today's target range."
+  },
+  "homeWhyStrainBody": "Strain {strain}, above today’s target of {range}.",
+  "@homeWhyStrainBody": {
+    "description": "Body of the high-strain row: today's strain and the target range.",
+    "placeholders": {
+      "strain": {
+        "type": "String"
+      },
+      "range": {
+        "type": "String"
+      }
+    }
+  },
   "homeStrainOf21": "of 21",
   "@homeStrainOf21": {
     "description": "Strain ring subtitle: out of the fixed 21-point scale."
-  },
-  "homeSleepNoTarget": "No target yet",
-  "@homeSleepNoTarget": {
-    "description": "Sleep ring subtitle when no computed sleep-need target exists yet."
-  },
-  "homeOfSpan": "of {duration}",
-  "@homeOfSpan": {
-    "description": "Sleep ring subtitle: duration measured against a computed sleep-need target.",
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "7h 45m"
-      }
-    }
   },
   "homeLoadFailedTitle": "Today could not be read",
   "@homeLoadFailedTitle": {
@@ -7419,6 +7871,10 @@
   "@homeSyncedNever": {
     "description": "Home header line when no record has ever been banked from a band."
   },
+  "homeSyncedTimeUnknown": "Band data, clock not set",
+  "@homeSyncedTimeUnknown": {
+    "description": "Home sync line when the strap banked records but its clock is unset, so how far the data reaches is unknown."
+  },
   "homeSyncingTitle": "Syncing with your band",
   "@homeSyncingTitle": {
     "description": "Title shown on a bare day while records are actively arriving from the band."
@@ -7455,7 +7911,7 @@
   "@homeNothingTodayTitle": {
     "description": "Title shown when there is history but nothing recorded for today."
   },
-  "homeNothingTodayBody": "The last night this app scored was {day}. Nothing has reached it since.",
+  "homeNothingTodayBody": "Last scored night: {day}.",
   "@homeNothingTodayBody": {
     "description": "Body shown when there is history but nothing recorded for today, naming the last scored night.",
     "placeholders": {
@@ -7491,7 +7947,7 @@
       }
     }
   },
-  "homeReadinessNoReason": "Nothing recorded says why.",
+  "homeReadinessNoReason": "No reason recorded.",
   "@homeReadinessNoReason": {
     "description": "Fallback body of the readiness-not-scored card when no reason is recorded."
   },
@@ -7541,29 +7997,17 @@
       }
     }
   },
-  "homeIllnessBodyNoZ": "Your resting heart rate has run above your usual over recent nights. This tracks one signal, so it shows a pattern, not a cause.",
+  "homeIllnessBodyNoZ": "Your resting heart rate has been above your usual over recent nights. A pattern, not a cause.",
   "@homeIllnessBodyNoZ": {
     "description": "Illness watch body text when no standardised-deviation figure is available."
   },
-  "homeIllnessBodyAbove": "Recent nights put your resting heart rate above your usual. That night was {z}× your normal night-to-night swing above it. A pattern, not a cause.",
+  "homeIllnessBodyAbove": "Recent nights put your resting heart rate above your usual. That night was above it too. A pattern, not a cause.",
   "@homeIllnessBodyAbove": {
-    "description": "Illness watch body text when the flagged night's heart rate sat above baseline, with the deviation amount.",
-    "placeholders": {
-      "z": {
-        "type": "String",
-        "example": "1.8"
-      }
-    }
+    "description": "Illness watch body text when the flagged night's heart rate sat above baseline."
   },
-  "homeIllnessBodyBelow": "Recent nights together put your resting heart rate above your usual, even though that night on its own was {z}× your normal night-to-night swing below it. A pattern, not a cause.",
+  "homeIllnessBodyBelow": "Recent nights together put your resting heart rate above your usual, though that night alone was below it. A pattern, not a cause.",
   "@homeIllnessBodyBelow": {
-    "description": "Illness watch body text when the flagged night's heart rate sat below baseline, with the deviation amount.",
-    "placeholders": {
-      "z": {
-        "type": "String",
-        "example": "1.8"
-      }
-    }
+    "description": "Illness watch body text when the flagged night's heart rate sat below baseline."
   },
   "homeIllnessAdvice": "Worth noting if it continues past a couple of days.",
   "@homeIllnessAdvice": {
@@ -8568,6 +9012,10 @@
     "description": "Shown after the user set their own sleep window and the band recorded it, but staging found no sleep in it."
   },
   "sleepDetailCorrectionUnavailable": "This night’s detailed recordings are no longer on the phone, so its sleep can’t be corrected now.",
+  "sleepDetailCorrectionNoRecordings": "This night has no detailed recordings on the phone, so its sleep can’t be corrected.",
+  "@sleepDetailCorrectionNoRecordings": {
+    "description": "Shown instead of the sleep correction buttons on a night with no detailed recordings on the phone that were never pruned (imported or never worn)."
+  },
   "sleepDetailCorrectionEveningPruned": "The evening before this night is no longer on the phone, so only a bedtime after midnight, or Not sleep, can be applied.",
   "@sleepDetailCorrectionEveningPruned": {
     "description": "Shown on the oldest night still kept, or after a correction there was refused: the evening part of the night has been pruned, so a bedtime before midnight, confirming the detected times, or reverting to automatic cannot be applied."
@@ -9645,6 +10093,10 @@
   "@activityPickerRecent": {
     "description": "Section heading over the recent-activities row"
   },
+  "activityPickerMostDone": "MOST DONE",
+  "@activityPickerMostDone": {
+    "description": "Section heading over the most-used-activities row"
+  },
   "activityPickerCalorieEstimatesTitle": "Calorie figures are estimates",
   "@activityPickerCalorieEstimatesTitle": {
     "description": "Status card title explaining that calorie figures are estimates"
@@ -10475,12 +10927,15 @@
   "@activitySummaryTopSet": {
     "description": "Section title above the heaviest logged set on a strength session"
   },
-  "activitySummaryOneRepMax": "1RM estimate {kg} kg",
+  "activitySummaryOneRepMax": "1RM estimate {value} {unit, select, lb{lb} other{kg}}",
   "@activitySummaryOneRepMax": {
     "description": "Estimated one-rep-max caption under the top set exercise name",
     "placeholders": {
-      "kg": {
+      "value": {
         "type": "int"
+      },
+      "unit": {
+        "type": "String"
       }
     }
   },
@@ -11480,6 +11935,30 @@
   "@settingsClockFormatRowTitle": {
     "description": "Settings row title cycling the 12/24-hour clock format"
   },
+  "settingsUnitsMetric": "Metric",
+  "@settingsUnitsMetric": {
+    "description": "Units value: metric"
+  },
+  "settingsUnitsImperial": "Imperial",
+  "@settingsUnitsImperial": {
+    "description": "Units value: imperial"
+  },
+  "settingsAppearanceLight": "Light",
+  "@settingsAppearanceLight": {
+    "description": "Appearance value: light theme"
+  },
+  "settingsAppearanceDark": "Dark",
+  "@settingsAppearanceDark": {
+    "description": "Appearance value: dark theme"
+  },
+  "settingsBackupDaily": "Daily",
+  "@settingsBackupDaily": {
+    "description": "Automatic backup frequency: once a day"
+  },
+  "settingsBackupWeekly": "Weekly",
+  "@settingsBackupWeekly": {
+    "description": "Automatic backup frequency: once a week"
+  },
   "settingsClockFormatSystem": "System",
   "@settingsClockFormatSystem": {
     "description": "Clock format value: follow the operating system setting"
@@ -11491,6 +11970,10 @@
   "settingsClockFormat12h": "12-hour",
   "@settingsClockFormat12h": {
     "description": "Clock format value: 12-hour clock with AM/PM (e.g. 7:30 PM)"
+  },
+  "settingsAppearanceSystem": "System",
+  "@settingsAppearanceSystem": {
+    "description": "Appearance value: follow the operating system light/dark setting"
   },
   "settingsCycleTrackingRowTitle": "Cycle tracking",
   "@settingsCycleTrackingRowTitle": {
@@ -12747,7 +13230,7 @@
   "activityStart": "Start",
   "activityEnd": "End",
   "activityCheckTimes": "Check the times",
-  "activityNapWindow": "Choose a past window between 5 minutes and 6 hours.",
+  "activityNapWindow": "Choose a past window between 5 minutes and 3 hours.",
   "activityEditNap": "Edit nap",
   "activityEditWorkout": "Edit workout",
   "activityNapAlerts": "Detected naps",
@@ -14293,7 +14776,7 @@
   "@supplementNoTrendYetNotEnoughc23fe5": {
     "description": "Presentation-only text for existing interface, exports or notifications."
   },
-  "supplementNotTaken3d2bc8": "not_taken",
+  "supplementNotTaken3d2bc8": "not taken",
   "@supplementNotTaken3d2bc8": {
     "description": "Presentation-only text for existing interface, exports or notifications."
   },
@@ -14413,7 +14896,7 @@
   "presentationS": "s",
   "presentationV": "µV",
   "presentationReadsTheRingDirectlyNoAccountNoKeyExchange": "Reads the ring directly — no account, no key exchange.",
-  "presentationPebble2OrPebble2SEOnlyPairsOnly": "Pebble 2 or Pebble 2 SE only. Pairs only for now — nothing is read or stored yet.",
+  "presentationPebble2OrPebble2SEOnlyPairsOnly": "Pebble 2 or Pebble 2 SE only. Experimental support: syncs and stores steps and sleep, plus heart rate on Pebble 2. The SE has no heart-rate sensor.",
   "presentationTheOriginalFossilSkagenHybridSmartwatchNotTheNewer": "The original Fossil/Skagen hybrid smartwatch, not the newer Hybrid HR. Pairs and connects; nothing derives from it yet.",
   "presentationABudgetActivityBandPairsAndBanksItsRaw": "A budget activity band. Pairs and banks its raw data, but nothing is derived from it yet.",
   "presentationPairsAndBanksItsRawDataNothingIsDecoded": "Pairs and banks its raw data — nothing is decoded yet.",
@@ -15541,7 +16024,7 @@
       }
     }
   },
-  "homeCoachSetUpChip": "Ask questions about your data: set up the coach",
+  "homeCoachSetUpChip": "Set up the coach",
   "@homeCoachSetUpChip": {
     "description": "Today tab chip when no coach model is configured."
   },
@@ -16138,6 +16621,69 @@
       }
     }
   },
+  "notifLookbackFlaggedBody": "This week flagged: {items}. Details live on Health.",
+  "@notifLookbackFlaggedBody": {
+    "description": "Weekly lookback notification body listing the week's flags; {items} is a comma-separated list of the flag phrases below.",
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "notifLookbackIllness": "resting heart rate raised ×{count}",
+  "@notifLookbackIllness": {
+    "description": "Weekly lookback flag phrase: nights with raised resting heart rate.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackAnomaly": "unusual physiology ×{count}",
+  "@notifLookbackAnomaly": {
+    "description": "Weekly lookback flag phrase: nights with unusual physiology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackTemp": "elevated skin temperature ×{count}",
+  "@notifLookbackTemp": {
+    "description": "Weekly lookback flag phrase: nights with elevated skin temperature.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackRhrHigherBody": "Resting heart rate ran about {bpm} bpm higher late in the week than early.",
+  "@notifLookbackRhrHigherBody": {
+    "description": "Weekly lookback notification body: resting heart rate drifted up over the week.",
+    "placeholders": {
+      "bpm": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackRhrLowerBody": "Resting heart rate ran about {bpm} bpm lower late in the week than early.",
+  "@notifLookbackRhrLowerBody": {
+    "description": "Weekly lookback notification body: resting heart rate drifted down over the week.",
+    "placeholders": {
+      "bpm": {
+        "type": "int"
+      }
+    }
+  },
+  "notifSyncStaleBody": "No new data for about {hours} hours. Open OpenStrap to reconnect — background sync may have stalled.",
+  "@notifSyncStaleBody": {
+    "description": "OS notification body when the band has not synced for several hours.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "settingsStepCalibration": "Step calibration",
   "settingsStepCalibrationSub": "Learns how your strap over- or under-counts your own walking, and corrects it on the phone. Nothing is written to the strap and nothing leaves the device",
   "stepCalTitle": "Step calibration",
@@ -16341,5 +16887,1493 @@
         "type": "int"
       }
     }
-  }
+  },
+  "pairBandNotSensor": "That device is a {label}, a band, not a plain sensor. Nothing was saved.",
+  "@pairBandNotSensor": {
+    "description": "Shown when a device picked as a plain sensor turns out to be a band. Nothing was saved. {label} is the band’s name.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pairResetWhoop5Step1": "Take the band off your wrist and wait for the green lights to go out.",
+  "@pairResetWhoop5Step1": {
+    "description": "Reset help for WHOOP 5.0 / MG, step 1."
+  },
+  "pairResetWhoop5Step2": "Hold the band by its sides and tap the top firmly with two fingers until only blue flashes. If blue and white show together, keep tapping until only blue is left.",
+  "@pairResetWhoop5Step2": {
+    "description": "Reset help for WHOOP 5.0 / MG, step 2: the tap procedure."
+  },
+  "pairResetWhoop5Step3": "If the WHOOP app is on this phone, force-quit it.",
+  "@pairResetWhoop5Step3": {
+    "description": "Reset help for WHOOP 5.0 / MG, step 3."
+  },
+  "pairResetWhoop5Step4": "Come back here and try again.",
+  "@pairResetWhoop5Step4": {
+    "description": "Reset help for WHOOP 5.0 / MG, step 4."
+  },
+  "pairResetGenericStep1": "Open the maker’s app and remove this device from it.",
+  "@pairResetGenericStep1": {
+    "description": "General reset help for a device, step 1."
+  },
+  "pairResetGenericStep2": "In your phone’s Bluetooth settings, find the device and choose Forget.",
+  "@pairResetGenericStep2": {
+    "description": "General reset help for a device, step 2."
+  },
+  "pairResetGenericStep3": "Restart the device, hold it close to this phone and try again.",
+  "@pairResetGenericStep3": {
+    "description": "General reset help for a device, step 3."
+  },
+  "pairResetGenericNote": "These are general tips. We haven’t checked the exact steps for this device yet.",
+  "@pairResetGenericNote": {
+    "description": "Shown above the general reset steps for a device whose own steps have not been checked yet."
+  },
+  "pairResetOfficialLink": "Open the maker’s help page",
+  "@pairResetOfficialLink": {
+    "description": "Link text opening the maker’s own help page in the browser."
+  },
+  "pairResetTitleBand": "Your band is paired somewhere else",
+  "@pairResetTitleBand": {
+    "description": "Title of the screen shown when pairing a band did not finish: it is probably still paired with another phone or app."
+  },
+  "pairResetTitleRing": "Your ring is paired somewhere else",
+  "@pairResetTitleRing": {
+    "description": "Same screen as the band title, for a ring."
+  },
+  "pairResetBody": "We couldn’t finish pairing {name}. It is probably still connected to another phone or app.",
+  "@pairResetBody": {
+    "description": "Body under the pairing-did-not-finish title. {name} is the device’s name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairResetHeading": "To reset it",
+  "@pairResetHeading": {
+    "description": "Heading above the numbered reset steps."
+  },
+  "pairResetWhoopTakeover": "Pairing here disconnects it from the WHOOP app.",
+  "@pairResetWhoopTakeover": {
+    "description": "Shown for WHOOP devices: a WHOOP keeps one connection, so pairing here takes it from the WHOOP app."
+  },
+  "pairResetOfficialSub": "{host} · opens in your browser",
+  "@pairResetOfficialSub": {
+    "description": "Second line of the maker’s-help-page row. {host} is the website’s host name.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "pairLinkOpenFailed": "Could not open the link. The address is {url}",
+  "@pairLinkOpenFailed": {
+    "description": "Snackbar when a help link could not be opened. {url} is the address, so the user can open it by hand.",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "pairPickDifferentBand": "Pick a different band",
+  "@pairPickDifferentBand": {
+    "description": "Button that goes back to the list of bands."
+  },
+  "pairThisIsWhoop": "This is a WHOOP band",
+  "@pairThisIsWhoop": {
+    "description": "Sheet title for a WHOOP found by the scan."
+  },
+  "pairThisIsRing": "This is a ring",
+  "@pairThisIsRing": {
+    "description": "Sheet title for a ring."
+  },
+  "pairThisIsWatch": "This is a watch",
+  "@pairThisIsWatch": {
+    "description": "Sheet title for a watch."
+  },
+  "pairThisIsFitnessBand": "This is a fitness band",
+  "@pairThisIsFitnessBand": {
+    "description": "Sheet title for a fitness band (Mi Band)."
+  },
+  "pairThisIsStrap": "This is a heart-rate strap",
+  "@pairThisIsStrap": {
+    "description": "Sheet title for a heart-rate chest strap."
+  },
+  "pairThisIsSensor": "This is a heart-rate sensor",
+  "@pairThisIsSensor": {
+    "description": "Sheet title for a heart-rate armband or other heart-rate sensor."
+  },
+  "pairTroubleTitle": "Trouble connecting?",
+  "@pairTroubleTitle": {
+    "description": "Heading of the always-open help card on the pairing screen."
+  },
+  "pairTroubleBody": "Put the band in pairing mode, then try again. Still stuck? Ask us.",
+  "@pairTroubleBody": {
+    "description": "Body of the help card."
+  },
+  "pairTroubleModeLink": "{device} pairing mode",
+  "@pairTroubleModeLink": {
+    "description": "Link to the maker’s page on putting {device} in pairing mode.",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "pairTroubleDiscord": "Ask on Discord",
+  "@pairTroubleDiscord": {
+    "description": "Link to the project’s Discord."
+  },
+  "pairTroubleDiscordSub": "The OpenStrap community",
+  "@pairTroubleDiscordSub": {
+    "description": "Line under the Discord link."
+  },
+  "pairModeTitle": "Put it in pairing mode",
+  "@pairModeTitle": {
+    "description": "Heading of the pairing-mode steps on a device sheet."
+  },
+  "pairModeNoSite": "A generic device with no single maker, so there are no maker’s steps to follow.",
+  "@pairModeNoSite": {
+    "description": "Shown instead of steps for a generic device with no maker’s page."
+  },
+  "pairOuraExistingKeyGuidance": "Already use the Oura app? Keep the ring in that app and pair with its existing key. Skip the reset steps below. Only reset it if you want a new key.",
+  "@pairOuraExistingKeyGuidance": {
+    "description": "Before any Oura reset steps: existing-key users keep the ring paired in Oura and skip resets; reset only for a new key."
+  },
+  "pairAddDevice": "Add a device",
+  "@pairAddDevice": {
+    "description": "Label of the button that starts adding a device (band or sensor is decided after the scan)."
+  },
+  "pairKindAll": "All",
+  "@pairKindAll": {
+    "description": "Filter pill that shows every device in the list."
+  },
+  "pairKindStrap": "Chest straps & armbands",
+  "@pairKindStrap": {
+    "description": "Filter pill: heart-rate straps and armbands."
+  },
+  "pairKindRing": "Rings",
+  "@pairKindRing": {
+    "description": "Filter pill for smart rings."
+  },
+  "pairKindWatch": "Watches",
+  "@pairKindWatch": {
+    "description": "Filter pill for watches."
+  },
+  "pairGoBack": "Go back",
+  "@pairGoBack": {
+    "description": "Link that closes a confirm sheet without pairing."
+  },
+  "pairAddDeviceSub": "Rings, watches and heart-rate straps",
+  "@pairAddDeviceSub": {
+    "description": "Line under the Add a device row in Settings."
+  },
+  "pairAddDeviceSubtitle": "Each device shows where it fits: every day, or workouts only.",
+  "@pairAddDeviceSubtitle": {
+    "description": "Lead of the Add a device screen."
+  },
+  "pairBandFoundBody": "It does much more every day than during workouts only. Which do you want?",
+  "@pairBandFoundBody": {
+    "description": "WHOOP sheet lead when no band is paired yet."
+  },
+  "pairBandFoundBodyHasBand": "You already have a band. Only one can be your band at a time.",
+  "@pairBandFoundBodyHasBand": {
+    "description": "WHOOP sheet lead when a band is already paired."
+  },
+  "pairIdentifiedBody": "It looked like a heart-rate strap, but when we connected it identified itself as {label}. Nothing was saved.",
+  "@pairIdentifiedBody": {
+    "description": "Body of the sheet shown when a device picked as a sensor identifies itself as a band after connecting. Nothing was saved.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pairAsMyBand": "Pair it as my band",
+  "@pairAsMyBand": {
+    "description": "Button that pairs the device as the user’s main band."
+  },
+  "pairSecondaryPaired": "Paired for workouts only.",
+  "@pairSecondaryPaired": {
+    "description": "Shown after a device is paired for workouts only."
+  },
+  "pairBandNow": "Your band now: {name}. Your data stays when you switch.",
+  "@pairBandNow": {
+    "description": "Note under the table when a band is already paired. {name} is that band’s name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairReplaceBand": "Pair this band, then disconnect {name}",
+  "@pairReplaceBand": {
+    "description": "Main button when a band is already paired: unpair it and pair the tapped one. {name} is the paired band’s name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairReplaceConfirmTitle": "Replace {name} after this band connects?",
+  "@pairReplaceConfirmTitle": {
+    "description": "Confirm dialog before replacing the band. {name} is the paired band’s name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairReplaceConfirmBody": "Your current band stays paired if setup fails or you cancel. Data already saved on this phone stays. Anything still unsynced on the old band is not synced to this phone after the switch.",
+  "@pairReplaceConfirmBody": {
+    "description": "Confirm dialog body: replacing the band keeps the data."
+  },
+  "pairReplaceConfirmYes": "Pair replacement",
+  "@pairReplaceConfirmYes": {
+    "description": "Confirm dialog button: unpair the old band and pair the new one."
+  },
+  "pairCurrentBandFallback": "your band",
+  "@pairCurrentBandFallback": {
+    "description": "Stands in for the paired band’s name when it has none, inside a sentence."
+  },
+  "pairWearableLead": "It can fill your days with sleep, recovery and heart rate.",
+  "@pairWearableLead": {
+    "description": "Sheet lead for a ring or watch."
+  },
+  "pairWearableNote": "Fills days without your WHOOP. Experimental, so switch it on in Devices.",
+  "@pairWearableNote": {
+    "description": "Note under a ring’s or watch’s table on the pairing sheet. “Devices” is the device list in Settings."
+  },
+  "pairStrapLead": "It adds heart rate while you work out. It does not record sleep, recovery or daily strain.",
+  "@pairStrapLead": {
+    "description": "Sheet lead for a heart-rate strap or sensor."
+  },
+  "pairStrapNote": "Turn on “Use during workouts” to record heart rate while you work out.",
+  "@pairStrapNote": {
+    "description": "Note on a strap’s sheet: workout recording needs the switch. Quotes deviceUseWorkoutsTitle."
+  },
+  "pairDeviceNamed": "Pair {name}",
+  "@pairDeviceNamed": {
+    "description": "Main button on a ring’s, watch’s or strap’s sheet. {name} is the device.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairUseForWorkouts": "Use it for workouts only",
+  "@pairUseForWorkouts": {
+    "description": "Text link on a WHOOP sheet: keep it for workouts only, not as the main band."
+  },
+  "pairReplaceUnpairFailed": "Your new band is paired, but your old band could not be removed.",
+  "@pairReplaceUnpairFailed": {
+    "description": "Shown when unpairing the old band failed during “Unpair (your band) and pair this one”; nothing else ran."
+  },
+  "pairWearableLeadPebble": "Pebble 2 can fill your days with sleep and heart rate. Pebble 2 SE shows the watch’s own sleep and steps. It has no heart-rate sensor, so this app cannot calculate daily strain or estimate recovery from it.",
+  "@pairWearableLeadPebble": {
+    "description": "Pebble-family pairing lead: SE shows the watch’s own sleep and steps; no HR sensor means no app-calculated daily strain or recovery estimate from the SE alone."
+  },
+  "pairMainBandWhoopOnly": "Main band: WHOOP 4.0 or WHOOP 5.0/MG only. Other devices can be added as additional devices.",
+  "@pairMainBandWhoopOnly": {
+    "description": "Plain statement on the pairing screens: only WHOOP can be the main band; other devices are added as additional devices."
+  },
+  "pairBandTitle": "Pair your band",
+  "@pairBandTitle": {
+    "description": "Title of the first-run list of bands."
+  },
+  "pairBandSubtitle": "Pick the one you wear. We will look for it nearby.",
+  "@pairBandSubtitle": {
+    "description": "Subtitle of the first-run list of bands."
+  },
+  "pairStrapOnlyLink": "I only have a heart-rate strap",
+  "@pairStrapOnlyLink": {
+    "description": "Text link under the band list for someone with only a heart-rate strap."
+  },
+  "pairWhoopRowLine": "Sleep, recovery, strain, heart rate and more",
+  "@pairWhoopRowLine": {
+    "description": "Line under each WHOOP on the first-run list."
+  },
+  "pairSetUpTitle": "Set up",
+  "@pairSetUpTitle": {
+    "description": "Top bar title of the first-run pairing screen."
+  },
+  "capLabelSleep": "Sleep",
+  "@capLabelSleep": {
+    "description": "Name of a thing a device sends: sleep."
+  },
+  "capLabelRecovery": "Recovery",
+  "@capLabelRecovery": {
+    "description": "Name of a thing a device sends: the morning recovery score."
+  },
+  "capLabelStrain": "Strain",
+  "@capLabelStrain": {
+    "description": "Name of a thing a device sends: strain."
+  },
+  "capLabelHrv": "Heart-rate variability",
+  "@capLabelHrv": {
+    "description": "Name of a thing a device sends: heart-rate variability."
+  },
+  "capLabelSkinTemperature": "Skin temperature",
+  "@capLabelSkinTemperature": {
+    "description": "Name of a thing a device sends: skin temperature."
+  },
+  "capLabelBloodOxygen": "Blood oxygen",
+  "@capLabelBloodOxygen": {
+    "description": "Name of a thing a device sends: blood oxygen (only a device’s own reading)."
+  },
+  "capLabelWorkoutHeartRate": "Heart rate during workouts",
+  "@capLabelWorkoutHeartRate": {
+    "description": "Table row: heart rate during a workout."
+  },
+  "capLabelWorkoutBeatToBeat": "Beat-to-beat timing during workouts",
+  "@capLabelWorkoutBeatToBeat": {
+    "description": "Table row: beat-to-beat timing during a workout."
+  },
+  "capLabelSteps": "Steps",
+  "@capLabelSteps": {
+    "description": "Name of a thing a device sends: steps."
+  },
+  "capReasonSkinTempNights": "After a few nights",
+  "@capReasonSkinTempNights": {
+    "description": "Caption under Skin temperature: it needs a few nights first."
+  },
+  "capReasonEstimated": "An estimate, not a direct reading",
+  "@capReasonEstimated": {
+    "description": "Why a value is conditional: it is an estimate, not a direct reading."
+  },
+  "capReasonEarly": "Early estimate; it firms up over the first weeks",
+  "@capReasonEarly": {
+    "description": "Why a value is conditional: it is an early estimate that firms up over the first weeks."
+  },
+  "capVendorReported": "The device’s own reading",
+  "@capVendorReported": {
+    "description": "Tag on a value that is the device’s own reading, not calculated by this app."
+  },
+  "slotSendsHeading": "Sends",
+  "@slotSendsHeading": {
+    "description": "Heading above the list of what a device sends."
+  },
+  "slotDoesntSendHeading": "Doesn’t send",
+  "@slotDoesntSendHeading": {
+    "description": "Heading above the list of what a secondary sensor does not send."
+  },
+  "pairSectionTitle": "Pair a device",
+  "@pairSectionTitle": {
+    "description": "Heading of the section in My sources that holds pairing."
+  },
+  "pairCardBandBody": "WHOOP 4.0 or WHOOP 5.0/MG only. Sleep, recovery and strain, around the clock.",
+  "@pairCardBandBody": {
+    "description": "Body of the Your band card in Settings."
+  },
+  "pairUnpairBand": "Unpair band",
+  "@pairUnpairBand": {
+    "description": "Red outline button that starts forgetting the paired band (a confirm dialog follows)."
+  },
+  "capLabelHeartRate": "Heart rate and resting heart rate",
+  "@capLabelHeartRate": {
+    "description": "Table row: heart rate and resting heart rate, as one capability."
+  },
+  "capLabelRespiration": "Respiration",
+  "@capLabelRespiration": {
+    "description": "Table row: breathing rate."
+  },
+  "capReasonFirstNights": "Estimated for the first 14 nights",
+  "@capReasonFirstNights": {
+    "description": "Caption under Recovery for a ring or watch: its recovery is an estimate until 14 nights of baseline."
+  },
+  "capReasonOwnStagesRing": "From the ring’s own sleep stages",
+  "@capReasonOwnStagesRing": {
+    "description": "Caption under Sleep for a ring: the sleep stages are the ring’s own."
+  },
+  "capReasonOwnStages": "From the device’s own sleep stages",
+  "@capReasonOwnStages": {
+    "description": "Caption under Sleep for a watch or fitness band: the sleep stages are the device’s own."
+  },
+  "capReasonLiveSessions": "During live sessions",
+  "@capReasonLiveSessions": {
+    "description": "Caption under Steps for WHOOP 4: it counts steps only while the app has a live connection."
+  },
+  "slotEveryDay": "Every day",
+  "@slotEveryDay": {
+    "description": "Column and chip: the device is used every day (the main band, or the ring/watch that fills days)."
+  },
+  "slotWorkoutsOnly": "Workouts only",
+  "@slotWorkoutsOnly": {
+    "description": "Column and chip: the device is used only during workouts."
+  },
+  "pairWearableCardNote": "Fills days without your WHOOP. Experimental, so switch it on below.",
+  "@pairWearableCardNote": {
+    "description": "Note under a ring’s or watch’s table on its device page; the switch is below it."
+  },
+  "pairWhatItSends": "What it sends",
+  "@pairWhatItSends": {
+    "description": "Heading above the table on a device page."
+  },
+  "capReasonUnconfirmed": "If this device sends it, not confirmed",
+  "@capReasonUnconfirmed": {
+    "description": "Caption under a row the device may or may not send; nobody has confirmed it does."
+  },
+  "capReasonPebble2Only": "Pebble 2 only. The 2 SE has no heart-rate sensor.",
+  "@capReasonPebble2Only": {
+    "description": "Caption under the heart rate, strain and recovery rows for Pebble: the shared Pebble entry covers the 2 SE, which has no heart-rate sensor."
+  },
+  "capReasonPebble2OnlyEstimated": "Pebble 2 only, and an estimate, not a direct reading. The 2 SE has no heart-rate sensor.",
+  "@capReasonPebble2OnlyEstimated": {
+    "description": "Caption under Pebble's recovery row: Pebble 2 only (the 2 SE has no heart-rate sensor), and recovery is an estimate."
+  },
+  "slotColumnReason": "{column}: {reason}",
+  "@slotColumnReason": {
+    "description": "Capability caption naming the column it applies to.",
+    "placeholders": {
+      "column": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "slotCapabilityStatus": "{capability}, {column}: {status}",
+  "@slotCapabilityStatus": {
+    "description": "Accessible table result with capability, column and sends status.",
+    "placeholders": {
+      "capability": {
+        "type": "String"
+      },
+      "column": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeCoachKeyReentry": "Your coach API key stays in secure storage and was not backed up. Enter it again in AI settings to use the coach on this phone.",
+  "welcomeSettingsSkipped": "{n, plural, =1{1 setting in the backup could not be read and was skipped} other{{n} settings in the backup could not be read and were skipped}}",
+  "@welcomeSettingsSkipped": {
+    "description": "Import report: settings rows in the backup that could not be read",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "welcomeSettingsSkippedBody": "Those keep this phone's values.",
+  "welcomeCoachChatGptReentry": "Your ChatGPT sign-in stays in secure storage and was not backed up. Sign in again in AI settings to use the coach on this phone.",
+  "welcomeCoachServerReentry": "Your custom coach server address was not backed up, because an address can hold a key. Enter it again in AI settings.",
+  "welcomeSettingsRestored": "{n} settings restored",
+  "@welcomeSettingsRestored": {
+    "description": "Import report: number of restored app preferences",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "strengthCustomWeight": "Custom weight",
+  "@strengthCustomWeight": {
+    "description": "Strength set editor copy."
+  },
+  "strengthEnterValue": "Enter a value",
+  "@strengthEnterValue": {
+    "description": "Strength set editor copy."
+  },
+  "strengthInvalidNumber": "Invalid number",
+  "@strengthInvalidNumber": {
+    "description": "Strength set editor copy."
+  },
+  "strengthLoadRangeKg": "Must be 0–500 kg",
+  "@strengthLoadRangeKg": {
+    "description": "Strength set editor copy."
+  },
+  "strengthLoadRangeLb": "Must be 0–1100 lb",
+  "@strengthLoadRangeLb": {
+    "description": "Strength set editor copy."
+  },
+  "strengthRepsRange": "Must be 1–200 reps",
+  "@strengthRepsRange": {
+    "description": "Strength set editor copy."
+  },
+  "strengthEditSet": "Edit set",
+  "@strengthEditSet": {
+    "description": "Strength set editor copy."
+  },
+  "strengthDeleteSet": "Delete set",
+  "@strengthDeleteSet": {
+    "description": "Strength set editor copy."
+  },
+  "strengthDeleteSetConfirm": "Delete this set?",
+  "@strengthDeleteSetConfirm": {
+    "description": "Strength set editor copy."
+  },
+  "strengthBodyweight": "Bodyweight",
+  "@strengthBodyweight": {
+    "description": "Strength set editor copy."
+  },
+  "strengthDelete": "Delete",
+  "@strengthDelete": {
+    "description": "Strength set editor copy."
+  },
+  "strengthSaveFailed": "Failed to save changes",
+  "@strengthSaveFailed": {
+    "description": "Strength set editor copy."
+  },
+  "bandStatusFirmwareLockedTitle": "The band’s firmware is probably holding back its data",
+  "@bandStatusFirmwareLockedTitle": {
+    "description": "BandStatus card title: band firmware 50.43 withholds all data until a WHOOP membership token is on it"
+  },
+  "bandStatusFirmwareLockedReason": "This band runs WHOOP firmware 50.43, which can connect and answer the app but send no recordings or live heart rate until a WHOOP-signed membership token is on it. That is one possible reason no data is arriving. OpenStrap cannot issue that token. Everything already saved here is safe.",
+  "@bandStatusFirmwareLockedReason": {
+    "description": "BandStatus card body: band firmware 50.43 withholds all data until a WHOOP membership token is on it"
+  },
+  "bandStatusFirmwareLockedFix": "If it is the firmware, nothing in the app changes it, and this clears once the band sends recordings again",
+  "@bandStatusFirmwareLockedFix": {
+    "description": "BandStatus fix action: band firmware 50.43 withholds all data until a WHOOP membership token is on it"
+  },
+  "dayStepsWhoop4NoCounter": "A WHOOP 4.0 has no step counter of its own, so it only counts steps while this app is receiving its live data.",
+  "@dayStepsWhoop4NoCounter": {
+    "description": "Steps screen: appended when the paired band is a WHOOP 4.0 and it counted nothing that day, because it has no on-chip step counter"
+  },
+  "napAutoLogTitle": "Log clear naps automatically",
+  "napAutoLogSub": "A detected nap with strong evidence is added without asking. You can still edit or remove it",
+  "napAutoLogSaveFailed": "That setting could not be saved. Try again.",
+  "pairSearchDevices": "Search for devices",
+  "pairPrimaryCannotBeSensor": "This is already your main band. It cannot also be paired as a workout sensor.",
+  "capReasonSkinTempProvisional": "Provisional estimate; needs a few nights",
+  "pairReplaceMyBand": "Replace my band",
+  "healthWearNotUpdatedSince": "not updated since {time}",
+  "@healthWearNotUpdatedSince": {
+    "description": "Wear-time row: the figure is from an earlier derive that the latest one could not refresh. time is a clock time, e.g. 11:05 AM",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dayStrainWornAsOf": "Worn as of {time}",
+  "@dayStrainWornAsOf": {
+    "description": "Day strain: label over a wear figure from an earlier derive that the latest one could not refresh. Says when the figure was computed, not that the band came off then. time is a clock time, e.g. 11:05 AM",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "guideTapMarker": "tap",
+  "@guideTapMarker": {
+    "description": "Short pill on the highlighted control in a navigation guide picture: the user taps it."
+  },
+  "guideScrollMarker": "scroll",
+  "@guideScrollMarker": {
+    "description": "Short vertical marker in a navigation guide picture: the screen needs scrolling to reach the highlighted control."
+  },
+  "guideStepOf": "Step {step} of {total}",
+  "@guideStepOf": {
+    "description": "Screen-reader label of one dot in the step indicator of a guide.",
+    "placeholders": {
+      "step": {
+        "type": "String",
+        "description": "The number of the step this dot stands for."
+      },
+      "total": {
+        "type": "String",
+        "description": "How many steps the guide has."
+      }
+    }
+  },
+  "guideDontSeeIt": "Don't see it?",
+  "@guideDontSeeIt": {
+    "description": "Link on the guide's step card that expands the help for a target that is not on the screen."
+  },
+  "guideExit": "Exit",
+  "@guideExit": {
+    "description": "Button on the guide card that ends the guide and leaves the app where it is."
+  },
+  "guideExitLabel": "Exit the guide",
+  "@guideExitLabel": {
+    "description": "Screen-reader label of the Exit button on the guide card."
+  },
+  "guideOffPathTitle": "You've left the path",
+  "@guideOffPathTitle": {
+    "description": "Title of the guide card when the user has gone to a screen the guide does not cover."
+  },
+  "guideOffPathBody": "This screen isn't part of the guide.",
+  "@guideOffPathBody": {
+    "description": "Body of the off-path guide card."
+  },
+  "guideBackToGuide": "Back to the guide",
+  "@guideBackToGuide": {
+    "description": "Button on the off-path guide card that returns to the last screen of the guide."
+  },
+  "guideDoneTitle": "Done",
+  "@guideDoneTitle": {
+    "description": "Title of the guide card after the last step."
+  },
+  "guideDoneBody": "That was the last step.",
+  "@guideDoneBody": {
+    "description": "Body of the guide card after the last step."
+  },
+  "guideTargetProxy": "Guide target: {caption}",
+  "@guideTargetProxy": {
+    "description": "Screen-reader label of the highlighted control while a guide runs.",
+    "placeholders": {
+      "caption": {
+        "type": "String",
+        "description": "The step caption."
+      }
+    }
+  },
+  "guideTabProxy": "Guide: open the {tab} tab",
+  "@guideTabProxy": {
+    "description": "Screen-reader label of the highlighted tab-bar tab while a guide runs: the step is on that tab.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "The tab's name, as the tab bar prints it."
+      }
+    }
+  },
+  "guideBackProxy": "Guide: back to the path",
+  "@guideBackProxy": {
+    "description": "Screen-reader label of the highlighted control that leads back to the guide's path while the user is off the path."
+  },
+  "guideMoveCardUp": "Move card up",
+  "@guideMoveCardUp": {
+    "description": "Screen-reader action on the guide's step card: move the card up the screen (the alternative to dragging it)."
+  },
+  "guideMoveCardDown": "Move card down",
+  "@guideMoveCardDown": {
+    "description": "Screen-reader action on the guide's step card: move the card down the screen (the alternative to dragging it)."
+  },
+  "guideTapsBack": "{count, plural, one{1 tap back} other{{count} taps back}}",
+  "@guideTapsBack": {
+    "description": "Number of taps (navigation hops) back to the active guide step, shown beside the off-path text.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "guideTapOneOf": "tap one of",
+  "@guideTapOneOf": {
+    "description": "Short label above several highlighted controls in a live guide step: any one of them does the step."
+  },
+  "guideExpandAccordion": "Expand {title}",
+  "@guideExpandAccordion": {
+    "description": "Guide hop asking the wearer to open a collapsed section",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSleepHmmRowTitle": "Experimental sleep staging (HMM)",
+  "@settingsSleepHmmRowTitle": {
+    "description": "Title of the experimental HMM sleep staging toggle in Settings."
+  },
+  "settingsSleepHmmRowSub": "Research algorithm, not a medical device. Off by default.",
+  "@settingsSleepHmmRowSub": {
+    "description": "Subtitle of the experimental HMM sleep staging toggle in Settings."
+  },
+  "guideStepUnavailable": "This step can't be shown right now.",
+  "@guideStepUnavailable": {
+    "description": "Shown in place of a guide step's picture when the control it points at cannot be found on the demo screen."
+  },
+  "guideNoVariantBody": "This guide doesn't cover your band yet. It covers: {bands}.",
+  "@guideNoVariantBody": {
+    "description": "Shown instead of a guide's steps when the guide has no version for the user's band. {bands} is a list of band names such as WHOOP 4 / WHOOP 5; brand names are not translated.",
+    "placeholders": {
+      "bands": {
+        "type": "String"
+      }
+    }
+  },
+  "guideHrZonesTitle": "Where to find your heart-rate zones",
+  "@guideHrZonesTitle": {
+    "description": "Title of the navigation guide that shows where to find the heart-rate zones."
+  },
+  "guideHrZonesIntro": "The heart-rate zones screen sits behind your {score} score. It takes three taps.",
+  "@guideHrZonesIntro": {
+    "description": "One line under the guide title. {score} is the in-app name of the Strain ring on the Today tab.",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "guideHrZonesStep1": "On the **{tab}** tab, tap the **{ring}** ring.",
+  "@guideHrZonesStep1": {
+    "description": "Step 1 caption. The words between ** ** are shown in bold and must be the in-app labels, passed in: {tab} is the Today tab name, {ring} the Strain ring name.",
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      },
+      "ring": {
+        "type": "String"
+      }
+    }
+  },
+  "guideHrZonesStep2": "Scroll down to **{section}** and tap **{action}** on the right.",
+  "@guideHrZonesStep2": {
+    "description": "Step 2 caption. Bold words are in-app labels: {section} is the 'Time in zones' heading, {action} the link on its right ('How these are set').",
+    "placeholders": {
+      "section": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "guideHrZonesStep3": "On **{screen}**, tap **{link}**, or **{editLink}** if you've already saved your own zones.",
+  "@guideHrZonesStep3": {
+    "description": "Step 3 caption. The screen title and both button labels are quoted verbatim; Edit appears after saving manual zones.",
+    "placeholders": {
+      "screen": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      },
+      "editLink": {
+        "type": "String"
+      }
+    }
+  },
+  "guideHrZonesAltTitle": "Another way in",
+  "@guideHrZonesAltTitle": {
+    "description": "Title of a footer card of the heart-rate zones guide: a second route to the same screen."
+  },
+  "guideHrZonesAltBody": "Open the **{tab}** tab and tap **{link}**, then follow steps 2 and 3.",
+  "@guideHrZonesAltBody": {
+    "description": "Footer card body. Bold words are in-app labels: {tab} is the Activity tab name, {link} the 'Today's strain' link.",
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "guideHrZonesMissingTitle": "Don't see \"{section}\"?",
+  "@guideHrZonesMissingTitle": {
+    "description": "Footer card title: the user cannot see the 'Time in zones' section. {section} is that section's in-app heading.",
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
+  "guideHrZonesMissingBody": "It appears once the band has recorded heart rate for the day and your zones can be worked out. If it still doesn't show after you've worn the band for a while, add your age in your profile.",
+  "@guideHrZonesMissingBody": {
+    "description": "Footer card body: why the 'Time in zones' section can be missing: no heart rate recorded for the day yet, or zones can't be worked out (no age set)."
+  },
+  "guidePickBand": "Which band do you have?",
+  "@guidePickBand": {
+    "description": "Shown above the band buttons when a guide has different steps for WHOOP 4 and WHOOP 5 and no band is paired yet."
+  },
+  "helpEmpty": "There are no guides for your band yet.",
+  "@helpEmpty": {
+    "description": "Help screen: shown when no guide covers the paired band."
+  },
+  "guideAnotherWayInTitle": "Another way in",
+  "@guideAnotherWayInTitle": {
+    "description": "Title of a footer card in a guide: a second route to the same screen."
+  },
+  "guideAlarmTitle": "Where to set an alarm, or a different time each day",
+  "@guideAlarmTitle": {
+    "description": "Title of the navigation guide for the weekly alarm schedule."
+  },
+  "guideAlarmStep1": "On the **{tab}** tab, scroll down to **{section}** and tap **{row}**.",
+  "@guideAlarmStep1": {
+    "description": "Step 1 caption. Words between ** ** are bold and must be the in-app labels, passed in: {tab} is the Sleep tab name, {section} the \"Alarm and body clock\" heading, {row} the Alarm row.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "section": {
+        "type": "String",
+        "description": "Heading of the section with the alarm row"
+      },
+      "row": {
+        "type": "String",
+        "description": "Name of the Alarm row"
+      }
+    }
+  },
+  "guideAlarmStep2": "Under **{group}**, tap a day that is off to turn it on, for example **{day}**. Tapping a day that is already on turns it off.",
+  "@guideAlarmStep2": {
+    "description": "Step 2 caption. Bold words are in-app labels: {group} is the \"Weekly schedule\" heading, {day} a short weekday name such as Tue.",
+    "placeholders": {
+      "group": {
+        "type": "String",
+        "description": "Heading of the weekly schedule"
+      },
+      "day": {
+        "type": "String",
+        "description": "Short name of one weekday"
+      }
+    }
+  },
+  "guideAlarmStep3": "Then tap **{wake}** under that day and pick the time. Every day can have its own time.",
+  "@guideAlarmStep3": {
+    "description": "Step 3 caption. {wake} is the in-app name of the Wake time row that appears under a day that is on.",
+    "placeholders": {
+      "wake": {
+        "type": "String",
+        "description": "Name of the Wake time row"
+      }
+    }
+  },
+  "guideAlarmAltBody": "Open **{profile}**, then **{settings}**, then **{band}**, then **{alarm}**.",
+  "@guideAlarmAltBody": {
+    "description": "Footer card body: the second route to the Alarm screen. Bold words are in-app labels in the order they are tapped.",
+    "placeholders": {
+      "profile": {
+        "type": "String",
+        "description": "Profile screen name"
+      },
+      "settings": {
+        "type": "String",
+        "description": "Settings row name"
+      },
+      "band": {
+        "type": "String",
+        "description": "The band settings group name"
+      },
+      "alarm": {
+        "type": "String",
+        "description": "Alarm row name"
+      }
+    }
+  },
+  "guideAlarmMissingTitle": "Don't see \"{group}\"?",
+  "@guideAlarmMissingTitle": {
+    "description": "Footer card title: the user cannot see the weekly schedule. {group} is its in-app heading.",
+    "placeholders": {
+      "group": {
+        "type": "String",
+        "description": "Heading of the weekly schedule"
+      }
+    }
+  },
+  "guideAlarmMissingBody": "**{group}** only shows while your band is connected. Keep the band close to your phone, wait for it to connect, then look again.",
+  "@guideAlarmMissingBody": {
+    "description": "Footer card body: why the weekly schedule can be missing (the band is not connected).",
+    "placeholders": {
+      "group": {
+        "type": "String",
+        "description": "Heading of the weekly schedule"
+      }
+    }
+  },
+  "guideAddNapTitle": "Where to log a nap yourself",
+  "@guideAddNapTitle": {
+    "description": "Title of the navigation guide for adding a nap by hand."
+  },
+  "guideAddNapStep1": "On the **{tab}** tab, tap **{naps}** under your last night.",
+  "@guideAddNapStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Sleep tab name, {naps} the Naps button.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      }
+    }
+  },
+  "guideAddNapStep2": "Tap **{log}**. You are asked two things: **{fell}**, then **{woke}**. Pick both times.",
+  "@guideAddNapStep2": {
+    "description": "Step 2 caption. {log} is the Log a nap button; {fell} and {woke} are the two questions of the time pickers, in lower case.",
+    "placeholders": {
+      "log": {
+        "type": "String",
+        "description": "Name of the Log a nap button"
+      },
+      "fell": {
+        "type": "String",
+        "description": "The first picker question, lower case"
+      },
+      "woke": {
+        "type": "String",
+        "description": "The second picker question, lower case"
+      }
+    }
+  },
+  "guideAddNapFoundTitle": "Naps the band found",
+  "@guideAddNapFoundTitle": {
+    "description": "Footer card title of the add-a-nap guide: naps the app detected itself."
+  },
+  "guideAddNapFoundBody": "Naps the band detected are listed on the same screen. If one is wrong, tap **{notNap}** next to it.",
+  "@guideAddNapFoundBody": {
+    "description": "Footer card body. {notNap} is the in-app button that rejects a detected nap.",
+    "placeholders": {
+      "notNap": {
+        "type": "String",
+        "description": "Name of the Not a nap button"
+      }
+    }
+  },
+  "guideAddNapRulesTitle": "The nap won't save?",
+  "@guideAddNapRulesTitle": {
+    "description": "Footer card title: the user tried to log a nap and it was refused."
+  },
+  "guideAddNapRulesBody": "A nap lasts between {minMinutes} minutes and {maxHours} hours, has to be over already, and can't overlap another nap or your main sleep.",
+  "@guideAddNapRulesBody": {
+    "description": "Footer card body: nap limits come from the shared form validation caps.",
+    "placeholders": {
+      "minMinutes": {
+        "type": "String"
+      },
+      "maxHours": {
+        "type": "String"
+      }
+    }
+  },
+  "guideRemoveTitle": "Where to remove a nap or workout that wasn't real",
+  "@guideRemoveTitle": {
+    "description": "Title of the navigation guide for rejecting a detected nap or workout."
+  },
+  "guideRemoveStep1": "On the **{tab}** tab, tap the **{card}** card. It only shows while something is waiting for you.",
+  "@guideRemoveStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Today tab name, {card} the title of the card.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Today tab name"
+      },
+      "card": {
+        "type": "String",
+        "description": "Title of the Detected activities card"
+      }
+    }
+  },
+  "guideRemoveStep2": "Every item has its own **{notNap}** / **{notWorkout}**. Tap it on the nap or workout that didn't happen; the highlight shows the choices.",
+  "@guideRemoveStep2": {
+    "description": "Step 2 caption. Bold words are the in-app buttons for a nap and for a workout.",
+    "placeholders": {
+      "notNap": {
+        "type": "String",
+        "description": "Name of the Not a nap button"
+      },
+      "notWorkout": {
+        "type": "String",
+        "description": "Name of the Not a workout button"
+      }
+    }
+  },
+  "guideRemoveSavedTitle": "Already saved?",
+  "@guideRemoveSavedTitle": {
+    "description": "Footer card title: the nap or workout was already accepted earlier."
+  },
+  "guideRemoveSavedBody": "Open the **{sleep}** tab and tap **{naps}**. Tap **{notNap}** on a nap the band found, or **{delete}** on one you logged yourself.",
+  "@guideRemoveSavedBody": {
+    "description": "Footer card body. Bold words are in-app labels.",
+    "placeholders": {
+      "sleep": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      },
+      "notNap": {
+        "type": "String",
+        "description": "Name of the Not a nap button"
+      },
+      "delete": {
+        "type": "String",
+        "description": "Name of the Delete button"
+      }
+    }
+  },
+  "guideRemoveMissingTitle": "Don't see \"{card}\"?",
+  "@guideRemoveMissingTitle": {
+    "description": "Footer card title: the user cannot see the card. {card} is its in-app title.",
+    "placeholders": {
+      "card": {
+        "type": "String",
+        "description": "Title of the Detected activities card"
+      }
+    }
+  },
+  "guideRemoveMissingBody": "The card is only there while something is waiting for your answer. Once it has been answered, look under **{sleep}** > **{naps}** for naps, or **{activity}** > **{history}** for workouts.",
+  "@guideRemoveMissingBody": {
+    "description": "Footer card body. Bold words are in-app labels; > separates the taps.",
+    "placeholders": {
+      "sleep": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      },
+      "activity": {
+        "type": "String",
+        "description": "Activity tab name"
+      },
+      "history": {
+        "type": "String",
+        "description": "Name of the History sub-tab"
+      }
+    }
+  },
+  "guideFixTimesTitle": "Where to fix your sleep times",
+  "@guideFixTimesTitle": {
+    "description": "Title of the navigation guide for correcting when a night started and ended."
+  },
+  "guideFixTimesStep1": "On the **{tab}** tab, tap **{change}** under your last night. It reads **{set}** until you have set the times yourself. You are asked when you went to bed, then when you got up.",
+  "@guideFixTimesStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} the Sleep tab, {change} and {set} the two texts of the same button.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "change": {
+        "type": "String",
+        "description": "Button text once the times are the user's own"
+      },
+      "set": {
+        "type": "String",
+        "description": "Button text while the times are automatic"
+      }
+    }
+  },
+  "guideFixTimesStep2": "To undo your changes, tap **{back}**. The night goes back to the times the app detected.",
+  "@guideFixTimesStep2": {
+    "description": "Step 2 caption. {back} is the in-app Back to automatic button.",
+    "placeholders": {
+      "back": {
+        "type": "String",
+        "description": "Name of the Back to automatic button"
+      }
+    }
+  },
+  "guideFixTimesBackTitle": "Don't see \"{back}\"?",
+  "@guideFixTimesBackTitle": {
+    "description": "Footer card title. {back} is the in-app Back to automatic button.",
+    "placeholders": {
+      "back": {
+        "type": "String",
+        "description": "Name of the Back to automatic button"
+      }
+    }
+  },
+  "guideFixTimesBackBody": "**{back}** only shows after you set or confirm the times yourself, while the whole night's recordings are still stored.",
+  "@guideFixTimesBackBody": {
+    "description": "Footer card body: Back to automatic needs user-set or confirmed times and recordings for the whole night.",
+    "placeholders": {
+      "back": {
+        "type": "String",
+        "description": "Name of the Back to automatic button"
+      }
+    }
+  },
+  "guideFixTimesAskTitle": "What the pickers ask",
+  "@guideFixTimesAskTitle": {
+    "description": "Footer card title: explains the two time pickers that open."
+  },
+  "guideFixTimesAskBody": "First the time you went to bed, then the time you got up. The night is worked out again from those two times.",
+  "@guideFixTimesAskBody": {
+    "description": "Footer card body."
+  },
+  "guideDeleteTitle": "Where to delete a workout",
+  "@guideDeleteTitle": {
+    "description": "Title of the navigation guide for deleting a recorded workout."
+  },
+  "guideDeleteStep1": "On the **{tab}** tab, open **{history}**.",
+  "@guideDeleteStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Activity tab, {history} the History sub-tab.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Activity tab name"
+      },
+      "history": {
+        "type": "String",
+        "description": "Name of the History sub-tab"
+      }
+    }
+  },
+  "guideDeleteStep2": "Tap the bin at the end of the session's row (**{label}**), then confirm.",
+  "@guideDeleteStep2": {
+    "description": "Step 2 caption. {label} is the accessibility label of the bin icon.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "description": "Accessibility label of the delete icon"
+      }
+    }
+  },
+  "guideDeleteWhatTitle": "What deleting does",
+  "@guideDeleteWhatTitle": {
+    "description": "Footer card title: the effect of deleting a workout."
+  },
+  "guideDeleteWhatBody": "The session disappears from the app. A copy in your phone's health app, if there is one, stays where it is.",
+  "@guideDeleteWhatBody": {
+    "description": "Footer card body."
+  },
+  "guideDeleteNoneTitle": "No bin to tap?",
+  "@guideDeleteNoneTitle": {
+    "description": "Footer card title: the user sees no delete icon."
+  },
+  "guideDeleteNoneBody": "If History says **{none}**, there is nothing to delete yet. **{start}** or **{log}** adds a session.",
+  "@guideDeleteNoneBody": {
+    "description": "Footer card body. Bold words are in-app labels: {none} the empty-History message, {start} and {log} the two ways to add a session.",
+    "placeholders": {
+      "none": {
+        "type": "String",
+        "description": "The message shown when no session is recorded"
+      },
+      "start": {
+        "type": "String",
+        "description": "Name of the Start a workout button"
+      },
+      "log": {
+        "type": "String",
+        "description": "Name of the Log a past workout button"
+      }
+    }
+  },
+  "guideStartTitle": "Where to start and stop a workout",
+  "@guideStartTitle": {
+    "description": "Title of the navigation guide for starting and stopping a workout."
+  },
+  "guideStartStep1": "On the **{tab}** tab, tap the **{card}** card.",
+  "@guideStartStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Activity tab, {card} the start card.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Activity tab name"
+      },
+      "card": {
+        "type": "String",
+        "description": "Text of the start card"
+      }
+    }
+  },
+  "guideStartStep2": "Find your activity: type in **{search}**, or tap one in the list.",
+  "@guideStartStep2": {
+    "description": "Step 2 caption. {search} is the in-app label of the search field.",
+    "placeholders": {
+      "search": {
+        "type": "String",
+        "description": "Label of the activity search field"
+      }
+    }
+  },
+  "guideStartStep3": "Check the details, then tap **{start}**.",
+  "@guideStartStep3": {
+    "description": "Step 3 caption. {start} is the Start button of the setup screen.",
+    "placeholders": {
+      "start": {
+        "type": "String",
+        "description": "Name of the Start button"
+      }
+    }
+  },
+  "guideStartStep4": "To stop, tap the red square (**{finish}**). You land on the summary of your session.",
+  "@guideStartStep4": {
+    "description": "Step 4 caption. {finish} is the accessibility label of the red stop button.",
+    "placeholders": {
+      "finish": {
+        "type": "String",
+        "description": "Accessibility label of the finish button"
+      }
+    }
+  },
+  "guideStartNoBandTitle": "No band connected?",
+  "@guideStartNoBandTitle": {
+    "description": "Footer card title of the start-a-workout guide."
+  },
+  "guideStartNoBandBody": "You can still start a session. A disconnected band supplies no heart rate, but another connected heart-rate sensor can.",
+  "@guideStartNoBandBody": {
+    "description": "Footer card body."
+  },
+  "guideStartPauseTitle": "Need a break?",
+  "@guideStartPauseTitle": {
+    "description": "Footer card title: pausing a running workout."
+  },
+  "guideStartPauseBody": "Tap **{pause}** to stop the clock, and **{resume}** to carry on.",
+  "@guideStartPauseBody": {
+    "description": "Footer card body. Bold words are the in-app Pause and Resume buttons.",
+    "placeholders": {
+      "pause": {
+        "type": "String",
+        "description": "Name of the Pause button"
+      },
+      "resume": {
+        "type": "String",
+        "description": "Name of the Resume button"
+      }
+    }
+  },
+  "guideLogPastTitle": "Where to log a workout you forgot to record",
+  "@guideLogPastTitle": {
+    "description": "Title of the navigation guide for adding a workout by hand."
+  },
+  "guideLogPastStep1": "On the **{tab}** tab, open **{history}**.",
+  "@guideLogPastStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Activity tab, {history} the History sub-tab.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Activity tab name"
+      },
+      "history": {
+        "type": "String",
+        "description": "Name of the History sub-tab"
+      }
+    }
+  },
+  "guideLogPastStep2": "Scroll to the bottom and tap **{log}**.",
+  "@guideLogPastStep2": {
+    "description": "Step 2 caption. {log} is the Log a past workout button.",
+    "placeholders": {
+      "log": {
+        "type": "String",
+        "description": "Name of the Log a past workout button"
+      }
+    }
+  },
+  "guideLogPastStep3": "Choose the activity and fill in the **{when}** times, then tap **{logIt}**.",
+  "@guideLogPastStep3": {
+    "description": "Step 3 caption. Bold words are in-app labels: {when} the heading of the times group, {logIt} the save button.",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "description": "Heading of the group with the times"
+      },
+      "logIt": {
+        "type": "String",
+        "description": "Name of the save button"
+      }
+    }
+  },
+  "guideLogPastScoreTitle": "Will it get a score?",
+  "@guideLogPastScoreTitle": {
+    "description": "Footer card title of the log-a-past-workout guide."
+  },
+  "guideLogPastScoreBody": "If the band recorded your heart rate for that time and your profile has your age and sex, the workout is scored from it. If not, it is saved without a score.",
+  "@guideLogPastScoreBody": {
+    "description": "Footer card body."
+  },
+  "guideLogPastMissingTitle": "Don't see \"{log}\"?",
+  "@guideLogPastMissingTitle": {
+    "description": "Footer card title. {log} is the in-app button.",
+    "placeholders": {
+      "log": {
+        "type": "String",
+        "description": "Name of the Log a past workout button"
+      }
+    }
+  },
+  "guideLogPastMissingBody": "It sits at the very bottom of **{history}**, below your sessions. Scroll all the way down.",
+  "@guideLogPastMissingBody": {
+    "description": "Footer card body.",
+    "placeholders": {
+      "history": {
+        "type": "String",
+        "description": "Name of the History sub-tab"
+      }
+    }
+  },
+  "guideSearchOrPick": "search or pick",
+  "@guideSearchOrPick": {
+    "description": "Short label above the search bar and the activity groups in the live guide step that picks an activity."
+  },
+  "profileHelpRow": "Help",
+  "@profileHelpRow": {
+    "description": "Profile row: open the Help list of navigation guides (where to find things in the app)."
+  },
+  "guideAddNapMissingTitle": "Don't see \"{naps}\"?",
+  "@guideAddNapMissingTitle": {
+    "description": "Footer card title (the \"Don't see it?\" help): the Naps button is not visible. {naps} is its in-app name.",
+    "placeholders": {
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      }
+    }
+  },
+  "guideAddNapMissingBody": "**{naps}** is below your night. Scroll down to find it.",
+  "@guideAddNapMissingBody": {
+    "description": "Footer card body: scroll below the night to find the Naps button.",
+    "placeholders": {
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      }
+    }
+  },
+  "guideRemoveStep2Still": "Every item has its own **{notNap}** / **{notWorkout}**. Tap it on the nap or workout that didn't happen; the outline marks the first one.",
+  "@guideRemoveStep2Still": {
+    "description": "Step 2 caption. Bold words are the in-app buttons for a nap and for a workout.",
+    "placeholders": {
+      "notNap": {
+        "type": "String",
+        "description": "Name of the Not a nap button"
+      },
+      "notWorkout": {
+        "type": "String",
+        "description": "Name of the Not a workout button"
+      }
+    }
+  },
+  "helpLookingForSomething": "Looking for something?",
+  "@helpLookingForSomething": {
+    "description": "Quiet button at the bottom of each main tab that opens Help for that tab."
+  },
+  "helpAllGuides": "All guides",
+  "@helpAllGuides": {
+    "description": "Show every guide after entering Help from one tab."
+  },
+  "helpTopicEmpty": "There are no guides for this tab yet.",
+  "@helpTopicEmpty": {
+    "description": "Empty state for a tab with no guides; All guides remains available."
+  },
+  "importSourceEncryptedBackup": "Encrypted backup",
+  "@importSourceEncryptedBackup": {
+    "description": "Import report source: an encrypted backup file."
+  },
+  "importSourceOpenStrapBackup": "OpenStrap backup",
+  "@importSourceOpenStrapBackup": {
+    "description": "Import report source: an OpenStrap backup file."
+  },
+  "importSourceRawSensor": "Raw sensor export",
+  "@importSourceRawSensor": {
+    "description": "Import report source: a raw sensor data export."
+  },
+  "importSourceVendorCsv": "Vendor CSV export",
+  "@importSourceVendorCsv": {
+    "description": "Import report source: a CSV export from the device maker."
+  },
+  "importSourceJournalCsv": "Journal CSV",
+  "@importSourceJournalCsv": {
+    "description": "Import report source: our own journal CSV export."
+  },
+  "importSourceLabCsv": "Lab results CSV",
+  "@importSourceLabCsv": {
+    "description": "Import report source: our own lab results CSV export."
+  },
+  "importSourceFilePicker": "File picker",
+  "@importSourceFilePicker": {
+    "description": "Import report source when the file picker itself failed."
+  },
+  "importSourceImport": "Import",
+  "@importSourceImport": {
+    "description": "Import report source when the whole import failed."
+  },
+  "importSourceNothingSelected": "Nothing selected",
+  "@importSourceNothingSelected": {
+    "description": "Import report source when no file was used."
+  },
+  "welcomeEncryptedBackupUseSettings": "That file is an encrypted backup. Open it from Settings → Your data, where the passphrase can be asked for.",
+  "@welcomeEncryptedBackupUseSettings": {
+    "description": "An encrypted backup was picked where no passphrase can be asked."
+  },
+  "welcomeNotUtf8": "{file}: not saved as UTF-8 — save it as \"CSV UTF-8\" and import it again",
+  "@welcomeNotUtf8": {
+    "description": "A journal or lab CSV saved in another encoding.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeCorruptTables": "{tables} could not be read — SQLite reported the file itself as corrupted for those tables. Every other table imported normally.",
+  "@welcomeCorruptTables": {
+    "description": "Some tables in an imported backup were corrupted.",
+    "placeholders": {
+      "tables": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeRejectsMore": "{shown}; and {count} more.",
+  "@welcomeRejectsMore": {
+    "description": "Tail of the refused-rows list: the first few, then how many more.",
+    "placeholders": {
+      "shown": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coachAppleTitle": "Apple Intelligence on this iPhone",
+  "@coachAppleTitle": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleSub": "Needs iOS 26 and Apple Intelligence turned on. No key needed.",
+  "@coachAppleSub": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleChecking": "Checking Apple Intelligence…",
+  "@coachAppleChecking": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleOnNote": "The coach, briefings and journal now use Apple’s small on-device model. It answers from your last two weeks and can’t log things for you; switch it off to use a bigger model instead.",
+  "@coachAppleOnNote": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleReady": "Ready.",
+  "@coachAppleReady": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleNotEnabled": "Turn on Apple Intelligence in Settings to use the on-device model.",
+  "@coachAppleNotEnabled": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleNotReady": "Apple’s on-device model is still downloading. Try again later.",
+  "@coachAppleNotReady": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleNotEligible": "This iPhone can’t run Apple’s on-device model.",
+  "@coachAppleNotEligible": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleUnsupported": "Needs an iPhone with Apple Intelligence on iOS 26 or later.",
+  "@coachAppleUnsupported": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleFailed": "Apple’s on-device model couldn’t answer. Try again.",
+  "@coachAppleFailed": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleTooLong": "That was too long for Apple’s on-device model. Start a new chat or ask a shorter question.",
+  "@coachAppleTooLong": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleDeclined": "Apple’s on-device model declined to answer that. Try wording it differently.",
+  "@coachAppleDeclined": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleTimeout": "Apple’s on-device model took too long to answer. Try again, or ask a shorter question.",
+  "@coachAppleTimeout": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "coachAppleNoEcg": "Apple’s on-device model can’t read an ECG waveform. To analyse this reading, switch Apple Intelligence off in the coach’s AI settings and use another model.",
+  "@coachAppleNoEcg": {
+    "description": "Coach, AI settings: Apple's on-device model (Foundation Models) option."
+  },
+  "aiBriefingUnknownBody": "This note was saved before the app recorded where briefings go, so it can’t say where these numbers were sent.",
+  "@aiBriefingUnknownBody": {
+    "description": "AI briefing, what-was-sent banner: a briefing saved before its endpoint was recorded."
+  },
+  "alarmAllDays": "All days",
+  "@alarmAllDays": {"description": "Snackbar action: copy the wake time just set to every weekday."},
+  "alarmCopiedToAllDays": "Wake time copied to every day",
+  "@alarmCopiedToAllDays": {"description": "Snackbar: wake time copied to every weekday."}
 }

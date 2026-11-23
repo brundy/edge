@@ -85,6 +85,11 @@ import '../../sync/paired_device.dart' show cleanDeviceLabel;
 import '../../state/app_state.dart';
 import '../../state/clock_format.dart' show formatClockOf;
 import '../pairing/device_picker.dart' show DevicePickerScreen;
+import '../pairing/pair_text.dart' show pairL10n, slotPill;
+import '../../ble/slot_comparison.dart' show DeviceSlot;
+import '../pairing/device_slot_card.dart'
+    show DeviceSlotCard, pairedDeviceSlot;
+import 'firmware_flash_screen.dart' show FirmwareFlashScreen;
 import '../onboarding/profile_setup.dart' show formatDay;
 import '../ui2.dart';
 import 'profile.dart';
@@ -846,6 +851,9 @@ class HealthSource {
   /// sleep, recovery and temperature are all still abstaining.
   final bool isBand;
 
+  /// Band only: data was banked but its timestamp is untrusted (unset RTC).
+  final bool timeUnknown;
+
   /// The `device` row this source is, for a paired sensor. Null for the
   /// primary band (whose row is `LocalDb.kPrimaryDeviceId`, `''`) and for the
   /// phone. It is the `device_id` every measurement this source wrote carries,
@@ -884,6 +892,7 @@ class HealthSource {
     this.batteryPackPct,
     this.lastData,
     this.isBand = false,
+    this.timeUnknown = false,
     this.deviceId,
     this.family,
     this.flagOff = false,
@@ -900,12 +909,14 @@ class HealthSource {
 ///
 /// Returns null for a non-band source: the phone reports steps and nothing that
 /// is calibrated per sensor.
-(String value, String sub)? calibrationDisclosure(HealthSource s) {
+(String value, String sub)? calibrationDisclosure(HealthSource s,
+    [AppLocalizations? l]) {
   if (!s.isBand) return null;
   final label = bandLabelFor(s.family);
   if (label != null) {
     return (
       label,
+      l?.devicesCalibrationSub ??
       'Metrics that depend on the sensor use this band’s own constants, so two '
           'different bands can land on different tiers for the same physiology.'
     );
@@ -916,7 +927,8 @@ class HealthSource {
   // build has no registry entry for lands here too — an unknown band is not a
   // WHOOP 4.
   return (
-    'Not stated yet',
+    l?.devicesCalibrationNotStated ?? 'Not stated yet',
+    l?.devicesCalibrationNotStatedSub ??
     'This band has not said which generation it is, and imported or older '
         'days never will. Metrics that depend on the sensor abstain rather '
         'than borrow another band’s numbers.'
@@ -957,6 +969,21 @@ double? sensorRowBatteryPct(Map<String, Object?> r) =>
 DateTime? sensorRowLastData(Map<String, Object?> r) => r['last_seen'] == null
     ? null
     : DateTime.fromMillisecondsSinceEpoch((r['last_seen'] as num).toInt() * 1000);
+
+/// True when a sync landed data after pairing (pairing stamps `last_seen`
+/// equal to `first_seen`) and did so within the last week. A ring that never
+/// synced, or last synced months ago, is not measuring anything now.
+bool sensorRowHasRecentData(Map<String, Object?> r, {DateTime? now}) {
+  final seen = r['last_seen'], first = r['first_seen'];
+  if (seen is! num || (first is num && seen <= first)) return false;
+  final age = (now ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000 - seen;
+  return age <= 7 * 86400;
+}
+
+/// The band's family now: what the link reports, else what was stored at
+/// pairing, else the snapshot the page was opened with.
+String? currentBandFamily(String? snapshot, {String? live, String? stored}) =>
+    live ?? stored ?? snapshot;
 
 /// [s] with the battery and last-data values its `device` row holds now.
 ///
@@ -1020,6 +1047,7 @@ List<HealthSource> liveSources(AppState app,
           batteryPackPct: app.device.batteryPackPct,
           lastData: app.lastRecordAt,
           isBand: true,
+          timeUnknown: app.bandRecordTimeUnknown,
           // The stored generation when no link has come up this launch, so a
           // disconnected band keeps its family-gated rows (Worn on, signals).
           family: app.device.generation ?? app.paired?.generation,
@@ -1046,7 +1074,13 @@ List<HealthSource> liveSources(AppState app,
           // `liveAdapterIds` is keyed by adapter so a live PPI stream never
           // marks an unrelated paired Oura row as connected just because
           // some sensor happens to be live right now.
-          connected: liveAdapterIds.contains(r['adapter_id']),
+          // A ring or watch syncs in sessions, with no link held open between
+          // them, so its switch being on and data having landed is what makes
+          // it the active source. A live stream still counts for everything.
+          connected: liveAdapterIds.contains(r['adapter_id']) ||
+              (_isEveryDayAdapter(r['adapter_id'] as String?) &&
+                  !app.flagOffSensorIds.contains(r['id']) &&
+                  sensorRowHasRecentData(r)),
           batteryPct: sensorRowBatteryPct(r),
           lastData: sensorRowLastData(r),
           isBand: false,
@@ -1092,9 +1126,14 @@ List<HealthSource> rankSources(List<HealthSource> sources) {
     final byTier = (a.tier?.rank ?? 99).compareTo(b.tier?.rank ?? 99);
     if (byTier != 0) return byTier;
     final at = a.lastData, bt = b.lastData;
-    if (at != null && bt != null && at != bt) return bt.compareTo(at);
-    if (at != null) return -1;
-    if (bt != null) return 1;
+    if (at != null && bt != null) {
+      final byRecency = bt.compareTo(at);
+      if (byRecency != 0) return byRecency;
+    } else if (at != null) {
+      return -1;
+    } else if (bt != null) {
+      return 1;
+    }
     return a.name.compareTo(b.name);
   });
   return out;
@@ -1126,8 +1165,9 @@ class MyDevices extends StatelessWidget {
   }
 
   Widget _build(BuildContext c, AppState app, Set<String> liveAdapterIds) {
+    final sources = rankSources(liveSources(app, liveAdapterIds: liveAdapterIds));
     return MyDevicesView(
-      sources: rankSources(liveSources(app, liveAdapterIds: liveAdapterIds)),
+      sources: sources,
       // The band row's dot says connected or not. That covers six different
       // problems with six different fixes, and a user cannot fix a problem the
       // app will not name — so the engine's own verdict rides alongside it.
@@ -1141,6 +1181,10 @@ class MyDevices extends StatelessWidget {
       // way back to pairing. So push it.
       onPair: () => goto(c, const RePair()),
       onAddSensor: () => addSensor(c),
+      onUnpair: () {
+        final band = sources.where((s) => s.isBand).firstOrNull;
+        _confirmForget(c, app, band?.displayName(c) ?? '');
+      },
       contendedSignals: contendedSignals(app),
       onSignalPriority: () => goto(c, const SignalPriorityScreen()),
     );
@@ -1464,6 +1508,9 @@ class MyDevicesView extends StatelessWidget {
   final List<HealthSource> sources;
   final VoidCallback? onPair, onAddSensor;
 
+  /// "Unpair band" on the already-paired card; null hides the button.
+  final VoidCallback? onUnpair;
+
   /// The band's own state, from `bandStatusFor`. Null when nothing is paired.
   final BandStatus? status;
 
@@ -1478,6 +1525,7 @@ class MyDevicesView extends StatelessWidget {
     this.sources = const [],
     this.onPair,
     this.onAddSensor,
+    this.onUnpair,
     this.status,
     this.contendedSignals = const [],
     this.onSignalPriority,
@@ -1500,7 +1548,6 @@ class MyDevicesView extends StatelessWidget {
     // the toggle sits on while a denied READ permission returns nothing. So
     // "a source exists" was the wrong test for this card: it told a user
     // whose phone was measuring nothing that "the phone counts steps".
-    final phoneCounting = sources.any((s) => !s.isBand && s.connected);
     final l = AppLocalizations.of(c);
     return Scaffold(
       backgroundColor: p.bg,
@@ -1514,31 +1561,10 @@ class MyDevicesView extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(S.x4, 0, S.x4, S.x10),
               children: [
-                // FIRST, in the tier-2 slot the missing band would occupy —
-                // not appended under the phone. Someone who has just forgotten
-                // a band is here to add one, and the row they can see is not
-                // the one they came for.
-                if (!hasBand) ...[
-                  StatusCard(
-                    phoneCounting
-                        ? (l?.devicesNoBandPaired ?? 'No band is paired')
-                        : (l?.devicesNothingMeasuringYet ??
-                            'Nothing is measuring yet'),
-                    phoneCounting
-                        ? (l?.devicesPhoneCountingBody ??
-                            'The phone counts steps and nothing else. Heart '
-                                'rate, sleep, recovery and temperature all abstain '
-                                'until a band is paired.')
-                        : (l?.devicesNothingMeasuringBody ??
-                            'No band is paired and no phone steps are arriving, '
-                                'so every metric in the app will abstain rather '
-                                'than estimate.'),
-                    fix: l?.devicesPairABand ?? 'Pair a band',
-                    icon: LucideIcons.watch,
-                    onFix: onPair,
-                  ),
-                  if (sources.isNotEmpty) const SizedBox(height: S.x3),
-                ],
+                // "Pair a device": the band first (or who it is, when one is
+                // paired), then "Add a device" for anything else.
+                ..._pairSection(c, hasBand),
+                if (sources.isNotEmpty) const SizedBox(height: S.x3),
                 // LIVE — the first of the two buckets. Only drawn when there is
                 // something in it: a heading over nothing is the empty rung
                 // problem again, one level up.
@@ -1556,19 +1582,6 @@ class MyDevicesView extends StatelessWidget {
                   ],
                   const SizedBox(height: S.x3),
                 ],
-                // At the foot of LIVE, because that is what it adds to. Not
-                // gated on having a band: a sensor is a second source, and
-                // someone with no band at all is exactly who benefits most
-                // from being able to pair one.
-                if (onAddSensor != null)
-                  Surface(
-                    pad: const EdgeInsets.symmetric(horizontal: S.x4),
-                    child: SetRow(LucideIcons.plus, C.green,
-                        l?.devicesAddASensor ?? 'Add a sensor',
-                        sub: l?.devicesAddASensorSub ??
-                            'A heart-rate strap or a ring, alongside the band',
-                        onTap: onAddSensor),
-                  ),
                 // ONLY when something can actually contend. A reorder screen
                 // over one device is a control with nothing to order, which is
                 // the empty-rung problem this screen already refuses (§6.5).
@@ -1611,6 +1624,168 @@ class MyDevicesView extends StatelessWidget {
   }
 }
 
+extension _PairSection on MyDevicesView {
+  /// The "Pair a device" section. Empty when there is nothing to show (a
+  /// fixture with no callbacks and no band).
+  List<Widget> _pairSection(BuildContext c, bool hasBand) {
+    final l = pairL10n(c);
+    final band = sources.where((s) => s.isBand).firstOrNull;
+    // What having no band costs. The phone row is listed whenever its toggle
+    // is on, so "a source exists" is not the test: only steps actually being
+    // banked is (see the note above `hasBand`).
+    // Only the PHONE counts here: a connected ring or strap is not phone
+    // steps, so it must not select the "phone counts steps" message.
+    final phoneCounting =
+        sources.any((s) => s.tier == SourceTier.phone && s.connected);
+    // A connected ring or watch fills the everyday columns without a band, so
+    // "every metric abstains" would be wrong while one is active.
+    final everyDayWearable = sources.any((s) =>
+        !s.isBand &&
+        !s.flagOff &&
+        s.connected &&
+        slotDeviceOf(s)?.slot == DeviceSlot.everyDay);
+    final al = AppLocalizations.of(c);
+    final children = <Widget>[
+      // ONE card for the band, paired or not, so the section keeps its
+      // height when the state flips: the status and the action in one box.
+      if ((!hasBand && onPair != null) || (hasBand && band != null))
+        _YourBandCard(
+          bandName: hasBand ? band?.displayName(c) : null,
+          bandState: hasBand && band != null
+              ? _localizedSourceState(c, band)
+              : null,
+          onPair: onPair,
+          onUnpair: onUnpair,
+          consequence: hasBand || everyDayWearable
+              ? null
+              : phoneCounting
+                  ? (al?.devicesPhoneCountingBody ??
+                      'The phone counts steps and nothing else. Heart '
+                          'rate, sleep, recovery and temperature all abstain '
+                          'until a band is paired.')
+                  : (al?.devicesNothingMeasuringBody ??
+                      'No band is paired and no phone steps are arriving, '
+                          'so every metric in the app will abstain rather '
+                          'than estimate.'),
+        ),
+      if (onAddSensor != null)
+        Surface(
+          pad: const EdgeInsets.symmetric(horizontal: S.x4),
+          child: SetRow(LucideIcons.plus, C.green, l.pairAddDevice,
+              sub: l.pairAddDeviceSub, onTap: onAddSensor),
+        ),
+    ];
+    if (children.isEmpty) return const [];
+    return [
+      Section(l.pairSectionTitle, Column(children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) const SizedBox(height: S.x3),
+          children[i],
+        ],
+      ])),
+      const SizedBox(height: S.x3),
+    ];
+  }
+}
+
+/// A paired device that fits one of the two columns: a ring or a watch
+/// (every day, as the active wearable) or a workout sensor such as a
+/// heart-rate strap (workouts only). Null for the band, the phone, a scale, a
+/// thermometer or a Coros watch. A WHOOP the user kept for workouts is stored
+/// under the heart-rate-sensor adapter, so it is a workout sensor too.
+({BandEntry entry, DeviceSlot slot})? slotDeviceOf(HealthSource s) {
+  if (s.isBand || s.deviceId == null) return null;
+  final e = kBandRegistry.where((e) => e.id == s.family).firstOrNull;
+  final slot = e == null ? null : pairedDeviceSlot(e);
+  return slot == null ? null : (entry: e!, slot: slot);
+}
+
+bool _isEveryDayAdapter(String? id) {
+  final e = kBandRegistry.where((e) => e.id == id).firstOrNull;
+  return e != null && pairedDeviceSlot(e) == DeviceSlot.everyDay;
+}
+
+/// The column chip a source row carries: the band is every day; a paired
+/// device its own column.
+DeviceSlot? sourceSlot(HealthSource s) =>
+    s.isBand ? DeviceSlot.everyDay : slotDeviceOf(s)?.slot;
+
+/// "Your band": no band yet ("No band is paired", the WHOOP-only line and
+/// "Pair your band"), or the paired band (its name, its state and "Unpair
+/// band"). Both states keep the same shape: a heading row, two lines, one
+/// button.
+class _YourBandCard extends StatelessWidget {
+  /// The paired band's name; null when no band is paired.
+  final String? bandName;
+  final String? bandState;
+  final VoidCallback? onPair, onUnpair;
+
+  /// Unpaired only: what the app can and cannot measure without a band, in
+  /// the same card so the section says it once.
+  final String? consequence;
+  const _YourBandCard(
+      {this.bandName,
+      this.bandState,
+      this.onPair,
+      this.onUnpair,
+      this.consequence});
+
+  @override
+  Widget build(BuildContext c) {
+    final p = P.of(c);
+    final l = pairL10n(c);
+    final paired = bandName != null;
+    return Surface(
+      key: ValueKey(paired ? 'band-paired-card' : 'pair-band-card'),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: S.x2,
+          runSpacing: S.x2,
+          children: [
+            Text(l.devicesYourBand, style: F.head.copyWith(color: p.ink)),
+            slotPill(l, DeviceSlot.everyDay),
+          ],
+        ),
+        const SizedBox(height: S.x2),
+        Text(paired ? bandName! : l.devicesNoBandPaired,
+            key: const ValueKey('your-band-status'),
+            style: F.body.copyWith(color: p.ink, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 2),
+        paired
+            ? Text(bandState ?? '', style: F.cap.copyWith(color: p.ink2))
+            : Text(l.pairCardBandBody,
+                key: const ValueKey('main-band-whoop-only-note'),
+                style: F.cap.copyWith(color: p.ink2)),
+        if (!paired && consequence != null) ...[
+          const SizedBox(height: S.x2),
+          Text(consequence!,
+              key: const ValueKey('no-band-consequence'),
+              style: F.cap.copyWith(color: p.ink2)),
+        ],
+        if (paired ? onUnpair != null : onPair != null) ...[
+          const SizedBox(height: S.x4),
+          paired
+              ? BigButton(l.pairUnpairBand,
+                  icon: LucideIcons.unlink,
+                  color: C.red,
+                  soft: true,
+                  onTap: onUnpair)
+              : BigButton(l.pairBandTitle,
+                  icon: LucideIcons.bluetooth, onTap: onPair),
+        ],
+      ]),
+    );
+  }
+}
+
+@visibleForTesting
+Future<void> debugConfirmForgetBand(
+        BuildContext c, AppState app, String name) =>
+    _confirmForget(c, app, name);
+
+
 /// The one line under a source's name.
 ///
 /// "Not connected" is a statement about a radio link, and the phone has none:
@@ -1625,7 +1800,10 @@ String sourceState(HealthSource s) {
   // resting state and not a fault — and a sensor whose tier could not be named
   // falls back to the phone's rung, where this function would otherwise have
   // told the user their chest strap was reporting steps.
-  if (s.deviceId != null) {
+  // A ring or watch fills whole days, so a workout never arms it: it reads
+  // as a band does, by sync and link, below.
+  final wearable = slotDeviceOf(s)?.slot == DeviceSlot.everyDay;
+  if (s.deviceId != null && !wearable) {
     if (s.connected) return 'Streaming beats';
     // A source with no rung supplies no signal, so there is nothing for a
     // workout to arm and nothing being derived. Say that, rather than promise
@@ -1641,7 +1819,7 @@ String sourceState(HealthSource s) {
 
 String _localizedSourceState(BuildContext c, HealthSource s) {
   final l = AppLocalizations.of(c);
-  if (s.deviceId != null) {
+  if (s.deviceId != null && slotDeviceOf(s)?.slot != DeviceSlot.everyDay) {
     if (s.connected) return l?.devicesStreamingBeats ?? 'Streaming beats';
     return s.tier == null
         ? (l?.devicesStoringWhatItSends ?? 'Paired · storing what it sends')
@@ -1669,7 +1847,11 @@ class SourceRow extends StatelessWidget {
     final p = P.of(c);
     final battery = s.batteryPct;
     final stacked = bigText(c);
-    final tierBadge = s.tier == null
+    // A secondary sensor is named by its role on its own page; a rung and an
+    // "Experimental" word on the row said nothing about what it sends.
+    final slot = sourceSlot(s);
+    final secondary = slotDeviceOf(s) != null;
+    final tierBadge = s.tier == null || secondary
         ? null
         : Pill(
             AppLocalizations.of(c)?.devicesTierRank(s.tier!.rank) ??
@@ -1740,11 +1922,16 @@ class SourceRow extends StatelessWidget {
               // IN THE WRAP, not a second trailing pill: this line already
               // wraps at accessibility sizes, and a pill column beside it does
               // not. The band's own page carries the explanation.
-              if (s.experimental)
+              if (s.experimental && !secondary)
                 Text(AppLocalizations.of(c)?.devicesExperimental ?? 'Experimental',
                     style: F.over.copyWith(color: p.on(C.orange))),
                   ],
                 ),
+                if (slot != null) ...[
+                  const SizedBox(height: S.x2),
+                  slotPill(pairL10n(c), slot,
+                      key: ValueKey('source-slot-${slot.name}')),
+                ],
                 if (stacked && tierBadge != null) ...[
                   const SizedBox(height: S.x1),
                   tierBadge,
@@ -1893,13 +2080,19 @@ class _DeviceDetailState extends State<DeviceDetail> {
         ? widget.s
         : refreshedSensorSource(
             widget.s, c.select<AppState, List<Map<String, Object?>>>((a) => a.sensors));
+    // The page can open before the band has said which generation it is; the
+    // snapshot would then hide the gen5 rows for good. Read it live.
+    final family = s.isBand
+        ? currentBandFamily(s.family,
+            live: app?.device.generation, stored: app?.paired?.generation)
+        : s.family;
     return DeviceDetailView(
       s,
       status: app?.engine.bandStatus,
       wornOn: _wornOn,
       wornOnUnknown: _wornOnUnknown,
       // Only the gen5 counter is calibrated per wearing location.
-      onWearing: s.family != 'gen5'
+      onWearing: family != 'gen5'
           ? null
           : () async {
               final w = await _pickWearing(c);
@@ -1913,7 +2106,16 @@ class _DeviceDetailState extends State<DeviceDetail> {
       health: _health,
       forecast: _forecast,
       onFind: app?.buzzBand,
-      liveHr: s.isBand ? app?.liveHr : null,
+      onInstallImage: (s.isBand && family == 'gen5')
+          ? () => goto(c, const FirmwareFlashScreen())
+          : null,
+      // Only when the band itself owns the live trace: a streaming chest
+      // strap outranks the wrist band, and its beats are not the band's.
+      liveHr: s.isBand &&
+              (app?.liveHrDeviceId ?? LocalDb.kPrimaryDeviceId) ==
+                  LocalDb.kPrimaryDeviceId
+          ? app?.liveHr
+          : null,
       onRename: (app != null && app.isConnected)
           ? () => _renameBand(c, app, s.name)
           : null,
@@ -2081,8 +2283,10 @@ Future<void> _syncMiband(BuildContext c) async {
             ? (l?.devicesBandKeyRefused ??
                 'The band rejected the key. Re-pair it to install a key it '
                     'accepts.')
-            : 'Could not reach the band. It has to be nearby, and not '
-                'connected to another app.'),
+            // The device-neutral string, as the other watch handlers use.
+            : (l?.devicesCouldNotReachCorosWatch ??
+                'Could not reach it. It has to be nearby, and not connected '
+                    'to another app.')),
   ));
 }
 
@@ -2347,9 +2551,14 @@ class DeviceDetailView extends StatelessWidget {
   /// nothing.
   final BatteryForecast? forecast;
 
+  /// Opens the image-install screen. Non-null only on a WHOOP 5 band's page;
+  /// null hides the row.
+  final VoidCallback? onInstallImage;
+
   const DeviceDetailView(this.s,
       {super.key,
       this.onFind,
+      this.onInstallImage,
       this.onForget,
       this.onSync,
       this.onRename,
@@ -2371,7 +2580,7 @@ class DeviceDetailView extends StatelessWidget {
     final last = s.lastData;
     final fault =
         localizedStatus?.isFault == true ? localizedStatus : null;
-    final calibration = calibrationDisclosure(s);
+    final calibration = calibrationDisclosure(s, l);
     return Scaffold(
       backgroundColor: p.bg,
       body: SafeArea(
@@ -2416,7 +2625,12 @@ class DeviceDetailView extends StatelessWidget {
                       fix: fault.fix ?? '', icon: LucideIcons.bluetoothOff),
                   const SizedBox(height: S.x5),
                 ],
-                if (s.tier case final t?) ...[
+                if (slotDeviceOf(s) case final d?) ...[
+                  DeviceSlotCard(entry: d.entry, slot: d.slot),
+                  const SizedBox(height: S.x4),
+                  // The switch the card's note names, right under it.
+                  DeviceUseSwitch(deviceId: s.deviceId!, adapterId: d.entry.id),
+                ] else if (s.tier case final t?) ...[
                   TierRow(t, filled: true),
                   const SizedBox(height: S.x5),
                 ],
@@ -2432,23 +2646,28 @@ class DeviceDetailView extends StatelessWidget {
                   Surface(
                     pad: const EdgeInsets.symmetric(horizontal: S.x4),
                     child: Column(children: [
-                      SetRow(LucideIcons.flaskConical, C.orange,
-                          l?.devicesSupport ?? 'Support',
-                          value: l?.devicesExperimental ?? 'Experimental',
-                          sub: l?.devicesSensorExperimentalSub ??
-                              'Decoded from the protocol, never checked '
-                                  'against the hardware — nobody here owns one.',
-                          chevron: false),
-                      Divider(color: p.line, height: 1),
-                      SetRow(LucideIcons.database, C.teal,
-                          l?.devicesWhatItDoes ?? 'What it does',
-                          sub: s.tier == null
-                              ? (l?.devicesWhatItDoesStored ??
-                                  'Everything it sends is saved under its name. Scores from it are experimental and off until it’s been checked against the hardware.')
-                              : (l?.devicesWhatItDoesBeats ??
-                                  'Heartbeat timing is saved under its name, during workouts and a few minutes after. Scoring workouts from it is experimental and off for now.'),
-                          chevron: false),
-                      Divider(color: p.line, height: 1),
+                      if (slotDeviceOf(s) == null) ...[
+                        SetRow(LucideIcons.flaskConical, C.orange,
+                            l?.devicesSupport ?? 'Support',
+                            value: l?.devicesExperimental ?? 'Experimental',
+                            sub: l?.devicesSensorExperimentalSub ??
+                                'Decoded from the protocol, never checked '
+                                    'against the hardware — nobody here owns one.',
+                            chevron: false),
+                        Divider(color: p.line, height: 1),
+                      ],
+                      // The every-day card above already describes wearables.
+                      if (slotDeviceOf(s)?.slot != DeviceSlot.everyDay) ...[
+                        SetRow(LucideIcons.database, C.teal,
+                            l?.devicesWhatItDoes ?? 'What it does',
+                            sub: s.tier == null
+                                ? (l?.devicesWhatItDoesStored ??
+                                    'Everything it sends is saved under its name. Scores from it are experimental and off until it’s been checked against the hardware.')
+                                : (l?.devicesWhatItDoesBeats ??
+                                    'Heartbeat timing is saved under its name, during workouts and a few minutes after. Scoring workouts from it is experimental and off for now.'),
+                            chevron: false),
+                        Divider(color: p.line, height: 1),
+                      ],
                       SetRow(LucideIcons.refreshCw, C.purple,
                           l?.devicesLastData ?? 'Last data',
                           value: last == null ? '' : formatDayTime(last, l),
@@ -2501,7 +2720,8 @@ class DeviceDetailView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: S.x5),
-                    if (s.family case final family?)
+                    if (s.family case final family?
+                        when slotDeviceOf(s) == null)
                       DeviceUseSwitch(
                           deviceId: s.deviceId!, adapterId: family),
                   ],
@@ -2563,8 +2783,8 @@ class DeviceDetailView extends StatelessWidget {
                                   'Not reported since the last connection')
                               : [
                                   if (s.charging) (l?.devicesCharging ?? 'Charging'),
-                                  ?_timeLeft(forecast),
-                                  ?_chargeHistory(health),
+                                  ?_timeLeft(forecast, l),
+                                  ?_chargeHistory(health, l),
                                 ].join(' · '),
                           chevron: false),
                       Divider(color: p.line, height: 1),
@@ -2583,17 +2803,25 @@ class DeviceDetailView extends StatelessWidget {
                       if (liveHr != null) ...[
                         SetRow(LucideIcons.heartPulse, C.red,
                             l?.devicesHeartRate ?? 'Heart rate',
-                            value: '$liveHr bpm',
+                            value: '$liveHr ${l?.wearableUnitBpm ?? 'bpm'}',
                             sub: l?.devicesRightNow ?? 'Right now',
                             chevron: false),
                         Divider(color: p.line, height: 1),
                       ],
                       SetRow(LucideIcons.refreshCw, C.purple,
                           l?.devicesLastData ?? 'Last data',
-                          value: last == null ? '' : formatDayTime(last, l),
-                          sub: last == null
-                              ? (l?.devicesNothingBankedYet ?? 'Nothing banked yet')
-                              : '',
+                          value: last != null
+                              ? formatDayTime(last, l)
+                              : s.timeUnknown
+                                  ? (l?.devicesTimeUnknown ?? 'Time unknown')
+                                  : '',
+                          sub: last != null
+                              ? ''
+                              : s.timeUnknown
+                                  ? (l?.devicesClockNotSetSub ??
+                                      'The strap recorded data but its clock is not set')
+                                  : (l?.devicesNothingBankedYet ??
+                                      'Nothing banked yet'),
                           chevron: false),
                       if (calibration != null) ...[
                         Divider(color: p.line, height: 1),
@@ -2626,6 +2854,16 @@ class DeviceDetailView extends StatelessWidget {
                             chevron: false,
                             onTap: onFind),
                       ],
+                      if (onInstallImage != null) ...[
+                        Divider(color: p.line, height: 1),
+                        SetRow(
+                            LucideIcons.upload,
+                            C.red,
+                            l?.devicesInstallImage ?? 'Install an image',
+                            sub: l?.devicesInstallImageSub ??
+                                'Use at your own risk',
+                            onTap: onInstallImage),
+                      ],
                     ]),
                   ),
                 const SizedBox(height: S.x5),
@@ -2633,7 +2871,10 @@ class DeviceDetailView extends StatelessWidget {
                   Surface(
                     pad: const EdgeInsets.symmetric(horizontal: S.x4),
                     child: SetRow(LucideIcons.trash2, C.red,
-                        l?.devicesForgetThisBand ?? 'Forget this band',
+                        s.isBand
+                            ? (l?.devicesForgetThisBand ?? 'Forget this band')
+                            : (l?.pairSensorForgetThisSensor ??
+                                'Forget this sensor'),
                         danger: true, chevron: false, onTap: onForget),
                   ),
                 ],
@@ -2655,26 +2896,30 @@ class DeviceDetailView extends StatelessWidget {
 /// that only moves in whole points, so it does not support a time of day, and
 /// printing one would claim a precision this cannot carry. "About" is doing
 /// real work in that sentence.
-String? _timeLeft(BatteryForecast? f) {
+String? _timeLeft(BatteryForecast? f, AppLocalizations? l) {
   final empty = f?.predictedEmptyAt;
   if (empty == null) return null;
   final left = empty.difference(DateTime.now());
   if (left.isNegative) return null;
-  if (left.inHours < 1) return 'under an hour left';
-  if (left.inHours < 36) return 'about ${left.inHours} h left';
-  return 'about ${(left.inHours / 24).round()} days left';
+  final h = left.inHours;
+  if (h < 1) return l?.devicesBatteryUnderAnHourLeft ?? 'under an hour left';
+  if (h < 36) return l?.devicesBatteryHoursLeft(h) ?? 'about $h h left';
+  final d = (h / 24).round();
+  return l?.devicesBatteryDaysLeft(d) ?? 'about $d days left';
 }
 
 /// "12 charges logged, up to 4,180 mV" — or null when there is no history to
 /// report yet. Two facts about this band and nothing derived from them: nothing
 /// here knows the pack's design capacity, and going on the charger is not a
 /// cycle.
-String? _chargeHistory(Map<String, dynamic>? h) {
+String? _chargeHistory(Map<String, dynamic>? h, AppLocalizations? l) {
   final cycles = (h?['charge_cycles'] as num?)?.toInt() ?? 0;
   if (cycles <= 0) return null;
   final mv = (h?['full_charge_mv'] as num?)?.toInt();
-  return '$cycles charge${cycles == 1 ? '' : 's'} logged'
-      '${mv == null ? '' : ', up to $mv mV'}';
+  final logged = l?.devicesChargesLogged(cycles) ??
+      '$cycles charge${cycles == 1 ? '' : 's'} logged';
+  if (mv == null) return logged;
+  return '$logged, ${l?.devicesChargeUpToMv(mv) ?? 'up to $mv mV'}';
 }
 
 String wornName(BuildContext c, int w) {

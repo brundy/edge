@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatf
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 import 'app_localizations.dart';
+import 'sweep_text.dart';
 
 String uiText(BuildContext context, String text) =>
     localizedText(AppLocalizations.of(context), text);
@@ -105,6 +106,43 @@ String localizedNotificationText(AppLocalizations? l, String text) {
   if (idle != null) {
     return l.notifWorkoutIdleBody(int.parse(idle[1]!));
   }
+  // NotificationCenter.weeklyLookbackFinding: a flag list, or an RHR drift.
+  final flagged =
+      RegExp(r'^This week flagged: (.+)\. Details live on Health\.$')
+          .firstMatch(text);
+  if (flagged != null) {
+    String part(String p) {
+      final m = RegExp(r'^(.+) ×(\d+)$').firstMatch(p);
+      if (m == null) return p;
+      final n = int.parse(m[2]!);
+      return switch (m[1]) {
+        'resting heart rate raised' => l.notifLookbackIllness(n),
+        'unusual physiology' => l.notifLookbackAnomaly(n),
+        'elevated skin temperature' => l.notifLookbackTemp(n),
+        _ => p,
+      };
+    }
+    return l.notifLookbackFlaggedBody(
+        flagged[1]!.split(', ').map(part).join(', '));
+  }
+  final drift = RegExp(
+    r'^Resting heart rate ran about (\d+) bpm (higher|lower) late in the week than early\.$',
+  ).firstMatch(text);
+  if (drift != null) {
+    final bpm = int.parse(drift[1]!);
+    return drift[2] == 'higher'
+        ? l.notifLookbackRhrHigherBody(bpm)
+        : l.notifLookbackRhrLowerBody(bpm);
+  }
+  final stale = RegExp(
+    r'^No new data for about (\d+) hours\. Open OpenStrap to reconnect — background sync may have stalled\.$',
+  ).firstMatch(text);
+  if (stale != null) {
+    return l.notifSyncStaleBody(int.parse(stale[1]!));
+  }
+  // The evening sweep notification's body is the finding line itself.
+  final sweep = sweepText(l, text);
+  if (sweep != text) return sweep;
   return localizedText(l, text);
 }
 
@@ -117,6 +155,20 @@ String localizedText(AppLocalizations? l, String text) {
     return l.findingLowReadinessScoredDetail(int.parse(lowScore[1]!));
   }
   return switch (text) {
+    "Apple Intelligence on this iPhone" => l.coachAppleTitle,
+    "Needs iOS 26 and Apple Intelligence turned on. No key needed." => l.coachAppleSub,
+    "Checking Apple Intelligence…" => l.coachAppleChecking,
+    "The coach, briefings and journal now use Apple’s small on-device model. It answers from your last two weeks and can’t log things for you; switch it off to use a bigger model instead." => l.coachAppleOnNote,
+    "Ready." => l.coachAppleReady,
+    "Turn on Apple Intelligence in Settings to use the on-device model." => l.coachAppleNotEnabled,
+    "Apple’s on-device model is still downloading. Try again later." => l.coachAppleNotReady,
+    "This iPhone can’t run Apple’s on-device model." => l.coachAppleNotEligible,
+    "Needs an iPhone with Apple Intelligence on iOS 26 or later." => l.coachAppleUnsupported,
+    "Apple’s on-device model couldn’t answer. Try again." => l.coachAppleFailed,
+    "That was too long for Apple’s on-device model. Start a new chat or ask a shorter question." => l.coachAppleTooLong,
+    "Apple’s on-device model declined to answer that. Try wording it differently." => l.coachAppleDeclined,
+    "Apple’s on-device model took too long to answer. Try again, or ask a shorter question." => l.coachAppleTimeout,
+    "Apple’s on-device model can’t read an ECG waveform. To analyse this reading, switch Apple Intelligence off in the coach’s AI settings and use another model." => l.coachAppleNoEcg,
     "Resting heart rate has been raised" => l.findingIllnessTitle,
     "Recent nights put your resting heart rate above your usual, from one very high night or a few slightly raised ones. One signal: a pattern, not a cause." =>
       l.findingIllnessDetail,
@@ -128,6 +180,51 @@ String localizedText(AppLocalizations? l, String text) {
     "Aerobic" => l.activityZonesNameAerobic,
     "Threshold" => l.activityZonesNameThreshold,
     "Max effort" => l.activityZonesNameMaxEffort,
+    "Saved, but the band hasn't taken it yet — it's sent again on the next sync" =>
+      l.alarmSavedNotOnBand,
+    "Using ChatGPT plan" =>
+      l.coachChatgptUsingPlanShort,
+    "Signed in, but ChatGPT plan usage was not allowed. Continue with ChatGPT again and allow it to use your plan here." =>
+      l.coachChatgptSharingNotAllowed,
+    "Signed out of ChatGPT." =>
+      l.coachChatgptSignedOut,
+    "Signed out here, but ChatGPT did not confirm it. You can also disconnect OpenStrap in ChatGPT settings." =>
+      l.coachChatgptSignOutUnconfirmed,
+    "You’re using your ChatGPT plan" =>
+      l.coachChatgptWelcomeTitle,
+    "Eligible usage in this app uses your ChatGPT plan. Manage usage in your ChatGPT settings." =>
+      l.coachChatgptWelcomeBody,
+    "Got it" =>
+      l.coachChatgptGotIt,
+    "Use your ChatGPT plan" =>
+      l.coachChatgptUseTitle,
+    "Using your ChatGPT plan" =>
+      l.coachChatgptUsingTitle,
+    "Plan usage not allowed" =>
+      l.coachChatgptNotAllowedTitle,
+    "Complete eligible AI requests in this app with usage included in your ChatGPT plan or credits balance. OpenStrap never charges for this." =>
+      l.coachChatgptBlurb,
+    "Cancel sign-in" =>
+      l.coachChatgptCancelSignIn,
+    "Continue with ChatGPT" =>
+      l.coachChatgptContinue,
+    "Manage usage" =>
+      l.coachChatgptManageUsage,
+    "Sign out of ChatGPT" =>
+      l.coachChatgptSignOut,
+    "Your questions and the rows the coach reads are sent to OpenAI under your ChatGPT account, where your ChatGPT data controls, including model training, may apply. Check them in ChatGPT settings. See exactly what is sent on \"What was sent\"." =>
+      l.coachChatgptPrivacy,
+    "Before you sign in" =>
+      l.coachChatgptTermsTitle,
+    "Signing in uses your own ChatGPT account and plan. Your use of it here is covered by OpenAI’s Terms of Use and Usage Policies, so please read them before you continue." =>
+      l.coachChatgptTermsBody,
+    "OpenAI Terms of Use" =>
+      l.coachChatgptTermsLink,
+    "OpenAI Usage Policies" =>
+      l.coachChatgptPoliciesLink,
+    "I’ve read them, continue" =>
+      l.coachChatgptTermsAccept,
+    "Cancel" => l.actionCancel,
 
     "units" => l.presentationUnits,
     "mg" => l.presentationMg,
@@ -135,6 +232,18 @@ String localizedText(AppLocalizations? l, String text) {
     "lb" => l.presentationLb,
     "in" => l.presentationIn,
     "Weight" => l.journalComposeWeightLabel,
+    "Custom weight" => l.strengthCustomWeight,
+    "Enter a value" => l.strengthEnterValue,
+    "Invalid number" => l.strengthInvalidNumber,
+    "Must be 0–500 kg" => l.strengthLoadRangeKg,
+    "Must be 0–1100 lb" => l.strengthLoadRangeLb,
+    "Must be 1–200 reps" => l.strengthRepsRange,
+    "Edit set" => l.strengthEditSet,
+    "Delete set" => l.strengthDeleteSet,
+    "Delete this set?" => l.strengthDeleteSetConfirm,
+    "Bodyweight" => l.strengthBodyweight,
+    "Delete" => l.strengthDelete,
+    "Failed to save changes" => l.strengthSaveFailed,
     "Screens before bed" => l.presentationScreensBeforeBed,
     "Soreness" => l.presentationSoreness,
     "Alcohol" => l.presentationAlcohol,
@@ -239,8 +348,8 @@ String localizedText(AppLocalizations? l, String text) {
       l.supplementBanisterTRIMPFamilyLogCompressed553d36,
     "Bedtime" => l.supplementBedtimee3cb8b,
     "Blood oxygen" => l.supplementBloodOxygen8cd845,
-    "Breathing rate recovered from respiratory sinus arrhythmia — the periodic modulation breathing imposes on beat timing — over a grid of candidate rates." =>
-      l.supplementBreathingRateRecoveredFromRespiratory66461f,
+    "Breathing rate recovered from respiratory sinus arrhythmia — the periodic modulation breathing imposes on beat timing. The spectral peak is found in overlapping five-minute stretches of clean beats (Lomb–Scargle on native beat times) and the night's rate is their median, reported only when most stretches agree. At a sleeping heart rate near or below 48 bpm the beats are too slow to resolve normal breathing, and the rate is withheld." =>
+      l.investigateMethodRespRate,
     "Breathing variability" => l.supplementBreathingVariability99a552,
     "Calibrating" => l.homeCalibrating,
     "Calories" => l.workoutCaloriesStatLabel,
@@ -336,8 +445,8 @@ String localizedText(AppLocalizations? l, String text) {
     "Morning cortisol" => l.supplementMorningCortisolc31c55,
     "Motion coprocessor" => l.supplementMotionCoprocessord1ef3c,
     "Movement minutes" => l.supplementMovementMinutes4670da,
-    "Night-to-night coefficient of variation of RMSSD." =>
-      l.supplementNightToNightCoefficientOf0cae4a,
+    "Within one night: the standard deviation of the night's beat intervals after artifact correction (SDNN) as a percentage of their mean. The chart shows how that per-night figure moves across nights; it is not a night-to-night coefficient of variation." =>
+      l.investigateMethodHrvStability,
     "Nightly sweep" => l.supplementNightlySweepe95625,
     "No alarm set for tonight" => l.supplementNoAlarmSetForTonight1dd33d,
     "No motion was recorded alongside the heart rate." =>
@@ -378,8 +487,8 @@ String localizedText(AppLocalizations? l, String text) {
       l.supplementProviderReturnedAnUnsupportedResponse711ef9,
     "Querying your data…" => l.supplementQueryingYourData547061,
     "REM sleep" => l.supplementREMSleepd0c12b,
-    "RMSSD over the longest artefact-free window during sleep. Beat timing is recovered from the band's 1 Hz records and corrected by the Lipponen–Tarvainen method before any statistic is taken. Pulse-derived, so this is PRV: real and trendable, but not ECG HRV." =>
-      l.supplementRMSSDOverTheLongestArtefact4d9ff2,
+    "The mean of RMSSD across every 5-minute window of the detected sleep session that holds at least 20 clean successive differences. Beats outside 300–2000 ms, and beats more than 20% from their local median, are dropped first. On a night whose beat timing looks noisy, only windows that pass the jitter check on their own, or that sit on a steady breathing line, count; a window, or a night, whose beats add up to more time than passed is left out. Older nights whose raw beats are gone keep the value an earlier version of this method gave them. Pulse-derived, so this is PRV: real and trendable, but not ECG HRV." =>
+      l.investigateMethodHrvRmssd,
     "Readiness" => l.readinessDetailTitle,
     "Reading your food log…" => l.supplementReadingYourFoodLog4efdaa,
     "Reading your medications…" => l.supplementReadingYourMedications855987,

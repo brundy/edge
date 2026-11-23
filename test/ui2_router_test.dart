@@ -32,6 +32,8 @@ import 'package:openstrap_edge/ui2/onboarding/welcome.dart'
     show isEncryptedBackup;
 import 'package:openstrap_edge/ui2/screens/log_workout.dart'
     show WorkoutSuggestionScreen;
+import 'package:openstrap_edge/ui2/screens/detected_activities.dart'
+    show DetectedActivitiesScreen;
 import 'package:openstrap_edge/ui2/profile/devices.dart';
 import 'package:openstrap_edge/ui2/profile/profile.dart';
 import 'package:openstrap_edge/ui2/screens/nutrition_screen.dart'
@@ -158,7 +160,7 @@ void main() {
         kRouteBreathing: ShellDomain.health,
         kRouteMeds: ShellDomain.health,
         kRouteWorkoutSuggestion: ShellDomain.today,
-        kRouteDetectedActivities: ShellDomain.today,
+        kRouteDetectedActivities: ShellDomain.activity,
         kRouteWater: ShellDomain.activity,
         kRouteWorkoutIdle: ShellDomain.activity,
         kRouteAlarm: ShellDomain.sleep,
@@ -194,6 +196,21 @@ void main() {
           (screenForRoute(kRouteWorkoutSuggestion)! as WorkoutSuggestionScreen)
               .focusId,
           isNull);
+    });
+
+    test('the detected-nap deep link lands on the Activity tab, focused', () {
+      // "Did you nap?" has to open the review over the Activity tab — where
+      // the suggestion cards live — not over Home, with the nap's own card
+      // scrolled into view.
+      const id = '2026-08-19:nap:1755625800';
+      final route = activitySuggestionRoute(id, 'nap');
+      expect(domainForRoute(route), ShellDomain.activity);
+      final screen = screenForRoute(route);
+      expect(screen, isA<DetectedActivitiesScreen>());
+      expect((screen! as DetectedActivitiesScreen).focusId, id);
+      // A detected workout rides the same route and the same domain.
+      expect(domainForRoute(activitySuggestionRoute(id, 'workout')),
+          ShellDomain.activity);
     });
 
     test('the tab index the shell persists round-trips through the enum', () {
@@ -444,6 +461,19 @@ void main() {
       ]);
       expect(ranked.first.name, 'A');
     });
+
+    test('the same last-data stamp still falls back to the name', () {
+      final at = DateTime(2026, 8, 22, 9);
+      for (final order in [
+        ['B', 'A'],
+        ['A', 'B'],
+      ]) {
+        final ranked = rankSources([
+          for (final n in order) src(n, SourceTier.wristOptical, at: at),
+        ]);
+        expect(ranked.map((s) => s.name).toList(), ['A', 'B']);
+      }
+    });
   });
 
   group('a source row states what is measuring, not what is switched on', () {
@@ -502,8 +532,15 @@ void main() {
             sources: [band(connected: false)],
             status: bandStatusFor(connection: 'disconnected')),
       ));
-      // Exactly one "Not connected": the row. No card repeating it.
-      expect(find.text('Not connected'), findsOneWidget);
+      // No failure card. "Not connected" is said by the row and by the
+      // "Your band" card's state line, never by a StatusCard.
+      expect(find.byType(StatusCard), findsNothing);
+      expect(find.text('Not connected'), findsNWidgets(2));
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('band-paired-card')),
+              matching: find.text('Not connected')),
+          findsOneWidget);
     });
   });
 
@@ -532,8 +569,8 @@ void main() {
         child: MaterialApp(
             theme: buildTheme(Brightness.light), home: const MyDevices()),
       ));
-      expect(find.text('Your band'), findsOneWidget);
-      expect(find.text('Pair a band'), findsNothing);
+      expect(find.byKey(const ValueKey('band-paired-card')), findsOneWidget);
+      expect(find.text('Pair your band'), findsNothing);
 
       // Forget. `unpair()` itself is platform-bound (ASK, the engine, the
       // foreground service); what it leaves behind for this screen is this.
@@ -541,10 +578,15 @@ void main() {
       app.notifyListeners();
       await tester.pump();
 
-      expect(find.text('Your band'), findsNothing);
+      // The band's row is gone; the one "Your band" left is the card's
+      // heading, now saying so and offering the way back.
+      expect(find.byKey(const ValueKey('band-paired-card')), findsNothing);
+      expect(find.text('Your band'), findsOneWidget);
+      expect(find.text('No band is paired'), findsOneWidget);
+      expect(find.widgetWithText(BigButton, 'Pair your band'), findsOneWidget);
       expect(find.text('This phone'), findsOneWidget,
           reason: 'the phone row is what used to swallow the empty state');
-      expect(find.text('Pair a band'), findsOneWidget);
+      expect(find.byKey(const ValueKey('pair-band-card')), findsOneWidget);
     });
 
     testWidgets('and for someone who only ever had the phone', (tester) async {
@@ -564,7 +606,7 @@ void main() {
           onPair: () => pairs++,
         ),
       ));
-      await tester.tap(find.text('Pair a band'));
+      await tester.tap(find.widgetWithText(BigButton, 'Pair your band'));
       expect(pairs, 1);
     });
 
@@ -605,7 +647,7 @@ void main() {
               isBand: true),
         ], onPair: () {}),
       ));
-      expect(find.text('Pair a band'), findsNothing);
+      expect(find.text('Pair your band'), findsNothing);
     });
   });
 
@@ -663,6 +705,22 @@ void main() {
       ));
       expect(find.text('Calibration'), findsOneWidget);
       expect(find.text('WHOOP 5'), findsOneWidget);
+    });
+
+    testWidgets('the install-an-image row shows only when handed a callback',
+        (tester) async {
+      _tallView(tester);
+      Future<void> pump(VoidCallback? install) => tester.pumpWidget(MaterialApp(
+            theme: buildTheme(Brightness.light),
+            home: DeviceDetailView(band('gen5'),
+                onFind: () {}, onInstallImage: install),
+          ));
+      await pump(null);
+      expect(find.text('Install an image'), findsNothing);
+      var opened = false;
+      await pump(() => opened = true);
+      await tester.tap(find.text('Install an image'));
+      expect(opened, isTrue);
     });
   });
 

@@ -47,13 +47,18 @@ Future<List<UltrahumanRecord>> ultrahumanRecords(
   int to,
 ) async {
   final db = await LocalDb.instance;
-  final out = <UltrahumanRecord>[];
-  for (final r in await db.rawQuery(
+  final rows = await db.rawQuery(
     "SELECT hex FROM ${LocalDb.rawArchiveView} WHERE device_id = ? "
     "AND reason = 'ultrahuman_record' AND rec_ts >= ? AND rec_ts <= ? "
     'ORDER BY rec_ts',
     [deviceId, from, to],
-  )) {
+  );
+  return prepareWearable(() => _ultrahumanRecords(rows));
+}
+
+List<UltrahumanRecord> _ultrahumanRecords(List<Map<String, Object?>> rows) {
+  final out = <UltrahumanRecord>[];
+  for (final r in rows) {
     final hex = r['hex'] as String;
     final rec = parseUltrahumanRecord([
       for (var i = 0; i + 1 < hex.length; i += 2)
@@ -77,8 +82,13 @@ Future<Substrate> ultrahumanSubstrate(String deviceId, int from, int to) async {
   final sub =
       await sparseHrSubstrate(kUltrahumanFamily, deviceId, from, to);
   if (sub.isEmpty) return sub;
+  final records = await ultrahumanRecords(deviceId, from, to);
+  return constructWearable(() => _ultrahumanSubstrate(sub, records));
+}
+
+Substrate _ultrahumanSubstrate(Substrate sub, List<UltrahumanRecord> records) {
   final temp = {
-    for (final r in await ultrahumanRecords(deviceId, from, to))
+    for (final r in records)
       if (_skinC(r) case final c?) r.tsA: (c * 100).round(),
   };
   return Substrate(
@@ -252,6 +262,9 @@ Future<Map<String, Object?>?> ultrahumanDayBlock(
 /// starts at [day]'s first record: that is a still lie-in the stager trimmed
 /// off the night's end as wake, not a nap.
 ///
+/// A hole in the records (ring off or charging, more than two cadences
+/// between records) ends a run without counting it: its end went unseen.
+///
 /// ponytail: fixed bounds on one value per 5 minutes; a nap within the hour
 /// before bed (3 h before midnight, tonight not yet staged) is not counted,
 /// and a lie-in broken by one movement counts its second part.
@@ -260,7 +273,13 @@ int ringNapMin(List<UltrahumanRecord> day, double hrMedian) {
   const minRun = 20 * 60, maxRun = 3 * 3600;
   var napSec = 0, run = 0;
   var lieIn = true;
+  int? prevTs;
   for (final r in day) {
+    if (prevTs != null && r.tsA - prevTs > 2 * c) {
+      run = 0;
+      lieIn = false;
+    }
+    prevTs = r.tsA;
     final rest = !_moving(r) &&
         ultrahumanHrQualityValid(r.hrQuality) &&
         r.hr <= hrMedian + 5;

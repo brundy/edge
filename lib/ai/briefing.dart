@@ -32,6 +32,21 @@ extension BriefingPeriodLabel on BriefingPeriod {
 BriefingPeriod currentBriefingPeriod(DateTime now) =>
     now.hour >= 17 ? BriefingPeriod.evening : BriefingPeriod.morning;
 
+/// The moment an evening sweep opened at [now] is about. Before the evening
+/// window it is still last night's sweep (its notification tapped next
+/// morning, or just after midnight), so it reads and regenerates YESTERDAY.
+/// [todayCached] is true when today's sweep slot is already written, which
+/// means the real slot has passed and the sweep is about today. [eveningMin]
+/// is the user-resolved slot (minutes from midnight, possibly pre-17:00);
+/// the default is the 17:00 window. From 17:00 on the day is open and the
+/// screen is about today even if the slot is later.
+DateTime eveningSweepMoment(DateTime now,
+        {bool todayCached = false, int eveningMin = 17 * 60}) =>
+    todayCached || now.hour * 60 + now.minute >= (eveningMin < 17 * 60 ? eveningMin : 17 * 60)
+        ? now
+        // day-1 rolls over month/year and never builds a skipped local midnight.
+        : DateTime(now.year, now.month, now.day - 1, 23, 59, 59);
+
 class Briefing {
   /// Local day label (YYYY-MM-DD) the briefing belongs to.
   final String day;
@@ -49,6 +64,13 @@ class Briefing {
   /// were actually present — absent metrics are never fabricated).
   final Map<String, dynamic> inputs;
 
+  /// Where the request went and which model answered, recorded when it was
+  /// written: the "what was sent" screen describes THIS briefing, not
+  /// whatever the settings say now. Null on a note saved before these were
+  /// recorded, and on one that called no model.
+  final String? endpoint;
+  final String? model;
+
   const Briefing({
     required this.day,
     required this.period,
@@ -56,6 +78,8 @@ class Briefing {
     required this.breakdownMd,
     required this.generatedAtMs,
     required this.inputs,
+    this.endpoint,
+    this.model,
   });
 
   /// Whether producing this note involved a model at all.
@@ -75,6 +99,8 @@ class Briefing {
         'breakdown_md': breakdownMd,
         'generated_at_ms': generatedAtMs,
         'inputs': inputs,
+        'endpoint': ?endpoint,
+        'model': ?model,
       };
 
   static Briefing? fromJson(dynamic j) {
@@ -93,6 +119,8 @@ class Briefing {
       inputs: j['inputs'] is Map
           ? (j['inputs'] as Map).cast<String, dynamic>()
           : const {},
+      endpoint: j['endpoint'] is String ? j['endpoint'] as String : null,
+      model: j['model'] is String ? j['model'] as String : null,
     );
   }
 }

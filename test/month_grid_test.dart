@@ -14,14 +14,20 @@ void main() {
     // Dated backwards from NOW, because `denseDays` lays a window out ending
     // today — a fixture pinned to a calendar date silently loses however many
     // days have passed since somebody wrote it.
-    List<ChartPoint> pts(List<double> vs) => [
-          for (var i = 0; i < vs.length; i++)
-            (
-              t: DateTime.now().subtract(Duration(days: i)).millisecondsSinceEpoch ~/
-                  1000,
-              v: vs[i],
-            ),
-        ];
+    List<ChartPoint> pts(List<double> vs) {
+      // Calendar days at noon, not i×24 h back from now: late in the evening
+      // after a DST change, a 24 h step lands two points on the same day.
+      final now = DateTime.now();
+      return [
+        for (var i = 0; i < vs.length; i++)
+          (
+            t: DateTime(now.year, now.month, now.day - i, 12)
+                    .millisecondsSinceEpoch ~/
+                1000,
+            v: vs[i],
+          ),
+      ];
+    }
 
     test('too little history is no colour at all, not a pale one', () {
       final short = List<double>.generate(kGridMinHistory - 1, (i) => 40 + i * 1.0);
@@ -54,6 +60,24 @@ void main() {
       expect(r.have, kGridDays);
       expect(r.historyDays, 30);
       expect(r.shaded, isTrue);
+    });
+
+    test('a past day ends the window there and ignores later days', () {
+      final asOf = DateTime(2026, 3, 15);
+      int at(int back) =>
+          DateTime(2026, 3, 15 - back, 12).millisecondsSinceEpoch ~/ 1000;
+      final r = gridRow(
+          'readiness',
+          [
+            for (var i = 1; i <= 10; i++) (t: at(-i), v: 95.0), // after
+            (t: at(0), v: 20.0),
+            for (var i = 1; i <= 20; i++) (t: at(i), v: 50.0),
+          ],
+          asOf: asOf);
+      expect(r.anchor, asOf);
+      expect(r.historyDays, 21);
+      expect(r.have, 21);
+      expect(r.cells.last, Side.below);
     });
   });
 

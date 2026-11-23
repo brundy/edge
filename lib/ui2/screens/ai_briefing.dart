@@ -20,6 +20,8 @@ import 'package:provider/provider.dart';
 import '../../ai/briefing.dart';
 import '../../ai/briefing_engine.dart';
 import '../../coach/coach_config.dart';
+import '../../state/app_state.dart';
+import '../../data/day_label.dart';
 import '../../coach/coach_engine.dart' show CoachException;
 import '../../l10n/app_localizations.dart';
 import '../ui2.dart';
@@ -36,16 +38,53 @@ class AiBriefingScreen extends StatefulWidget {
 
 class _AiBriefingScreenState extends State<AiBriefingScreen> {
   Briefing? _b;
+  // The moment this screen is about: null (now) for the morning briefing,
+  // last night for an evening sweep opened before the evening window.
+  DateTime? _at;
   bool _busy = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _b = BriefingStore.read(widget.period);
+    _at = _sweepAt();
+    final at = _at;
+    _b = BriefingStore.read(widget.period,
+        day: at == null ? null : todayLabel(at));
+    if (widget.period == BriefingPeriod.evening) _resolveSlot();
   }
 
+  // Refine with the user's real (possibly pre-17:00) slot once it is known.
+  Future<void> _resolveSlot() async {
+    final at = await _sweepAtResolved();
+    if (!mounted || at == null) return;
+    setState(() {
+      _at = at;
+      _b = BriefingStore.read(widget.period, day: todayLabel(at));
+    });
+  }
+
+  Future<DateTime?> _sweepAtResolved() async {
+    if (widget.period != BriefingPeriod.evening) return null;
+    int? slot;
+    try {
+      slot = await context.read<AppState>().eveningSlotMin();
+    } catch (_) {}
+    return eveningSweepMoment(DateTime.now(),
+        todayCached: BriefingStore.read(BriefingPeriod.evening) != null,
+        eveningMin: slot ?? 17 * 60);
+  }
+
+  // Re-resolved on every generate, so a screen left open past the evening
+  // slot does not write yesterday's sweep over today's.
+  DateTime? _sweepAt() => widget.period == BriefingPeriod.evening
+      ? eveningSweepMoment(DateTime.now(),
+          todayCached: BriefingStore.read(BriefingPeriod.evening) != null)
+      : null;
+
   Future<void> _generate() async {
+    _at = await _sweepAtResolved();
+    if (!mounted) return;
     final repo = repoOf(context);
     if (repo == null) return;
     setState(() {
@@ -56,7 +95,7 @@ class _AiBriefingScreenState extends State<AiBriefingScreen> {
       final b = await BriefingEngine(
         config: context.read<CoachConfig>(),
         repo: repo,
-      ).generate(widget.period);
+      ).generate(widget.period, now: _at, wallNow: DateTime.now());
       if (mounted) setState(() => _b = b);
     } catch (e) {
       if (mounted) {
@@ -163,7 +202,8 @@ class _AiBriefingScreenState extends State<AiBriefingScreen> {
                   if (b != null)
                     SentPayload(
                       inputs: b.inputs,
-                      config: cfg,
+                      endpoint: b.endpoint,
+                      model: b.model,
                       asked: b.calledModel,
                     ),
                 ],
@@ -182,7 +222,13 @@ class _AiBriefingScreenState extends State<AiBriefingScreen> {
 /// trusted about the exact question it exists to answer.
 class SentPayload extends StatelessWidget {
   final Map<String, dynamic> inputs;
-  final CoachConfig config;
+
+  /// The endpoint and model recorded on the briefing ([Briefing.endpoint]).
+  /// A null endpoint is a note saved before it was recorded: the banner then
+  /// says it cannot tell, rather than reading today's settings, which may be
+  /// a different provider (or Apple's on-device model) than the one it went to.
+  final String? endpoint;
+  final String? model;
 
   /// Whether a model was called at all — [Briefing.calledModel]. False for a
   /// nightly sweep that found nothing: there was no request, so the banner may
@@ -192,12 +238,15 @@ class SentPayload extends StatelessWidget {
   const SentPayload({
     super.key,
     required this.inputs,
-    required this.config,
+    required this.endpoint,
+    this.model,
     this.asked = true,
   });
 
   /// True when the endpoint is on this machine, in which case nothing left it.
   static bool isLocal(String base) {
+    // Apple's on-device model: the request never leaves the phone.
+    if (base == kAppleOnDeviceBase) return true;
     final h = Uri.tryParse(base)?.host.toLowerCase() ?? '';
     return h == 'localhost' || h == '127.0.0.1' || h == '::1';
   }
@@ -219,8 +268,15 @@ class SentPayload extends StatelessWidget {
   Widget build(BuildContext c) {
     final p = P.of(c);
     final l = AppLocalizations.of(c);
-    final host = Uri.tryParse(config.apiBase)?.host ?? config.apiBase;
-    final local = isLocal(config.apiBase);
+    final base = endpoint;
+    final unknown = base == null;
+    final host = base == null
+        ? ''
+        : base == kAppleOnDeviceBase
+            ? kAppleOnDeviceModel
+            : (Uri.tryParse(base)?.host ?? base);
+    final local = base != null && isLocal(base);
+    final modelName = model ?? '';
     final keys = inputs.keys.toList()..sort();
     // An empty payload is not "we sent an empty payload". The nightly sweep
     // calls no model at all on a day with no finding, so the banner must not go
@@ -252,13 +308,16 @@ class SentPayload extends StatelessWidget {
                         ? (l?.aiBriefingNoneBody ??
                             'Nothing. There was no request — the note above was '
                                 'written on this phone.')
+                        : unknown
+                            ? (l?.aiBriefingUnknownBody ??
+                                'This note was saved before the app recorded where briefings go, so it can’t say where these numbers were sent.')
                         : local
                             ? (l?.aiBriefingLocalBody(host) ??
                                 'These numbers went to $host, on this machine. '
                                     'Nothing left it.')
-                            : (l?.aiBriefingCloudBody(host, config.model) ??
+                            : (l?.aiBriefingCloudBody(host, modelName) ??
                                 'These numbers, and nothing else, were sent to '
-                                    '$host as ${config.model}. No raw '
+                                    '$host as $modelName. No raw '
                                     'recordings, no name, no identifier.'),
                     style: F.cap.copyWith(color: p.ink, height: 1.5),
                   ),

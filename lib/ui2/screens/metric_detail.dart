@@ -10,6 +10,8 @@
 // the old UI ended up with forty different opinions about what a chart is.
 
 import '../../l10n/display_text.dart';
+import 'dart:math' as math;
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -55,6 +57,21 @@ String nounInSentence(AppLocalizations? l, String name) {
   // Lowercase the sentence opening, preserving acronyms within the label.
   return '${name[0].toLowerCase()}${name.substring(1)}';
 }
+
+/// Metrics a day's wear produces, not a night's. Their empty state asks for
+/// the band through the day; "overnight" would send someone to bed to get a
+/// step count.
+const kDaytimeMetricKeys = {
+  'steps',
+  'calories',
+  'strain',
+  'trimp',
+  'active_min',
+  'wear',
+  // After a workout, and sleep outside the main night.
+  'hrr',
+  'nap_min',
+};
 
 /// What a metric key means on screen, and whether we are willing to draw it.
 class MetricSpec {
@@ -701,6 +718,7 @@ Widget metricDayScreen(String key, String day) => switch (key) {
 class MetricDetail extends StatefulWidget {
   final String metricKey;
   final MetricData? data;
+
   const MetricDetail(this.metricKey, {super.key, this.data});
 
   @override
@@ -738,6 +756,17 @@ class _MetricDetailState extends State<MetricDetail> {
   int _range = 0;
   MetricData? _d;
   bool _loading = true;
+
+  /// The last read threw. A failed read is NOT "nothing recorded": rendering it
+  /// as the ordinary empty state told someone with data on disk to wear the
+  /// band, and offered no way back. It also outranks any series still in `_d`:
+  /// a refresh that failed must not pass the older numbers off as current.
+  bool _failed = false;
+
+  /// Which read is newest. A step-goal save and the failure card's retry can
+  /// both start one while another is in flight; without this the OLDER request
+  /// can finish last and install its own `_d`/`_failed` over the newer answer.
+  int _loadGen = 0;
 
   /// The slot the user has put a finger on, as an index into the DENSE window.
   /// Null until they touch the chart. A window change clears it: slot 12 of a
@@ -845,9 +874,10 @@ class _MetricDetailState extends State<MetricDetail> {
     // modal sheet the user can dismiss by leaving the screen. Guarded here and
     // not at each call site — one guard where every caller already routes.
     if (!mounted) return;
+    final gen = ++_loadGen;
     final repo = repoOf(context);
     if (repo == null) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && gen == _loadGen) setState(() => _loading = false);
       return;
     }
     try {
@@ -862,6 +892,8 @@ class _MetricDetailState extends State<MetricDetail> {
           : const <DeviceOption>[];
       final d = await MetricData.load(repo, widget.metricKey,
           candidates: candidates);
+      // A newer load owns the screen now; this answer is history.
+      if (!mounted || gen != _loadGen) return;
       var winners = const <InputSignal, String?>{};
       if (d.sources.length >= 2 && spec.requires.isNotEmpty && mounted) {
         // Read before the query, so the `mounted` in the condition above is
@@ -880,14 +912,17 @@ class _MetricDetailState extends State<MetricDetail> {
         // the one above — nothing reads `context` past this point, but the
         // guard is unconditional for every await here, not just the ones
         // that happen to touch it.
-        if (!mounted) return;
+        if (!mounted || gen != _loadGen) return;
         winners = resolved;
       }
-      if (mounted) {
-        setState(() => (_d = d, _winners = winners, _loading = false));
+      if (mounted && gen == _loadGen) {
+        setState(() => (_d = d, _winners = winners, _loading = false,
+            _failed = false));
       }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && gen == _loadGen) {
+        setState(() => (_loading = false, _failed = true));
+      }
     }
   }
 
@@ -928,6 +963,23 @@ class _MetricDetailState extends State<MetricDetail> {
         ),
         const SizedBox(height: S.x5),
         investigateRow(c, () => go(c, Investigate(widget.metricKey))),
+      ] else if (_failed) ...[
+        // Outranks a cached series on purpose: those numbers are from the last
+        // read that WORKED, and a failed refresh must not present them as the
+        // current answer. The only way forward is the retry.
+        const SizedBox(height: S.x2),
+        StatusCard(
+          l?.wellnessLoadFailedTitle ?? 'This could not be read',
+          l?.homeLoadFailedBody ??
+              'The stored day failed to load. Nothing was deleted — this is a '
+                  'read that went wrong, not missing data.',
+          fix: l?.homeTryAgain ?? 'Try again',
+          icon: LucideIcons.databaseZap,
+          onFix: () {
+            setState(() => (_loading = true, _failed = false));
+            _load();
+          },
+        ),
       ] else if (vals.isEmpty) ...[
         _ranges(c, d, spec.color),
         const SizedBox(height: S.x5),
@@ -956,8 +1008,11 @@ class _MetricDetailState extends State<MetricDetail> {
             // them to wear the band is a promise that cannot change anything —
             // they already did, and the days are one tab away.
             fix: all.isEmpty
-                ? (l?.metricDetailWearBandFix ??
-                    'Wear the band overnight to start the series')
+                ? (kDaytimeMetricKeys.contains(widget.metricKey)
+                    ? (l?.dayStrainWearBandFix ??
+                        'Wear the band through the day')
+                    : (l?.metricDetailWearBandFix ??
+                        'Wear the band overnight to start the series'))
                 : '',
             icon: spec.icon,
           ),
@@ -974,7 +1029,7 @@ class _MetricDetailState extends State<MetricDetail> {
               steps: null, goal: d.stepGoal, color: spec.color, onSaved: _load),
         ],
         const SizedBox(height: S.x5),
-        investigateRow(c, () => go(c, Investigate(widget.metricKey))),
+        if (!_failed) investigateRow(c, () => go(c, Investigate(widget.metricKey))),
       ] else ...[
         _ranges(c, d, spec.color),
         const SizedBox(height: S.x5),
@@ -1480,7 +1535,7 @@ class _MetricDetailState extends State<MetricDetail> {
               style: F.over.copyWith(color: p.ink3),
             ),
           ),
-        if (_pick != null) _picked(c, spec, series, d),
+        if (win > 1) _panel(c, spec, series, d),
         // L4 — the coverage denominator, under the curve it belongs to.
         //
         // Deliberately unflattering, and gated to the ranges where it changes
@@ -1597,12 +1652,13 @@ class _MetricDetailState extends State<MetricDetail> {
     return l?.metricDetailSlotNoRecord(pretty) ?? '$pretty, no record';
   }
 
-  /// The touched day, and the door into it.
+  /// The panel under the chart: the newest reading at rest, the touched day
+  /// while a finger is on the chart, and the door into that day.
   ///
   /// A day with a value is a day that derived, so the door always leads
-  /// somewhere. A day with no value says so and offers nothing — an action
+  /// somewhere. A day with no value reads a dash and offers nothing — an action
   /// button is a promise, and there is no screen behind an empty day.
-  Widget _picked(
+  Widget _panel(
     BuildContext c,
     MetricSpec spec,
     List<double?> series,
@@ -1610,60 +1666,61 @@ class _MetricDetailState extends State<MetricDetail> {
   ) {
     final p = P.of(c);
     final l = AppLocalizations.of(c);
-    final i = _pick!.clamp(0, series.length - 1);
-    final day = _dayOfSlot(i, series.length);
+    final len = series.length;
+    var latest = len - 1;
+    while (latest > 0 && series[latest] == null) {
+      latest--;
+    }
+    final i = (_pick ?? latest).clamp(0, len - 1);
+    final day = _dayOfSlot(i, len);
     final v = series[i];
-    final attributed = _labelSources(d) && _labelsFor(day, d.coverage, d.sources).isNotEmpty;
-    final who = attributed ? _contributors(_labelsFor(day, d.coverage, d.sources)) : '';
+    final ub = unitBeside(spec.unit);
+    final u = ub.isEmpty ? '' : ' ${uiText(c, ub)}';
+    // The last 7 days up to today, whatever day is shown: the figure the shown
+    // day is set against. Only recorded days count; none recorded is a dash.
+    final week = [for (var k = math.max(0, len - 7); k < len; k++) ?series[k]];
+    final avg =
+        week.isEmpty ? null : week.reduce((a, b) => a + b) / week.length;
+    String? versus;
+    if (v != null && avg != null) {
+      final diff = v - avg;
+      final shown = _fmt(spec, diff.abs());
+      // No signed zero: a difference that rounds to nothing carries no sign.
+      final zero = shown == _fmt(spec, 0);
+      versus = '${zero ? shown : signed(diff, shown)}$u';
+    }
+    // The same gate and rule as `_slotSays`: a day with no attribution names
+    // none, and a single-device window reserves nothing.
+    final multi = _labelSources(d);
+    final who = multi ? _contributors(_labelsFor(day, d.coverage, d.sources)) : '';
     return Padding(
       padding: const EdgeInsets.only(top: S.x3),
-      child: Surface(
-        color: p.card2,
-        elevation: 0,
-        onTap: v == null ? null : () => go(c, _dayScreen(widget.metricKey, day)),
-        semanticLabel: [
-          v == null
-              ? (l?.metricDetailSlotNoRecord(prettyDay(day, l)) ??
-                  '${prettyDay(day, l)}, no record')
-              : (l?.metricDetailOpenDay(prettyDay(day, l)) ??
-                  'Open ${prettyDay(day, l)}'),
-          if (attributed) who,
-        ].join(' · '),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    dayNavLabel(day, l),
-                  style: F.body
-                      .copyWith(color: p.ink, fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
-            ),
-            const SizedBox(width: S.x3),
-            Text(
-              v == null
-                  ? (l?.metricDetailNoRecordLabel ?? 'No record')
-                  : '${_fmt(spec, v)} ${unitBeside(spec.unit)}'.trimRight(),
-              style: v == null
-                  ? F.cap.copyWith(color: p.ink3)
-                  : F.n17.copyWith(color: p.ink),
-            ),
-            if (v != null) ...[
-              const SizedBox(width: S.x2),
-              Icon(LucideIcons.chevronRight, size: 18, color: p.ink3),
-            ],
-          ]),
-          // WHICH DEVICE, second line, only under the gate. A day-level scalar
-          // from a merged substrate has no single producer, so this names the
-          // SET (final-plan §4.4) and never picks one of two.
-          if (attributed) ...[
-            const SizedBox(height: S.x1),
-            Text(who, style: F.over.copyWith(color: p.ink3)),
-          ],
-        ]),
+      child: ChartPanel(
+        // Scrubbed onto a no-value day the slider names no device, so the
+        // panel does not either: the screen shows what the slider says.
+        note: _pick != null && v == null ? '' : who,
+        reserveNote: multi,
+        time: dayNavLabel(day, l),
+        timeSpan: [
+          for (var k = 0; k < len; k++) dayNavLabel(_dayOfSlot(k, len), l),
+        ],
+        scrubbed: _pick != null,
+        color: p.on(spec.color),
+        cells: [
+          ChartPanelCell(uiText(c, spec.title),
+              color: p.on(spec.color),
+              value: v == null ? null : '${_fmt(spec, v)}$u'),
+        ],
+        stats: [
+          ChartPanelCell(l?.chartPanelSevenDayAvg ?? '7-day avg',
+              value: avg == null ? null : '${_fmt(spec, avg)}$u'),
+          ChartPanelCell(l?.chartPanelVsAvg ?? 'vs avg', value: versus),
+        ],
+        onOpen: v == null
+            ? null
+            : () => go(c, _dayScreen(widget.metricKey, day)),
+        openLabel: l?.metricDetailOpenDay(prettyDay(day, l)) ??
+            'Open ${prettyDay(day, l)}',
       ),
     );
   }
@@ -2072,7 +2129,7 @@ class DayNav extends StatelessWidget {
           ),
         );
 
-    return Container(
+    return GuideBox(child: Container(
       decoration: BoxDecoration(color: p.card2, borderRadius: R.rMd),
       child: Row(children: [
         arrow(LucideIcons.chevronLeft, l?.metricDetailPreviousDay ?? 'Previous day',
@@ -2097,7 +2154,7 @@ class DayNav extends StatelessWidget {
           ),
         arrow(LucideIcons.chevronRight, l?.metricDetailNextDay ?? 'Next day', newer),
       ]),
-    );
+    ));
   }
 }
 
