@@ -1249,6 +1249,23 @@ void main() {
       expect(later.quietSettled, isFalse);
       app.activeWorkout = null;
     });
+
+    test('an emptied rhr series drops the cached nightly anchor', () async {
+      await LocalDb.putMetricSeriesValue('2020-01-01', 'rhr', 52);
+      final app = AppState.forTesting();
+      addTearDown(app.dispose);
+      await app.debugRefreshNightlyRhr();
+      app.startWorkout(workoutId: 'rhr-before', type: 'run');
+      expect(app.activeWorkout!.restingHr, 52);
+      await app.stopWorkout();
+
+      await LocalDb.wipeAll();
+      await app.debugRefreshNightlyRhr();
+      app.startWorkout(workoutId: 'rhr-after', type: 'run');
+      expect(app.activeWorkout!.restingHr, isNull,
+          reason: 'no anchor on file means no score, not the deleted one');
+      await app.stopWorkout();
+    });
   });
 }
 
@@ -1260,6 +1277,10 @@ class _ConnectedEngine extends BleEngine {
 
   @override
   bool get isConnected => true;
+
+  // A link with fresh traffic: manual sync trusts it instead of probing.
+  @override
+  Duration get sinceLastRx => Duration.zero;
 
   @override
   Future<void> requestHistorySync() async => historyRequests++;

@@ -5,6 +5,28 @@
   "profileMyDevices": "Мои устройства",
   "profileLanguage": "Язык",
   "languageSystemDefault": "Системный",
+  "alarmSavedNotOnBand": "Сохранено, но браслет ещё не принял его — он будет отправлен снова при следующей синхронизации",
+  "coachChatgptUsingPlanShort": "Используется подписка ChatGPT",
+  "coachChatgptSharingNotAllowed": "Вход выполнен, но использование подписки ChatGPT не разрешено. Снова нажмите «Продолжить с ChatGPT» и разрешите использовать подписку здесь.",
+  "coachChatgptSignedOut": "Вы вышли из ChatGPT.",
+  "coachChatgptSignOutUnconfirmed": "Вы вышли здесь, но ChatGPT этого не подтвердил. Отключить OpenStrap можно также в настройках ChatGPT.",
+  "coachChatgptWelcomeTitle": "Вы используете свою подписку ChatGPT",
+  "coachChatgptWelcomeBody": "Допустимое использование в этом приложении идёт за счёт вашей подписки ChatGPT. Управлять им можно в настройках ChatGPT.",
+  "coachChatgptGotIt": "Понятно",
+  "coachChatgptUseTitle": "Использовать подписку ChatGPT",
+  "coachChatgptUsingTitle": "Используется ваша подписка ChatGPT",
+  "coachChatgptNotAllowedTitle": "Использование подписки не разрешено",
+  "coachChatgptBlurb": "Выполняйте допустимые ИИ-запросы в этом приложении за счёт лимита вашей подписки ChatGPT или баланса кредитов. OpenStrap никогда не берёт за это плату.",
+  "coachChatgptCancelSignIn": "Отменить вход",
+  "coachChatgptContinue": "Продолжить с ChatGPT",
+  "coachChatgptManageUsage": "Управлять использованием",
+  "coachChatgptSignOut": "Выйти из ChatGPT",
+  "coachChatgptPrivacy": "Ваши вопросы и строки, которые читает тренер, отправляются в OpenAI от имени вашего аккаунта ChatGPT, где могут действовать ваши настройки данных ChatGPT, в том числе об обучении моделей. Проверьте их в настройках ChatGPT. Что именно отправляется, видно в разделе «Что отправлено».",
+  "coachChatgptTermsTitle": "Перед входом",
+  "coachChatgptTermsBody": "Для входа используются ваш собственный аккаунт и подписка ChatGPT. Их использование здесь регулируется Условиями использования и Правилами использования OpenAI, поэтому прочитайте их, прежде чем продолжить.",
+  "coachChatgptTermsLink": "Условия использования OpenAI",
+  "coachChatgptPoliciesLink": "Правила использования OpenAI",
+  "coachChatgptTermsAccept": "Прочитал(а), продолжить",
   "actionCancel": "Отмена",
   "actionSave": "Сохранить",
   "actionContinue": "Продолжить",
@@ -78,7 +100,7 @@
   "alarmChangeTheTime": "Изменить время",
   "alarmTestTheBuzz": "Проверить вибрацию",
   "alarmCancelTheAlarm": "Отменить будильник",
-  "alarmBuzzingTheBand": "Браслет вибрирует",
+  "alarmBuzzingTheBand": "Вибрация отправлена на браслет",
   "alarmCancelled": "Будильник отменён",
   "alarmSentToBand": "Будильник отправлен на браслет",
   "alarmInThePast": "Время прошло — будильник уже сработал или был пропущен",
@@ -350,6 +372,86 @@
   "devicesBandExperimentalSub": "Данные браслета декодируются, но никто из участников проекта его не носил. Показатели проверены только по протоколу, а не на реальном устройстве.",
   "devicesBuzzTheBand": "Вибрация браслета",
   "devicesFindItByFeel": "Найти по вибрации",
+  "devicesInstallImage": "Установить образ",
+  "devicesInstallImageSub": "На ваш страх и риск",
+  "flashWarning": "Установка образа, который вы предоставляете сами, может безвозвратно повредить браслет, лишить его гарантии и вывести из строя. Отменить это из приложения нельзя. OpenStrap не предоставляет, не проверяет и не одобряет никакие образы, а OpenStrap и его участники не несут ответственности за любые потери или ущерб. Вы делаете это полностью на свой страх и риск.",
+  "flashAccept": "Я понимаю и принимаю риск",
+  "flashFileInfo": "{name}\n{bytes} байт\nsha256 {sha}",
+  "@flashFileInfo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "bytes": {
+        "type": "int"
+      },
+      "sha": {
+        "type": "String"
+      }
+    }
+  },
+  "flashChoose": "Выбрать файл образа",
+  "flashChooseAnother": "Выбрать другой",
+  "flashSend": "Отправить на браслет",
+  "flashStop": "Стоп",
+  "flashProgress": "Отправлено блоков: {done} из {total}. Держите приложение открытым, а браслет рядом.",
+  "@flashProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "flashCommitting": "Отправка подтверждения…",
+  "flashCommitted": "Браслет принял образ. Это не подтверждает, что он работает. Проверьте версию прошивки браслета после перезапуска.",
+  "flashCommitUnknown": "Подтверждение отправлено, но браслет не ответил. Оно могло быть применено, а могло и нет. Не повторяйте попытку. Проверьте версию прошивки браслета после перезапуска.",
+  "flashBlockNoImage": "Сначала выберите файл образа.",
+  "flashBlockTooLarge": "Этот файл слишком велик для образа.",
+  "flashBlockNoLink": "Подключите WHOOP 5 и дождитесь окончания синхронизации.",
+  "flashBlockBatteryUnknown": "Уровень заряда неизвестен. Дождитесь, пока он будет считан.",
+  "flashBlockBatteryLow": "Заряд {pct}%. Сначала зарядите не менее чем до {min}%.",
+  "@flashBlockBatteryLow": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "flashFailTakeover": "Не удалось взять управление соединением.",
+  "flashFailStart": "Браслет не принял начало обновления.",
+  "flashFailData": "Браслет отклонил данные на байте {offset}. Ничего не было применено.",
+  "@flashFailData": {
+    "placeholders": {
+      "offset": {
+        "type": "int"
+      }
+    }
+  },
+  "flashFailVerify": "Браслет не проверил образ. Ничего не было применено.",
+  "flashFailCancelled": "Отменено. Ничего не было применено.",
+  "flashFailCommitRejected": "Браслет не принял подтверждение.",
+  "flashPickUnreadable": "Не удалось прочитать этот файл.",
+  "flashConfirmTitle": "Установить этот образ?",
+  "flashConfirmBody": "Браслет получил файл и проверил его. Ничего не будет установлено, пока вы не нажмёте «Уверен», и это нельзя отменить.\n\n{name}\nsha256 {sha}",
+  "@flashConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "sha": {
+        "type": "String"
+      }
+    }
+  },
+  "flashConfirmSure": "Уверен",
+  "flashConfirmCancel": "Отмена",
+  "flashAcknowledge": "Я проверил версию прошивки. Разрешить ещё одну установку.",
   "devicesForgetThisBand": "Удалить браслет",
   "pairSensorAddASensor": "Добавить датчик",
   "pairSensorWhatThisAdds": "Что это даёт",
@@ -375,6 +477,8 @@
   "devicePickerBlurbSensor": "Нагрудный датчик или датчик на руку для измерения интервалов между ударами во время тренировки.",
   "devicePickerBlurbCoros": "Спортивные часы. Читает заряд и текущий пульс; записанные тренировки остаются на часах.",
   "devicePickerBlurbMiband234": "Mi Band 2 или 3: пульс, шаги и сон. Сначала отвяжите его от Mi Fit или Zepp либо сбросьте. Если браслет завибрирует, коснитесь его. Mi Band 4 не поддерживается.",
+  "devicePickerBlurbGarmin": "Часы Garmin. Синхронизируют пульс, шаги, сон и ВСР. Экспериментально.",
+  "devicePickerNoMatch": "Поблизости нет устройств, подходящих под этот поиск.",
   "devicePickerBlurbColmi": "Кольцо Colmi. Синхронизирует пульс, стадии сна, шаги, SpO2, ВСР и стресс; значения, которые кольцо рассчитывает само, помечены как значения Colmi. Экспериментально.",
   "devicePickerCannotPairFromHere": "Это устройство нельзя подключить с этого экрана.",
   "pairSensorSearching": "Поиск…",
@@ -819,7 +923,7 @@
   "aiBriefingEmptyCardBody": "На момент составления ни у одного показателя не было значения, поэтому запрос их не содержал.",
   "napsFellAsleepHelp": "КОГДА ВЫ ЗАСНУЛИ",
   "napsWokeUpHelp": "КОГДА ВЫ ПРОСНУЛИСЬ",
-  "napsInvalidWindow": "Дневной сон длится от 5 минут до 6 часов. Более долгий сон относится к ночному, где можно просмотреть его стадии.",
+  "napsInvalidWindow": "Дневной сон длится от 5 минут до 3 часов. Более долгий сон относится к ночному, где можно просмотреть его стадии.",
   "napsOverlap": "Этот период пересекается с уже записанным дневным сном. Сначала удалите прежнюю запись, чтобы не учитывать одно время дважды.",
   "napsOverlapsSleep": "Этот период пересекается с основным сном, который уже учитывает это время. Запишите только часть после подъёма или исправьте ночь.",
   "napsNotReanalysed": "Повторный анализ дня не выполнен: уже идёт другой анализ. Изменение сохранено и будет учтено в следующий раз.",
@@ -1707,7 +1811,7 @@
   },
   "nutritionDayCountsRule": "День учитывается, если у каждого приёма пищи указана энергетическая ценность.",
   "nutritionDaysLoggedLabel": "Дни с записями",
-  "nutritionPartialExcluded": "{partial} дней с неполными записями исключены из всех средних ниже",
+  "nutritionPartialExcluded": "{partial, plural, one{{partial} день с неполными записями исключён} few{{partial} дня с неполными записями исключены} many{{partial} дней с неполными записями исключены} other{{partial} дня с неполными записями исключены}} из всех средних ниже",
   "@nutritionPartialExcluded": {
     "placeholders": {
       "partial": {
@@ -1737,7 +1841,7 @@
     }
   },
   "nutritionEnergyLoggedTitle": "Записанные калории",
-  "nutritionPartialFootnote": "{n} неполных дней исключено из средних ниже.",
+  "nutritionPartialFootnote": "{n, plural, one{{n} неполный день исключён} few{{n} неполных дня исключены} many{{n} неполных дней исключены} other{{n} неполного дня исключены}} из средних ниже.",
   "@nutritionPartialFootnote": {
     "placeholders": {
       "n": {
@@ -2124,7 +2228,7 @@
   "investigateDipDepthQuartiles": "Глубина снижения, квартили",
   "investigateNotEnoughNightsAcross": "Недостаточно ночей для сравнения",
   "investigateNeedsSeveralNights": "Нужны несколько ночей с несколькими часами наблюдений в каждой.",
-  "investigateDroppedIrregular": "{count, plural, one{Исключена # ночь из-за сигнала проверки нерегулярного ритма} few{Исключены # ночи из-за сигнала проверки нерегулярного ритма} many{Исключено # ночей из-за сигнала проверки нерегулярного ритма} other{Исключено # ночи из-за сигнала проверки нерегулярного ритма}}",
+  "investigateDroppedIrregular": "{count, plural, one{Исключена {count} ночь из-за сигнала проверки нерегулярного ритма} few{Исключены {count} ночи из-за сигнала проверки нерегулярного ритма} many{Исключено {count} ночей из-за сигнала проверки нерегулярного ритма} other{Исключено {count} ночи из-за сигнала проверки нерегулярного ритма}}",
   "@investigateDroppedIrregular": {
     "placeholders": {
       "count": {
@@ -2132,7 +2236,7 @@
       }
     }
   },
-  "investigateDroppedThin": "{count, plural, one{Исключена # ночь из-за малого числа часов наблюдения} few{Исключены # ночи из-за малого числа часов наблюдения} many{Исключено # ночей из-за малого числа часов наблюдения} other{Исключено # ночи из-за малого числа часов наблюдения}}",
+  "investigateDroppedThin": "{count, plural, one{Исключена {count} ночь из-за малого числа часов наблюдения} few{Исключены {count} ночи из-за малого числа часов наблюдения} many{Исключено {count} ночей из-за малого числа часов наблюдения} other{Исключено {count} ночи из-за малого числа часов наблюдения}}",
   "@investigateDroppedThin": {
     "placeholders": {
       "count": {
@@ -2218,7 +2322,7 @@
   "calmBreathingRingLeads": "Следуйте кольцу. Отложите телефон.",
   "calmBreathingScoredPill": "Оценено",
   "calmBreathingHowLong": "Длительность",
-  "calmBreathingMinutesSemantic": "{m, plural, one{# минута} few{# минуты} many{# минут} other{# минуты}}",
+  "calmBreathingMinutesSemantic": "{m, plural, one{{m} минута} few{{m} минуты} many{{m} минут} other{{m} минуты}}",
   "@calmBreathingMinutesSemantic": {
     "placeholders": {
       "m": {
@@ -2438,6 +2542,9 @@
       }
     }
   },
+  "investigateMethodHrvRmssd": "Среднее RMSSD по всем 5-минутным окнам распознанного сна, в которых есть не меньше 20 чистых последовательных разностей. Сначала отбрасываются удары вне диапазона 300–2000 мс и удары, отстоящие от локальной медианы больше чем на 20 %. В ночь, когда ритм ударов выглядит зашумлённым, учитываются только окна, которые сами проходят проверку на джиттер или лежат на ровной дыхательной линии; окно или ночь, чьи удары в сумме дают больше времени, чем прошло, исключаются. Старые ночи, сырые удары которых уже удалены, сохраняют значение, полученное более ранней версией этого метода. Значение получено из пульса, поэтому это ВСП по пульсу (PRV): реальная и пригодная для трендов, но не ВСР по ЭКГ.",
+  "investigateMethodRespRate": "Частота дыхания, выделенная из дыхательной синусовой аритмии — периодической модуляции, которую дыхание вносит в ритм ударов. Спектральный пик ищется в перекрывающихся пятиминутных отрезках чистых ударов (Lomb–Scargle по фактическим моментам ударов), а значение за ночь — их медиана; оно показывается, только если большинство отрезков согласуются. При пульсе во сне около 48 уд/мин и ниже удары слишком редки, чтобы различить обычное дыхание, и значение не показывается.",
+  "investigateMethodHrvStability": "В пределах одной ночи: стандартное отклонение межударных интервалов после коррекции артефактов (SDNN) в процентах от их среднего. График показывает, как это значение меняется от ночи к ночи; это не коэффициент вариации между ночами.",
   "metricDetailSlotWithValue": "{day}, {value} {unit}",
   "@metricDetailSlotWithValue": {
     "placeholders": {
@@ -2507,6 +2614,10 @@
       }
     }
   },
+  "chartPanelLatest": "ПОСЛЕДНЕЕ",
+  "chartPanelSelected": "ВЫБРАНО",
+  "chartPanelSevenDayAvg": "Среднее за 7 дн.",
+  "chartPanelVsAvg": "от среднего",
   "metricDetailNoRecordLabel": "Нет записи",
   "metricDetailLowest": "Наименьшее",
   "metricDetailTypical": "Обычное",
@@ -2563,7 +2674,7 @@
       }
     }
   },
-  "metricDetailDaysWithWithout": "{withCount} дней с записью · {withoutCount} без",
+  "metricDetailDaysWithWithout": "{withCount, plural, one{{withCount} день} few{{withCount} дня} many{{withCount} дней} other{{withCount} дня}} с записью · {withoutCount} без",
   "@metricDetailDaysWithWithout": {
     "placeholders": {
       "withCount": {
@@ -2687,7 +2798,7 @@
     }
   },
   "cycleWhatYouUsuallyNotice": "Что вы обычно замечаете",
-  "cycleSymptomShapeSummary": "Одно значение на неделю цикла, от отмеченных вами начал. Учитываются только {daysByWeek} отмеченных дней каждой недели за {cycles} циклов.",
+  "cycleSymptomShapeSummary": "Одно значение на неделю цикла, от отмеченных вами начал. Учитываются только отмеченные дни (по неделям: {daysByWeek}) за {cycles, plural, one{{cycles} цикл} few{{cycles} цикла} many{{cycles} циклов} other{{cycles} цикла}}.",
   "@cycleSymptomShapeSummary": {
     "placeholders": {
       "daysByWeek": {
@@ -2733,7 +2844,7 @@
       }
     }
   },
-  "cycleMiddleOfNCycles": "Центральное значение {n} циклов для каждого дня.",
+  "cycleMiddleOfNCycles": "Центральное значение по {n, plural, one{{n} циклу} few{{n} циклам} many{{n} циклам} other{{n} цикла}} для каждого дня.",
   "@cycleMiddleOfNCycles": {
     "placeholders": {
       "n": {
@@ -3278,7 +3389,7 @@
   "homeDriverRhr": "Пульс в покое",
   "homeDriverResp": "Частота дыхания",
   "homeDriverTemp": "Температура кожи",
-  "homeDbRebuiltTitle": "Для запуска приложения база восстановлена заново",
+  "homeDbRebuiltTitle": "Ваша база данных пересоздана",
   "homeDbRebuiltNothingRecovered": "Ничего не удалось прочитать.",
   "homeDbRebuiltRecovered": "Восстановлено: {list}.",
   "@homeDbRebuiltRecovered": {
@@ -3308,9 +3419,9 @@
     }
   },
   "homeWorkoutHoldTitle": "Тренировка ещё идёт",
-  "homeWorkoutHoldBody": "Пока идёт тренировка, расчёт дня на паузе. Браслет продолжает запись; завершите тренировку на панели ниже, и день заполнится.",
-  "homeInsightsRebuildingTitle": "Выводы за несколько дней пересчитываются",
-  "homeInsightsRebuildingAlgoVersion": "После обновления способ расчёта изменился.",
+  "homeWorkoutHoldBody": "Сегодняшний день заполнится, когда вы завершите тренировку.",
+  "homeInsightsRebuildingTitle": "Обновляем ваши тренды",
+  "homeInsightsRebuildingAlgoVersion": "Обновляется после последнего обновления приложения.",
   "homeInsightsStaleOverWeek": "Тренды обновлялись больше недели назад. Синхронизируйте браслет, чтобы обновить их.",
   "homeInsightsStaleOnDay": "Тренды обновлялись {day}. Синхронизируйте браслет, чтобы обновить их.",
   "@homeInsightsStaleOnDay": {
@@ -3323,7 +3434,6 @@
   },
   "homeInsightsNoVersionStamp": "Тренды обновляются. После синхронизации это занимает около минуты.",
   "homeSyncBand": "Синхронизировать браслет",
-  "homeWhyLabel": "Почему?",
   "homeCalibrating": "Изучаем ваш обычный уровень",
   "homeCalibratingNights": "{have} из {need} ночей",
   "@homeCalibratingNights": {
@@ -3347,24 +3457,111 @@
       }
     }
   },
-  "homeGapNoReason": "Причина отсутствия данных не записана.",
+  "homeGapNoReason": "Причина не указана.",
   "homeRingRecovery": "Восстановление",
   "homeRingStrain": "Нагрузка",
   "homeRingSleep": "Сон",
   "homeRingNoStrain": "Нет нагрузки",
   "homeRingNoSleep": "Нет сна",
   "homeSleepGapFallback": "Не записана ночь с достаточной длительностью сна для оценки.",
-  "homeStrainOf21": "из 21",
-  "homeSleepNoTarget": "Цель пока не задана",
-  "homeOfSpan": "из {duration}",
-  "@homeOfSpan": {
+  "homeSleepPctOf": "{pct}% от {target}",
+  "@homeSleepPctOf": {
     "placeholders": {
-      "duration": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
         "type": "String",
-        "example": "7h 45m"
+        "example": "8h 00m"
       }
     }
   },
+  "homeSleepPctOfDefault": "{pct}% от {target} (по умолчанию)",
+  "@homeSleepPctOfDefault": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String",
+        "example": "8h 00m"
+      }
+    }
+  },
+  "homeSleepPctCompact": "{pct}% от {target}",
+  "@homeSleepPctCompact": {
+    "description": "Short sleep caption against a learned target.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSleepPctDefaultCompact": "{pct}% от {target} · цель по умолчанию",
+  "@homeSleepPctDefaultCompact": {
+    "description": "Short sleep caption that keeps an explicit default-target qualifier.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSleepPctDefaultTight": "{pct}% от {target} по умолч.",
+  "@homeSleepPctDefaultTight": {
+    "description": "Tightest sleep caption when the target is the default: still names the target as the default.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWhyRecoveryTitle": "Низкое восстановление",
+  "homeWhyRecoveryPlain": "Восстановление {score} из 100",
+  "@homeWhyRecoveryPlain": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "homeWhySleepTitle": "Недостаточно сна",
+  "homeWhySleepBody": "Оценённый сон был короче вашей потребности.",
+  "homeWhySleepDetail": "Сон {asleep}, на {gap} меньше вашей потребности {need}.",
+  "@homeWhySleepDetail": {
+    "placeholders": {
+      "asleep": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      },
+      "need": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWhyStrainTitle": "Нагрузка выше цели",
+  "homeWhyStrainBody": "Нагрузка {strain}, выше сегодняшней цели {range}.",
+  "@homeWhyStrainBody": {
+    "placeholders": {
+      "strain": {
+        "type": "String"
+      },
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "homeStrainOf21": "из 21",
   "homeLoadFailedTitle": "Не удалось прочитать сегодняшний день",
   "homeLoadFailedBody": "Сохранённый день не загрузился. Ничего не удалено: это ошибка чтения, а не отсутствие данных.",
   "homeDayLoadFailedTitle": "Не удалось прочитать {day}",
@@ -3400,7 +3597,7 @@
   "homeAskCoach": "Спросить тренера",
   "homeProfileSettings": "Профиль и настройки",
   "homeNothingTodayTitle": "За сегодня ничего не записано",
-  "homeNothingTodayBody": "Последняя оценённая ночь: {day}. С тех пор данные не поступали.",
+  "homeNothingTodayBody": "Последняя оценённая ночь: {day}.",
   "homeNoDataThisDayTitle": "Нет данных за этот день",
   "homeNoDataThisDayBody": "В этот день ничего не было записано.",
   "homeSomeDayDataMissingTitle": "Часть данных за этот день отсутствует",
@@ -3422,7 +3619,7 @@
       }
     }
   },
-  "homeReadinessNoReason": "Причина не записана.",
+  "homeReadinessNoReason": "Причина не указана.",
   "homeSeeWhatWasMissing": "Посмотреть, чего не хватило",
   "homeAtAGlance": "Краткий обзор",
   "homeTodaysPlan": "План на сегодня",
@@ -3441,25 +3638,9 @@
       }
     }
   },
-  "homeIllnessBodyNoZ": "В последние ночи пульс в покое выше обычного. Отслеживается один сигнал, поэтому это закономерность, а не причина.",
-  "homeIllnessBodyAbove": "В последние ночи пульс в покое выше обычного. В ту ночь он был выше на {z} вашего обычного разброса. Это закономерность, а не причина.",
-  "@homeIllnessBodyAbove": {
-    "placeholders": {
-      "z": {
-        "type": "String",
-        "example": "1.8"
-      }
-    }
-  },
-  "homeIllnessBodyBelow": "В сумме за последние ночи пульс в покое выше обычного, хотя сама по себе та ночь была ниже нормы на {z} вашего обычного разброса. Это закономерность, а не причина.",
-  "@homeIllnessBodyBelow": {
-    "placeholders": {
-      "z": {
-        "type": "String",
-        "example": "1.8"
-      }
-    }
-  },
+  "homeIllnessBodyNoZ": "В последние ночи ваш пульс в покое был выше обычного. Это закономерность, а не причина.",
+  "homeIllnessBodyAbove": "Последние ночи подняли ваш пульс в покое выше обычного. Та ночь тоже была выше. Это закономерность, а не причина.",
+  "homeIllnessBodyBelow": "В сумме последние ночи подняли ваш пульс в покое выше обычного, хотя сама та ночь была ниже. Это закономерность, а не причина.",
   "homeIllnessAdvice": "Обратите внимание, если это продолжается больше пары дней.",
   "homeHeartRate": "Пульс",
   "homeRestingSub": "В покое",
@@ -3746,7 +3927,7 @@
   "wellnessWhichDayOfWeek": "День недели",
   "wellnessHigher": "выше",
   "wellnessLower": "ниже",
-  "wellnessHeadlineBinary": "В {n} дней с записью «{field}» показатель «{outcome}» был на {amount} {direction}",
+  "wellnessHeadlineBinary": "В дни с записью «{field}» (всего {n}) показатель «{outcome}» был на {amount} {direction}",
   "@wellnessHeadlineBinary": {
     "placeholders": {
       "n": {
@@ -3766,7 +3947,7 @@
       }
     }
   },
-  "wellnessHeadlineNoSlope": "В {n} дней с записью «{field}» большее количество сопровождалось {direction} значением «{outcome}»",
+  "wellnessHeadlineNoSlope": "В дни с записью «{field}» (всего {n}) большее количество сопровождалось {direction} значением «{outcome}»",
   "@wellnessHeadlineNoSlope": {
     "placeholders": {
       "n": {
@@ -3783,7 +3964,7 @@
       }
     }
   },
-  "wellnessHeadlineSlope": "В {n} дней с записью «{field}» показатель «{outcome}» был на {amount} {direction} на каждые {step}",
+  "wellnessHeadlineSlope": "В дни с записью «{field}» (всего {n}) показатель «{outcome}» был на {amount} {direction} на каждые {step}",
   "@wellnessHeadlineSlope": {
     "placeholders": {
       "n": {
@@ -3940,6 +4121,7 @@
   "sleepDetailWindowNoSleep": "Время сохранено, но в записях браслета за эти часы нет сна, который можно оценить.",
   "sleepDetailNightUnrecorded": "Пульс указывает на ночной сон, но большую часть ночи браслет записал слишком мало данных о движении, поэтому оценивать нечего.",
   "sleepDetailCorrectionUnavailable": "Подробные записи этой ночи уже удалены с телефона, поэтому её сон больше нельзя исправить.",
+  "sleepDetailCorrectionNoRecordings": "Для этой ночи на телефоне нет подробных записей, поэтому её сон нельзя исправить.",
   "sleepDetailCorrectionEveningPruned": "Вечер перед этой ночью уже удалён с телефона, поэтому можно применить только время отхода ко сну после полуночи или «Не сон».",
   "sleepDetailNoHypnogramTitle": "За эту ночь гипнограммы нет",
   "sleepDetailNoHypnogramBody": "Для определения стадий нужны движение и межударные интервалы. Одного из источников не было.",
@@ -4469,6 +4651,7 @@
   "activityPickerNoMatchBody": "В каталоге около семидесяти активностей с опубликованными энергозатратами. Выберите ближайшую.",
   "activityPickerQuickStart": "БЫСТРЫЙ СТАРТ",
   "activityPickerRecent": "НЕДАВНИЕ",
+  "activityPickerMostDone": "ЧАЩЕ ВСЕГО",
   "activityPickerCalorieEstimatesTitle": "Калории — оценочные значения",
   "activityPickerMetValue": "{met}× от покоя",
   "@activityPickerMetValue": {
@@ -4898,11 +5081,14 @@
   },
   "activitySummaryTimeInZonesTitle": "Время в зонах",
   "activitySummaryTopSet": "Лучший подход",
-  "activitySummaryOneRepMax": "Оценка 1RM: {kg} кг",
+  "activitySummaryOneRepMax": "Оценка 1RM: {value} {unit, select, lb{фунт.} other{кг}}",
   "@activitySummaryOneRepMax": {
     "placeholders": {
-      "kg": {
+      "value": {
         "type": "int"
+      },
+      "unit": {
+        "type": "String"
       }
     }
   },
@@ -5400,9 +5586,16 @@
   "settingsUnitsRowTitle": "Единицы измерения",
   "settingsAppearanceRowTitle": "Оформление",
   "settingsClockFormatRowTitle": "Формат времени",
+  "settingsUnitsMetric": "Метрическая",
+  "settingsUnitsImperial": "Имперская",
+  "settingsAppearanceLight": "Светлая",
+  "settingsAppearanceDark": "Тёмная",
+  "settingsBackupDaily": "Ежедневно",
+  "settingsBackupWeekly": "Еженедельно",
   "settingsClockFormatSystem": "Системный",
   "settingsClockFormat24h": "24-часовой",
   "settingsClockFormat12h": "12-часовой",
+  "settingsAppearanceSystem": "Системная",
   "settingsCycleTrackingRowTitle": "Отслеживание цикла",
   "settingsCycleTrackingRowSub": "Добавляет вкладку «Цикл» в раздел «Самочувствие». Отключение скрывает её, сохраняя все записи",
   "settingsGroupYourData": "Ваши данные",
@@ -5828,7 +6021,7 @@
   "activityStart": "Начало",
   "activityEnd": "Конец",
   "activityCheckTimes": "Проверьте время",
-  "activityNapWindow": "Выберите прошедший период от 5 минут до 6 часов.",
+  "activityNapWindow": "Выберите прошедший период от 5 минут до 3 часов.",
   "activityEditNap": "Изменить дневной сон",
   "activityEditWorkout": "Изменить тренировку",
   "activityNapAlerts": "Обнаруженный дневной сон",
@@ -6646,7 +6839,7 @@
   "presentationS": "с",
   "presentationV": "мкВ",
   "presentationReadsTheRingDirectlyNoAccountNoKeyExchange": "Данные считываются прямо с кольца — без аккаунта и обмена ключами.",
-  "presentationPebble2OrPebble2SEOnlyPairsOnly": "Только Pebble 2 или Pebble 2 SE. Пока доступно только подключение — данные ещё не считываются и не сохраняются.",
+  "presentationPebble2OrPebble2SEOnlyPairsOnly": "Только Pebble 2 или Pebble 2 SE. Экспериментальная поддержка: синхронизация и сохранение шагов и сна, а на Pebble 2 также пульса. У SE нет датчика пульса.",
   "presentationTheOriginalFossilSkagenHybridSmartwatchNotTheNewer": "Первые гибридные часы Fossil/Skagen, не более новые Hybrid HR. Сопряжение и подключение работают; показатели пока не рассчитываются.",
   "presentationABudgetActivityBandPairsAndBanksItsRaw": "Недорогой фитнес-браслет. Подключается и сохраняет исходные данные; показатели пока не рассчитываются.",
   "presentationPairsAndBanksItsRawDataNothingIsDecoded": "Подключается и сохраняет исходные данные — они пока не декодируются.",
@@ -6768,6 +6961,42 @@
   "actionUpdateApp": "Обновить приложение",
   "alarmGlanceInThePast": "Сработал или пропущен",
   "devicesBatteryPack": "Батарейный блок",
+  "devicesBatteryUnderAnHourLeft": "меньше часа",
+  "devicesBatteryHoursLeft": "осталось около {hours} ч",
+  "@devicesBatteryHoursLeft": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesBatteryDaysLeft": "осталось около {days} дн.",
+  "@devicesBatteryDaysLeft": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesChargesLogged": "{n, plural, one{{n} зарядка записана} few{{n} зарядки записаны} many{{n} зарядок записано} other{{n} зарядки записано}}",
+  "@devicesChargesLogged": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesChargeUpToMv": "до {mv} мВ",
+  "@devicesChargeUpToMv": {
+    "placeholders": {
+      "mv": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesCalibrationSub": "Показатели, зависящие от датчика, используют собственные константы этого браслета, поэтому два разных браслета могут дать разные уровни при одинаковой физиологии.",
+  "devicesCalibrationNotStated": "Пока не указано",
+  "devicesCalibrationNotStatedSub": "Браслет не сообщил своё поколение, а импортированные или старые дни не сообщат никогда. Показатели, зависящие от датчика, не рассчитываются, а не берут значения другого браслета.",
   "devicesBatteryPackSub": "Браслет сообщает данные примерно раз в 10 минут",
   "welcomeArchiveSkipped": "{n, plural, one{{n} день сохранённой истории датчиков в формате, который эта версия не читает. Обновите приложение и снова импортируйте копию.} few{{n} дня сохранённой истории датчиков в формате, который эта версия не читает. Обновите приложение и снова импортируйте копию.} many{{n} дней сохранённой истории датчиков в формате, который эта версия не читает. Обновите приложение и снова импортируйте копию.} other{{n} дня сохранённой истории датчиков в формате, который эта версия не читает. Обновите приложение и снова импортируйте копию.}}",
   "welcomeArchiveRestored": "{n, plural, one{Необработанная история датчиков восстановлена или дополнена за {n} день} few{Необработанная история датчиков восстановлена или дополнена за {n} дня} many{Необработанная история датчиков восстановлена или дополнена за {n} дней} other{Необработанная история датчиков восстановлена или дополнена за {n} дня}}",
@@ -7396,7 +7625,7 @@
   "activityStepsFoodTitle": "Шаги и питание",
   "activityStepsSub": "Сегодня и все предыдущие дни",
   "activityNutritionSub": "Записывайте еду и смотрите белок за сегодня",
-  "homeBackToToday": "Вернуться к сегодня",
+  "homeBackToToday": "Вернуться к сегодняшнему дню",
   "homeSomeDataMissingTitle": "Часть сегодняшних данных отсутствует",
   "homeFirstWeekTitle": "Ваши первые недели",
   "homeFirstWeekWear": "Наденьте браслет на ночь",
@@ -7433,7 +7662,7 @@
       }
     }
   },
-  "homeCoachSetUpChip": "Задавайте вопросы о своих данных: настройте тренера",
+  "homeCoachSetUpChip": "Настроить тренера",
   "profileSetupCycleSub": "Отмечайте менструацию в разделе «Здоровье». Это можно изменить позже.",
   "homeRecoverySleeping": "Сон…",
   "homeRecoveryAfterWake": "Восстановление оценивается после пробуждения.",
@@ -7904,5 +8133,1047 @@
         "type": "int"
       }
     }
-  }
+  },
+  "welcomeCoachKeyReentry": "API-ключ тренера остаётся в защищённом хранилище и не включён в резервную копию. Введите его снова в настройках ИИ, чтобы пользоваться тренером на этом телефоне.",
+  "welcomeSettingsSkipped": "{n, plural, one{{n} настройку из резервной копии не удалось прочитать, она пропущена} few{{n} настройки из резервной копии не удалось прочитать, они пропущены} many{{n} настроек из резервной копии не удалось прочитать, они пропущены} other{{n} настройки из резервной копии не удалось прочитать, они пропущены}}",
+  "@welcomeSettingsSkipped": {
+    "description": "Import report: settings rows in the backup that could not be read",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "welcomeSettingsSkippedBody": "Для них остаются значения этого телефона.",
+  "welcomeCoachChatGptReentry": "Данные входа в ChatGPT остаются в защищённом хранилище и не включены в резервную копию. Войдите снова в настройках ИИ, чтобы пользоваться тренером на этом телефоне.",
+  "welcomeCoachServerReentry": "Адрес вашего собственного сервера коуча не сохранён в резервной копии, потому что адрес может содержать ключ. Введите его снова в настройках ИИ.",
+  "welcomeSettingsRestored": "Восстановлено настроек: {n}",
+  "@welcomeSettingsRestored": {
+    "description": "Import report: number of restored app preferences",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "strengthCustomWeight": "Свой вес",
+  "strengthEnterValue": "Введите значение",
+  "strengthInvalidNumber": "Неверное число",
+  "strengthLoadRangeKg": "Должно быть от 0 до 500 кг",
+  "strengthLoadRangeLb": "Должно быть от 0 до 1100 фунтов",
+  "strengthRepsRange": "Должно быть от 1 до 200 повторений",
+  "strengthEditSet": "Редактировать подход",
+  "strengthDeleteSet": "Удалить подход",
+  "strengthDeleteSetConfirm": "Удалить этот подход?",
+  "strengthBodyweight": "Свой вес",
+  "strengthDelete": "Удалить",
+  "strengthSaveFailed": "Не удалось сохранить изменения",
+  "whoopFirmwareWarningTitle": "Пользователям WHOOP: не подключайтесь снова к приложению WHOOP",
+  "whoopFirmwareWarningAction": "Если вы пользуетесь OpenStrap или другим приложением с открытым кодом либо планируете перейти на него позже, не подключайте браслет к официальному приложению WHOOP снова. Оно может автоматически установить обновления прошивки. Удалите или отключите приложение WHOOP, чтобы оно не обновляло ваш браслет.",
+  "whoopFirmwareWarningDetails": "В сообщениях о прошивках WHOOP 5.0 / MG 50.43.1.0 и 50.43.2.0 описывается заблокированный доступ к данным. Bluetooth при этом может подключаться. OpenStrap не может выпустить подписанный WHOOP токен членства, необходимый для разблокировки затронутых браслетов. Мы работаем над решением, но исправления пока нет.",
+  "napAutoLogTitle": "Автоматически записывать явный дневной сон",
+  "napAutoLogSub": "Обнаруженный дневной сон с убедительными признаками добавляется без запроса. Его по-прежнему можно изменить или удалить",
+  "napAutoLogSaveFailed": "Не удалось сохранить настройку. Попробуйте ещё раз.",
+  "pairBandNotSensor": "Это устройство — {label}, то есть браслет, а не простой датчик. Ничего не сохранено.",
+  "@pairBandNotSensor": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "bandStatusFirmwareLockedTitle": "Прошивка браслета, вероятно, удерживает его данные",
+  "bandStatusFirmwareLockedReason": "На этом браслете прошивка WHOOP 50.43: он может подключаться и отвечать приложению, но не передавать ни записи, ни пульс в реальном времени, пока на нём нет подписанного WHOOP токена подписки. Возможно, данные не приходят именно поэтому. OpenStrap не может выпустить такой токен. Всё, что уже сохранено здесь, в безопасности.",
+  "bandStatusFirmwareLockedFix": "Если дело в прошивке, приложение изменить это не может, и сообщение исчезнет, как только браслет снова начнёт передавать записи",
+  "pairResetWhoop5Step1": "Снимите браслет с руки и подождите, пока погаснут зелёные огоньки.",
+  "pairResetWhoop5Step2": "Держите браслет за боковые стороны и сильно постукивайте двумя пальцами по верхней части, пока не будет мигать только синий. Если горят синий и белый вместе, продолжайте стучать, пока не останется только синий.",
+  "pairResetWhoop5Step3": "Если приложение WHOOP установлено на этом телефоне, принудительно закройте его.",
+  "pairResetWhoop5Step4": "Вернитесь сюда и попробуйте ещё раз.",
+  "pairResetGenericStep1": "Откройте приложение производителя и удалите из него это устройство.",
+  "pairResetGenericStep2": "В настройках Bluetooth телефона найдите устройство и выберите «Забыть».",
+  "pairResetGenericStep3": "Перезапустите устройство, поднесите его ближе к этому телефону и попробуйте ещё раз.",
+  "pairResetGenericNote": "Это общие советы. Точные шаги для этого устройства мы пока не проверяли.",
+  "pairResetOfficialLink": "Открыть страницу помощи производителя",
+  "pairResetTitleBand": "Ваш браслет подключён к другому устройству",
+  "pairResetTitleRing": "Ваше кольцо подключено к другому устройству",
+  "pairResetBody": "Не удалось завершить подключение {name}. Скорее всего, устройство всё ещё подключено к другому телефону или приложению.",
+  "@pairResetBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairResetHeading": "Как сбросить",
+  "pairResetWhoopTakeover": "Подключение здесь отключает его от приложения WHOOP.",
+  "pairResetOfficialSub": "{host} · откроется в браузере",
+  "@pairResetOfficialSub": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "pairLinkOpenFailed": "Не удалось открыть ссылку. Адрес: {url}",
+  "@pairLinkOpenFailed": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "pairPickDifferentBand": "Выбрать другой браслет",
+  "pairThisIsWhoop": "Это браслет WHOOP",
+  "pairThisIsRing": "Это кольцо",
+  "pairThisIsWatch": "Это часы",
+  "pairThisIsFitnessBand": "Это фитнес-браслет",
+  "pairThisIsStrap": "Это нагрудный пульсометр",
+  "pairThisIsSensor": "Это датчик пульса",
+  "pairTroubleTitle": "Не получается подключить?",
+  "pairTroubleBody": "Переведите браслет в режим сопряжения и попробуйте снова. Не помогло? Спросите нас.",
+  "pairTroubleModeLink": "Режим сопряжения {device}",
+  "@pairTroubleModeLink": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "pairTroubleDiscord": "Спросить в Discord",
+  "pairTroubleDiscordSub": "Сообщество OpenStrap",
+  "pairModeTitle": "Переведите в режим сопряжения",
+  "pairModeNoSite": "Это универсальное устройство без единого производителя, поэтому инструкции производителя нет.",
+  "pairOuraExistingKeyGuidance": "Уже пользуетесь приложением Oura? Оставьте кольцо сопряжённым в этом приложении и выполните сопряжение с его текущим ключом. Пропустите шаги сброса ниже. Сбрасывайте кольцо только для получения нового ключа.",
+  "pairAddDevice": "Добавить устройство",
+  "pairKindAll": "Все",
+  "pairKindStrap": "Нагрудные и плечевые датчики",
+  "pairKindRing": "Кольца",
+  "pairKindWatch": "Часы",
+  "pairGoBack": "Назад",
+  "pairAddDeviceSub": "Кольца, часы и нагрудные пульсометры",
+  "pairAddDeviceSubtitle": "У каждого устройства указано, для чего оно подходит: на каждый день или только для тренировок.",
+  "pairBandFoundBody": "Каждый день он даёт гораздо больше, чем только на тренировках. Что выберете?",
+  "pairBandFoundBodyHasBand": "У вас уже есть браслет. Основным может быть только один.",
+  "pairIdentifiedBody": "Выглядело как пульсовой ремень, но при подключении устройство назвалось {label}. Ничего не сохранено.",
+  "@pairIdentifiedBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pairAsMyBand": "Подключить как мой браслет",
+  "pairSecondaryPaired": "Подключено только для тренировок.",
+  "pairBandNow": "Сейчас ваш браслет: {name}. При замене данные сохраняются.",
+  "@pairBandNow": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairReplaceBand": "Подключить этот браслет, затем отключить {name}",
+  "@pairReplaceBand": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairReplaceConfirmTitle": "Заменить {name} после подключения этого браслета?",
+  "@pairReplaceConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairReplaceConfirmBody": "Если настройка не удастся или вы её отмените, текущий браслет останется сопряжённым. Данные, уже сохранённые на этом телефоне, сохранятся. Данные, не успевшие синхронизироваться со старого браслета, после замены на этот телефон не попадут.",
+  "pairReplaceConfirmYes": "Подключить новый браслет",
+  "pairCurrentBandFallback": "ваш браслет",
+  "pairWearableLead": "Он может заполнять ваши дни данными о сне, восстановлении и пульсе.",
+  "pairWearableNote": "Заполняет дни без вашего WHOOP. Экспериментально, поэтому включите это в разделе «Устройства».",
+  "pairStrapLead": "Он добавляет пульс во время тренировки. Сон, восстановление и дневную нагрузку он не записывает.",
+  "pairStrapNote": "Включите «Использовать во время тренировок», чтобы записывать пульс во время тренировок.",
+  "pairDeviceNamed": "Подключить {name}",
+  "@pairDeviceNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairUseForWorkouts": "Использовать только для тренировок",
+  "pairReplaceUnpairFailed": "Новый браслет сопряжён, но старый удалить не удалось.",
+  "pairWearableLeadPebble": "Pebble 2 может заполнять ваши дни данными о сне и пульсе. Pebble 2 SE показывает сон и шаги по данным самих часов. У него нет датчика пульса, поэтому приложение не может рассчитать дневную нагрузку или оценить восстановление по его данным.",
+  "pairMainBandWhoopOnly": "Основной браслет: только WHOOP 4.0 или WHOOP 5.0/MG. Другие устройства можно добавить как дополнительные.",
+  "pairBandTitle": "Подключите браслет",
+  "pairBandSubtitle": "Выберите то, что вы носите. Мы поищем его поблизости.",
+  "pairStrapOnlyLink": "У меня только пульсовой ремень",
+  "pairWhoopRowLine": "Сон, восстановление, нагрузка, пульс и многое другое",
+  "pairSetUpTitle": "Настройка",
+  "capLabelSleep": "Сон",
+  "capLabelRecovery": "Восстановление",
+  "capLabelStrain": "Нагрузка",
+  "capLabelHrv": "Вариабельность пульса",
+  "capLabelSkinTemperature": "Температура кожи",
+  "capLabelBloodOxygen": "Кислород в крови",
+  "capLabelWorkoutHeartRate": "Пульс во время тренировок",
+  "capLabelWorkoutBeatToBeat": "Интервалы между ударами во время тренировок",
+  "capLabelSteps": "Шаги",
+  "capReasonSkinTempNights": "Через несколько ночей",
+  "capReasonEstimated": "Оценка, а не прямое измерение",
+  "capReasonEarly": "Предварительная оценка; за первые недели она становится точнее",
+  "capVendorReported": "Собственное измерение устройства",
+  "slotSendsHeading": "Передаёт",
+  "slotDoesntSendHeading": "Не передаёт",
+  "pairSectionTitle": "Подключить устройство",
+  "pairCardBandBody": "Только WHOOP 4.0 или WHOOP 5.0/MG. Сон, восстановление и нагрузка круглые сутки.",
+  "pairUnpairBand": "Удалить сопряжение с браслетом",
+  "capLabelHeartRate": "Пульс и пульс в покое",
+  "capLabelRespiration": "Дыхание",
+  "capReasonFirstNights": "Первые 14 ночей — оценка",
+  "capReasonOwnStagesRing": "По фазам сна самого кольца",
+  "capReasonOwnStages": "По фазам сна самого устройства",
+  "capReasonLiveSessions": "Во время сеансов в реальном времени",
+  "slotEveryDay": "Каждый день",
+  "slotWorkoutsOnly": "Только тренировки",
+  "pairWearableCardNote": "Заполняет дни без вашего WHOOP. Экспериментально, поэтому включите это ниже.",
+  "pairWhatItSends": "Что передаёт",
+  "capReasonUnconfirmed": "Если устройство это передаёт, не подтверждено",
+  "capReasonPebble2Only": "Только Pebble 2. У 2 SE нет датчика пульса.",
+  "capReasonPebble2OnlyEstimated": "Только Pebble 2, и это оценка, а не прямое измерение. У 2 SE нет датчика пульса.",
+  "slotColumnReason": "{column}: {reason}",
+  "@slotColumnReason": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "slotCapabilityStatus": "{capability}, {column}: {status}",
+  "@slotCapabilityStatus": {
+    "placeholders": {
+      "capability": {
+        "type": "String"
+      },
+      "column": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "pairSearchDevices": "Найти устройства",
+  "pairPrimaryCannotBeSensor": "Это уже ваш основной браслет. Его нельзя также подключить как датчик для тренировок.",
+  "capReasonSkinTempProvisional": "Предварительная оценка; нужны данные за несколько ночей",
+  "pairReplaceMyBand": "Заменить мой браслет",
+  "dayStepsWhoop4NoCounter": "У WHOOP 4.0 нет собственного шагомера, поэтому он считает шаги только пока это приложение получает его данные в реальном времени.",
+  "healthWearNotUpdatedSince": "не обновлялось с {time}",
+  "@healthWearNotUpdatedSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dayStrainWornAsOf": "Ношение, данные на {time}",
+  "@dayStrainWornAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "guideTapMarker": "нажать",
+  "guideScrollMarker": "листать",
+  "guideStepOf": "Шаг {step} из {total}",
+  "@guideStepOf": {
+    "description": "Screen-reader label of one dot in the step indicator of a guide.",
+    "placeholders": {
+      "step": {
+        "type": "String",
+        "description": "The number of the step this dot stands for."
+      },
+      "total": {
+        "type": "String",
+        "description": "How many steps the guide has."
+      }
+    }
+  },
+  "guideDontSeeIt": "Не видите?",
+  "@guideDontSeeIt": {
+    "description": "Link on the guide's step card that expands the help for a target that is not on the screen."
+  },
+  "guideExit": "Выйти",
+  "@guideExit": {
+    "description": "Button on the guide card that ends the guide and leaves the app where it is."
+  },
+  "guideExitLabel": "Выйти из инструкции",
+  "@guideExitLabel": {
+    "description": "Screen-reader label of the Exit button on the guide card."
+  },
+  "guideOffPathTitle": "Вы сошли с пути",
+  "@guideOffPathTitle": {
+    "description": "Title of the guide card when the user has gone to a screen the guide does not cover."
+  },
+  "guideOffPathBody": "Этого экрана нет в инструкции.",
+  "@guideOffPathBody": {
+    "description": "Body of the off-path guide card."
+  },
+  "guideBackToGuide": "Назад к инструкции",
+  "@guideBackToGuide": {
+    "description": "Button on the off-path guide card that returns to the last screen of the guide."
+  },
+  "guideDoneTitle": "Готово",
+  "@guideDoneTitle": {
+    "description": "Title of the guide card after the last step."
+  },
+  "guideDoneBody": "Это был последний шаг.",
+  "@guideDoneBody": {
+    "description": "Body of the guide card after the last step."
+  },
+  "guideTargetProxy": "Цель инструкции: {caption}",
+  "@guideTargetProxy": {
+    "description": "Screen-reader label of the highlighted control while a guide runs.",
+    "placeholders": {
+      "caption": {
+        "type": "String",
+        "description": "The step caption."
+      }
+    }
+  },
+  "guideTabProxy": "Инструкция: открыть вкладку {tab}",
+  "guideBackProxy": "Инструкция: вернуться на путь",
+  "guideMoveCardUp": "Переместить карточку вверх",
+  "guideMoveCardDown": "Переместить карточку вниз",
+  "guideTapsBack": "{count, plural, one{{count} касание назад} few{{count} касания назад} many{{count} касаний назад} other{{count} касания назад}}",
+  "@guideTapsBack": {
+    "description": "Number of taps (navigation hops) back to the active guide step, shown beside the off-path text.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@guideTabProxy": {
+    "description": "Screen-reader label of the highlighted tab-bar tab while a guide runs: the step is on that tab.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "The tab's name, as the tab bar prints it."
+      }
+    }
+  },
+  "@guideBackProxy": {
+    "description": "Screen-reader label of the highlighted control that leads back to the guide's path while the user is off the path."
+  },
+  "@guideMoveCardUp": {
+    "description": "Screen-reader action on the guide's step card: move the card up the screen (the alternative to dragging it)."
+  },
+  "@guideMoveCardDown": {
+    "description": "Screen-reader action on the guide's step card: move the card down the screen (the alternative to dragging it)."
+  },
+  "guideTapOneOf": "коснитесь одного",
+  "@guideExpandAccordion": {
+    "description": "Guide hop asking the wearer to open a collapsed section",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "guideExpandAccordion": "Развернуть {title}",
+  "settingsSleepHmmRowTitle": "Экспериментальное определение стадий сна (HMM)",
+  "@settingsSleepHmmRowTitle": {
+    "description": "Title of the experimental HMM sleep staging toggle in Settings."
+  },
+  "settingsSleepHmmRowSub": "Исследовательский алгоритм, не медицинское устройство. Выключено по умолчанию.",
+  "@settingsSleepHmmRowSub": {
+    "description": "Subtitle of the experimental HMM sleep staging toggle in Settings."
+  },
+  "guideStepUnavailable": "Этот шаг сейчас нельзя показать.",
+  "guideNoVariantBody": "Эта инструкция пока не подходит для вашего браслета. Подходит для: {bands}.",
+  "guideHrZonesTitle": "Где найти зоны пульса",
+  "guideHrZonesIntro": "Экран зон пульса находится за показателем «{score}». Нужно три нажатия.",
+  "guideHrZonesStep1": "На вкладке **{tab}** нажмите на кольцо **{ring}**.",
+  "guideHrZonesStep2": "Прокрутите вниз до **{section}** и нажмите **{action}** справа.",
+  "guideHrZonesStep3": "На экране **{screen}** нажмите **{link}** или **{editLink}**, если вы уже сохранили свои зоны.",
+  "guideHrZonesAltTitle": "Другой путь",
+  "guideHrZonesAltBody": "Откройте вкладку **{tab}** и нажмите **{link}**, затем выполните шаги 2 и 3.",
+  "guideHrZonesMissingTitle": "Не видите «{section}»?",
+  "guideHrZonesMissingBody": "Раздел появляется, когда браслет записал пульс за этот день и ваши зоны можно рассчитать. Если он не появился и после того, как вы поносили браслет, укажите свой возраст в профиле.",
+  "@guideNoVariantBody": {
+    "description": "Shown instead of a guide's steps when the guide has no version for the user's band. {bands} is a list of band names such as WHOOP 4 / WHOOP 5; brand names are not translated.",
+    "placeholders": {
+      "bands": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesIntro": {
+    "description": "One line under the guide title. {score} is the in-app name of the Strain ring on the Today tab.",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesStep1": {
+    "description": "Step 1 caption. The words between ** ** are shown in bold and must be the in-app labels, passed in: {tab} is the Today tab name, {ring} the Strain ring name.",
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      },
+      "ring": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesStep2": {
+    "description": "Step 2 caption. Bold words are in-app labels: {section} is the 'Time in zones' heading, {action} the link on its right ('How these are set').",
+    "placeholders": {
+      "section": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesStep3": {
+    "description": "Step 3 caption. The screen title and both button labels are quoted verbatim; Edit appears after saving manual zones.",
+    "placeholders": {
+      "screen": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      },
+      "editLink": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesAltBody": {
+    "description": "Footer card body. Bold words are in-app labels: {tab} is the Activity tab name, {link} the 'Today's strain' link.",
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesMissingTitle": {
+    "description": "Footer card title: the user cannot see the 'Time in zones' section. {section} is that section's in-app heading.",
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
+  "guidePickBand": "Какой у вас браслет?",
+  "helpEmpty": "Для вашего браслета пока нет инструкций.",
+  "guideAnotherWayInTitle": "Другой путь",
+  "guideAlarmTitle": "Где поставить будильник или задать своё время на каждый день",
+  "guideAlarmStep1": "На вкладке **{tab}** прокрутите вниз до **{section}** и нажмите **{row}**.",
+  "guideAlarmStep2": "В разделе **{group}** нажмите на выключенный день, чтобы включить его, например **{day}**. Если нажать на уже включённый день, он выключится.",
+  "guideAlarmStep3": "Затем нажмите **{wake}** под этим днём и выберите время. У каждого дня может быть своё время.",
+  "guideAlarmAltBody": "Откройте **{profile}**, затем **{settings}**, затем **{band}**, затем **{alarm}**.",
+  "guideAlarmMissingTitle": "Не видите «{group}»?",
+  "guideAlarmMissingBody": "**{group}** показывается, только пока браслет подключён. Держите браслет рядом с телефоном, дождитесь подключения и посмотрите снова.",
+  "guideAddNapTitle": "Где самому записать дневной сон",
+  "guideAddNapStep1": "На вкладке **{tab}** нажмите **{naps}** под последней ночью.",
+  "guideAddNapStep2": "Нажмите **{log}**. Вас спросят о двух вещах: **{fell}**, затем **{woke}**. Выберите оба времени.",
+  "guideAddNapFoundTitle": "Дневной сон, найденный браслетом",
+  "guideAddNapFoundBody": "Дневной сон, который заметил браслет, показан на том же экране. Если что-то определено неверно, нажмите рядом **{notNap}**.",
+  "guideAddNapRulesTitle": "Дневной сон не сохраняется?",
+  "guideAddNapRulesBody": "Дневной сон длится от {minMinutes} минут до {maxHours} часов, должен уже закончиться и не может пересекаться с другим дневным сном или с основным сном.",
+  "@guideAddNapRulesBody": {
+    "description": "Footer card body: nap limits come from the shared form validation caps.",
+    "placeholders": {
+      "minMinutes": {
+        "type": "String"
+      },
+      "maxHours": {
+        "type": "String"
+      }
+    }
+  },
+  "guideRemoveTitle": "Где убрать дневной сон или тренировку, которых не было",
+  "guideRemoveStep1": "На вкладке **{tab}** нажмите на карточку **{card}**. Она есть, только пока что-то ждёт вашего ответа.",
+  "guideRemoveStep2": "У каждого пункта своя кнопка **{notNap}** / **{notWorkout}**. Нажмите её у дневного сна или тренировки, которых не было; подсветка показывает варианты.",
+  "guideRemoveSavedTitle": "Уже сохранено?",
+  "guideRemoveSavedBody": "Откройте вкладку **{sleep}** и нажмите **{naps}**. Нажмите **{notNap}** у сна, найденного браслетом, или **{delete}** у записанного вами.",
+  "guideRemoveMissingTitle": "Не видите «{card}»?",
+  "guideRemoveMissingBody": "Карточка есть, только пока что-то ждёт вашего ответа. После ответа ищите дневной сон в **{sleep}** > **{naps}**, а тренировки в **{activity}** > **{history}**.",
+  "guideFixTimesTitle": "Где исправить время сна",
+  "guideFixTimesStep1": "На вкладке **{tab}** нажмите **{change}** под последней ночью. Там написано **{set}**, пока вы сами не задали время. Вас спросят, когда вы легли, а затем когда встали.",
+  "guideFixTimesStep2": "Чтобы отменить изменения, нажмите **{back}**. Ночь вернётся ко времени, которое определило приложение.",
+  "guideFixTimesBackTitle": "Не видите «{back}»?",
+  "guideFixTimesBackBody": "**{back}** появляется только после того, как вы сами задали или подтвердили время, и пока записи за всю ночь ещё сохранены.",
+  "guideFixTimesAskTitle": "О чём спрашивают окна выбора",
+  "guideFixTimesAskBody": "Сначала время, когда вы легли, затем время, когда встали. По этим двум значениям ночь рассчитывается заново.",
+  "guideDeleteTitle": "Где удалить тренировку",
+  "guideDeleteStep1": "На вкладке **{tab}** откройте **{history}**.",
+  "guideDeleteStep2": "Нажмите на корзину в конце строки тренировки (**{label}**) и подтвердите.",
+  "guideDeleteWhatTitle": "Что происходит при удалении",
+  "guideDeleteWhatBody": "Тренировка исчезает из приложения. Копия в приложении «Здоровье» на телефоне, если она есть, остаётся на месте.",
+  "guideDeleteNoneTitle": "Нет корзины, на которую нажать?",
+  "guideDeleteNoneBody": "Если в разделе «История» написано **{none}**, удалять пока нечего. Тренировку добавляют кнопки **{start}** и **{log}**.",
+  "guideStartTitle": "Где начать и закончить тренировку",
+  "guideStartStep1": "На вкладке **{tab}** нажмите на карточку **{card}**.",
+  "guideStartStep2": "Найдите свою активность: введите её в **{search}** или выберите из списка.",
+  "guideStartStep3": "Проверьте детали и нажмите **{start}**.",
+  "guideStartStep4": "Чтобы остановить, нажмите красный квадрат (**{finish}**). Вы попадёте на итоги тренировки.",
+  "guideStartNoBandTitle": "Браслет не подключён?",
+  "guideStartNoBandBody": "Тренировку всё равно можно начать. Отключённый браслет не передаёт пульс, но другой подключённый датчик пульса может его передавать.",
+  "guideStartPauseTitle": "Нужен перерыв?",
+  "guideStartPauseBody": "Нажмите **{pause}**, чтобы остановить время, и **{resume}**, чтобы продолжить.",
+  "guideLogPastTitle": "Где записать тренировку, которую вы забыли начать",
+  "guideLogPastStep1": "На вкладке **{tab}** откройте **{history}**.",
+  "guideLogPastStep2": "Прокрутите в самый низ и нажмите **{log}**.",
+  "guideLogPastStep3": "Выберите активность, заполните время в разделе **{when}** и нажмите **{logIt}**.",
+  "guideLogPastScoreTitle": "Будет ли оценка?",
+  "guideLogPastScoreBody": "Если браслет записывал ваш пульс в это время и в вашем профиле указаны возраст и пол, тренировка получит оценку по нему. Если нет, она сохранится без оценки.",
+  "guideLogPastMissingTitle": "Не видите «{log}»?",
+  "guideLogPastMissingBody": "Она в самом низу раздела **{history}**, под вашими тренировками. Прокрутите до конца.",
+  "@guideAlarmStep1": {
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "section": {
+        "type": "String",
+        "description": "Heading of the section with the alarm row"
+      },
+      "row": {
+        "type": "String",
+        "description": "Name of the Alarm row"
+      }
+    }
+  },
+  "@guideAlarmStep2": {
+    "placeholders": {
+      "group": {
+        "type": "String",
+        "description": "Heading of the weekly schedule"
+      },
+      "day": {
+        "type": "String",
+        "description": "Short name of one weekday"
+      }
+    }
+  },
+  "@guideAlarmStep3": {
+    "placeholders": {
+      "wake": {
+        "type": "String",
+        "description": "Name of the Wake time row"
+      }
+    }
+  },
+  "@guideAlarmAltBody": {
+    "placeholders": {
+      "profile": {
+        "type": "String",
+        "description": "Profile screen name"
+      },
+      "settings": {
+        "type": "String",
+        "description": "Settings row name"
+      },
+      "band": {
+        "type": "String",
+        "description": "The band settings group name"
+      },
+      "alarm": {
+        "type": "String",
+        "description": "Alarm row name"
+      }
+    }
+  },
+  "@guideAlarmMissingTitle": {
+    "placeholders": {
+      "group": {
+        "type": "String",
+        "description": "Heading of the weekly schedule"
+      }
+    }
+  },
+  "@guideAlarmMissingBody": {
+    "placeholders": {
+      "group": {
+        "type": "String",
+        "description": "Heading of the weekly schedule"
+      }
+    }
+  },
+  "@guideAddNapStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Sleep tab name, {naps} the Naps button.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      }
+    }
+  },
+  "@guideAddNapStep2": {
+    "description": "Step 2 caption. {log} is the Log a nap button; {fell} and {woke} are the two questions of the time pickers, in lower case.",
+    "placeholders": {
+      "log": {
+        "type": "String",
+        "description": "Name of the Log a nap button"
+      },
+      "fell": {
+        "type": "String",
+        "description": "The first picker question, lower case"
+      },
+      "woke": {
+        "type": "String",
+        "description": "The second picker question, lower case"
+      }
+    }
+  },
+  "@guideAddNapFoundBody": {
+    "description": "Footer card body. {notNap} is the in-app button that rejects a detected nap.",
+    "placeholders": {
+      "notNap": {
+        "type": "String",
+        "description": "Name of the Not a nap button"
+      }
+    }
+  },
+  "@guideRemoveStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Today tab name, {card} the title of the card.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Today tab name"
+      },
+      "card": {
+        "type": "String",
+        "description": "Title of the Detected activities card"
+      }
+    }
+  },
+  "@guideRemoveStep2": {
+    "description": "Step 2 caption. Bold words are the in-app buttons for a nap and for a workout.",
+    "placeholders": {
+      "notNap": {
+        "type": "String",
+        "description": "Name of the Not a nap button"
+      },
+      "notWorkout": {
+        "type": "String",
+        "description": "Name of the Not a workout button"
+      }
+    }
+  },
+  "@guideRemoveSavedBody": {
+    "description": "Footer card body. Bold words are in-app labels.",
+    "placeholders": {
+      "sleep": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      },
+      "notNap": {
+        "type": "String",
+        "description": "Name of the Not a nap button"
+      },
+      "delete": {
+        "type": "String",
+        "description": "Name of the Delete button"
+      }
+    }
+  },
+  "@guideRemoveMissingTitle": {
+    "description": "Footer card title: the user cannot see the card. {card} is its in-app title.",
+    "placeholders": {
+      "card": {
+        "type": "String",
+        "description": "Title of the Detected activities card"
+      }
+    }
+  },
+  "@guideRemoveMissingBody": {
+    "description": "Footer card body. Bold words are in-app labels; > separates the taps.",
+    "placeholders": {
+      "sleep": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      },
+      "activity": {
+        "type": "String",
+        "description": "Activity tab name"
+      },
+      "history": {
+        "type": "String",
+        "description": "Name of the History sub-tab"
+      }
+    }
+  },
+  "@guideFixTimesStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} the Sleep tab, {change} and {set} the two texts of the same button.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Sleep tab name"
+      },
+      "change": {
+        "type": "String",
+        "description": "Button text once the times are the user's own"
+      },
+      "set": {
+        "type": "String",
+        "description": "Button text while the times are automatic"
+      }
+    }
+  },
+  "@guideFixTimesStep2": {
+    "description": "Step 2 caption. {back} is the in-app Back to automatic button.",
+    "placeholders": {
+      "back": {
+        "type": "String",
+        "description": "Name of the Back to automatic button"
+      }
+    }
+  },
+  "@guideFixTimesBackTitle": {
+    "description": "Footer card title. {back} is the in-app Back to automatic button.",
+    "placeholders": {
+      "back": {
+        "type": "String",
+        "description": "Name of the Back to automatic button"
+      }
+    }
+  },
+  "@guideFixTimesBackBody": {
+    "description": "Footer card body: Back to automatic needs user-set or confirmed times and recordings for the whole night.",
+    "placeholders": {
+      "back": {
+        "type": "String",
+        "description": "Name of the Back to automatic button"
+      }
+    }
+  },
+  "@guideDeleteStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Activity tab, {history} the History sub-tab.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Activity tab name"
+      },
+      "history": {
+        "type": "String",
+        "description": "Name of the History sub-tab"
+      }
+    }
+  },
+  "@guideDeleteStep2": {
+    "description": "Step 2 caption. {label} is the accessibility label of the bin icon.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "description": "Accessibility label of the delete icon"
+      }
+    }
+  },
+  "@guideDeleteNoneBody": {
+    "description": "Footer card body. Bold words are in-app labels: {none} the empty-History message, {start} and {log} the two ways to add a session.",
+    "placeholders": {
+      "none": {
+        "type": "String",
+        "description": "The message shown when no session is recorded"
+      },
+      "start": {
+        "type": "String",
+        "description": "Name of the Start a workout button"
+      },
+      "log": {
+        "type": "String",
+        "description": "Name of the Log a past workout button"
+      }
+    }
+  },
+  "@guideStartStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Activity tab, {card} the start card.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Activity tab name"
+      },
+      "card": {
+        "type": "String",
+        "description": "Text of the start card"
+      }
+    }
+  },
+  "@guideStartStep2": {
+    "description": "Step 2 caption. {search} is the in-app label of the search field.",
+    "placeholders": {
+      "search": {
+        "type": "String",
+        "description": "Label of the activity search field"
+      }
+    }
+  },
+  "@guideStartStep3": {
+    "description": "Step 3 caption. {start} is the Start button of the setup screen.",
+    "placeholders": {
+      "start": {
+        "type": "String",
+        "description": "Name of the Start button"
+      }
+    }
+  },
+  "@guideStartStep4": {
+    "description": "Step 4 caption. {finish} is the accessibility label of the red stop button.",
+    "placeholders": {
+      "finish": {
+        "type": "String",
+        "description": "Accessibility label of the finish button"
+      }
+    }
+  },
+  "@guideStartPauseBody": {
+    "description": "Footer card body. Bold words are the in-app Pause and Resume buttons.",
+    "placeholders": {
+      "pause": {
+        "type": "String",
+        "description": "Name of the Pause button"
+      },
+      "resume": {
+        "type": "String",
+        "description": "Name of the Resume button"
+      }
+    }
+  },
+  "@guideLogPastStep1": {
+    "description": "Step 1 caption. Bold words are in-app labels: {tab} is the Activity tab, {history} the History sub-tab.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "Activity tab name"
+      },
+      "history": {
+        "type": "String",
+        "description": "Name of the History sub-tab"
+      }
+    }
+  },
+  "@guideLogPastStep2": {
+    "description": "Step 2 caption. {log} is the Log a past workout button.",
+    "placeholders": {
+      "log": {
+        "type": "String",
+        "description": "Name of the Log a past workout button"
+      }
+    }
+  },
+  "@guideLogPastStep3": {
+    "description": "Step 3 caption. Bold words are in-app labels: {when} the heading of the times group, {logIt} the save button.",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "description": "Heading of the group with the times"
+      },
+      "logIt": {
+        "type": "String",
+        "description": "Name of the save button"
+      }
+    }
+  },
+  "@guideLogPastMissingTitle": {
+    "description": "Footer card title. {log} is the in-app button.",
+    "placeholders": {
+      "log": {
+        "type": "String",
+        "description": "Name of the Log a past workout button"
+      }
+    }
+  },
+  "@guideLogPastMissingBody": {
+    "description": "Footer card body.",
+    "placeholders": {
+      "history": {
+        "type": "String",
+        "description": "Name of the History sub-tab"
+      }
+    }
+  },
+  "guideSearchOrPick": "поиск или выбор",
+  "profileHelpRow": "Помощь",
+  "@guideAddNapMissingTitle": {
+    "placeholders": {
+      "naps": {
+        "type": "String"
+      }
+    }
+  },
+  "guideAddNapMissingTitle": "Не видите «{naps}»?",
+  "@guideAddNapMissingBody": {
+    "placeholders": {
+      "naps": {
+        "type": "String"
+      }
+    }
+  },
+  "guideAddNapMissingBody": "**{naps}** находится под вашей ночью. Прокрутите вниз, чтобы найти эту кнопку.",
+  "guideRemoveStep2Still": "У каждого пункта своя кнопка **{notNap}** / **{notWorkout}**. Нажмите её у дневного сна или тренировки, которых не было; рамка отмечает первый пункт.",
+  "@guideRemoveStep2Still": {
+    "description": "Step 2 caption. Bold words are the in-app buttons for a nap and for a workout.",
+    "placeholders": {
+      "notNap": {
+        "type": "String",
+        "description": "Name of the Not a nap button"
+      },
+      "notWorkout": {
+        "type": "String",
+        "description": "Name of the Not a workout button"
+      }
+    }
+  },
+  "helpLookingForSomething": "Что-то ищете?",
+  "helpAllGuides": "Все руководства",
+  "helpTopicEmpty": "Для этой вкладки пока нет руководств.",
+  "importSourceEncryptedBackup": "Зашифрованная резервная копия",
+  "importSourceOpenStrapBackup": "Резервная копия OpenStrap",
+  "importSourceRawSensor": "Экспорт сырых данных датчика",
+  "importSourceVendorCsv": "Экспорт CSV от производителя",
+  "importSourceJournalCsv": "CSV дневника",
+  "importSourceLabCsv": "CSV результатов анализов",
+  "importSourceFilePicker": "Выбор файлов",
+  "importSourceImport": "Импорт",
+  "importSourceNothingSelected": "Ничего не выбрано",
+  "welcomeEncryptedBackupUseSettings": "Этот файл — зашифрованная резервная копия. Откройте его в разделе Настройки → Ваши данные, там можно ввести пароль.",
+  "welcomeNotUtf8": "{file}: сохранён не в UTF-8. Сохраните как «CSV UTF-8» и импортируйте снова",
+  "@welcomeNotUtf8": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeCorruptTables": "Не удалось прочитать {tables}: SQLite сообщает, что файл повреждён в этих таблицах. Все остальные таблицы импортированы нормально.",
+  "@welcomeCorruptTables": {
+    "placeholders": {
+      "tables": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeRejectsMore": "{shown}; и ещё {count}.",
+  "@welcomeRejectsMore": {
+    "placeholders": {
+      "shown": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackFlaggedBody": "На этой неделе отмечено: {items}. Подробности в разделе «Здоровье».",
+  "@notifLookbackFlaggedBody": {
+    "description": "Weekly lookback notification body listing the week's flags; {items} is a comma-separated list of the flag phrases below.",
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "notifLookbackIllness": "пульс в покое повышен ×{count}",
+  "@notifLookbackIllness": {
+    "description": "Weekly lookback flag phrase: nights with raised resting heart rate.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackAnomaly": "необычные показатели ×{count}",
+  "@notifLookbackAnomaly": {
+    "description": "Weekly lookback flag phrase: nights with unusual physiology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackTemp": "повышенная температура кожи ×{count}",
+  "@notifLookbackTemp": {
+    "description": "Weekly lookback flag phrase: nights with elevated skin temperature.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackRhrHigherBody": "К концу недели пульс в покое был примерно на {bpm} уд/мин выше, чем в начале.",
+  "@notifLookbackRhrHigherBody": {
+    "description": "Weekly lookback notification body: resting heart rate drifted up over the week.",
+    "placeholders": {
+      "bpm": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackRhrLowerBody": "К концу недели пульс в покое был примерно на {bpm} уд/мин ниже, чем в начале.",
+  "@notifLookbackRhrLowerBody": {
+    "description": "Weekly lookback notification body: resting heart rate drifted down over the week.",
+    "placeholders": {
+      "bpm": {
+        "type": "int"
+      }
+    }
+  },
+  "notifSyncStaleBody": "Новых данных нет примерно {hours} ч. Откройте OpenStrap, чтобы переподключиться, — фоновая синхронизация могла остановиться.",
+  "@notifSyncStaleBody": {
+    "description": "OS notification body when the band has not synced for several hours.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesTimeUnknown": "Время неизвестно",
+  "devicesClockNotSetSub": "Браслет записал данные, но его часы не установлены",
+  "homeSyncedTimeUnknown": "Данные с браслета, часы не установлены",
+  "coachAppleTitle": "Apple Intelligence на этом iPhone",
+  "coachAppleSub": "Нужны iOS 26 и включённый Apple Intelligence. Ключ не нужен.",
+  "coachAppleChecking": "Проверяем Apple Intelligence…",
+  "coachAppleOnNote": "Коуч, сводки и дневник теперь используют небольшую модель Apple на устройстве. Она отвечает по данным за последние две недели и не может ничего записывать за вас; выключите её, чтобы использовать более крупную модель.",
+  "coachAppleReady": "Готово.",
+  "coachAppleNotEnabled": "Включите Apple Intelligence в Настройках, чтобы использовать модель на устройстве.",
+  "coachAppleNotReady": "Модель Apple на устройстве ещё загружается. Попробуйте позже.",
+  "coachAppleNotEligible": "Этот iPhone не может запускать модель Apple на устройстве.",
+  "coachAppleUnsupported": "Нужен iPhone с Apple Intelligence на iOS 26 или новее.",
+  "coachAppleFailed": "Модель Apple на устройстве не смогла ответить. Попробуйте ещё раз.",
+  "coachAppleTooLong": "Это слишком длинно для модели Apple на устройстве. Начните новый чат или задайте вопрос короче.",
+  "coachAppleDeclined": "Модель Apple на устройстве отказалась на это отвечать. Попробуйте сформулировать иначе.",
+  "coachAppleTimeout": "Модель Apple на устройстве отвечала слишком долго. Попробуйте ещё раз или задайте вопрос короче.",
+  "coachAppleNoEcg": "Модель Apple на устройстве не может читать кривую ЭКГ. Чтобы проанализировать эту запись, выключите Apple Intelligence в настройках ИИ коуча и используйте другую модель.",
+  "aiBriefingUnknownBody": "Эта заметка сохранена до того, как приложение стало записывать, куда уходят сводки, поэтому оно не может сказать, куда были отправлены эти данные.",
+  "alarmAllDays": "Все дни",
+  "alarmCopiedToAllDays": "Время подъёма скопировано на все дни"
 }

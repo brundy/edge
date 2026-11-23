@@ -36,6 +36,7 @@ import '../screens/home_screen.dart' show repoOf;
 import '../screens/journal_compose.dart' show OsTextField;
 import '../screens/metric_detail.dart' show detailScaffold;
 import '../ui2.dart';
+import 'catalogue.dart' show activityByName;
 
 /// 'YYYY-MM-DD' → '3 Aug'. Returns the raw label if it does not parse — a date
 /// we cannot format is still better than dropping the attribution.
@@ -171,6 +172,11 @@ class _ZonesDetailState extends State<ZonesDetail> {
   ZonesData? _d;
   bool _loading = true;
 
+  /// The last read threw. A failed read is NOT "No zones yet": rendering it as
+  /// the empty state also invented an age (`d.age` null from the placeholder)
+  /// and told a user who HAD set one to go and set it.
+  bool _failed = false;
+
   @override
   void initState() {
     super.initState();
@@ -190,9 +196,9 @@ class _ZonesDetailState extends State<ZonesDetail> {
     }
     try {
       final d = await ZonesData.load(repo);
-      if (mounted) setState(() => (_d = d, _loading = false));
+      if (mounted) setState(() => (_d = d, _loading = false, _failed = false));
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => (_loading = false, _failed = true));
     }
   }
 
@@ -269,9 +275,8 @@ class _ZonesDetailState extends State<ZonesDetail> {
       ),
     );
     final typed = [for (final ctl in ctrls) Typed.of(ctl.text)];
-    for (final ctl in ctrls) {
-      ctl.dispose();
-    }
+    // Not disposed: the sheet's exit animation still builds the fields after
+    // this returns, and a bare controller holds nothing once they are gone.
     if (saved != true || !c.mounted) return;
     final bad = [
       for (var i = 0; i < 5; i++) if (typed[i].bad) 'Z${i + 1}',
@@ -320,6 +325,23 @@ class _ZonesDetailState extends State<ZonesDetail> {
       if (_loading && _d == null) ...[
         const SizedBox(height: S.x8),
         const Center(child: CircularProgressIndicator()),
+      ] else if (_failed && _d == null) ...[
+        const SizedBox(height: S.x2),
+        StatusCard(
+          l?.wellnessLoadFailedTitle ?? 'This could not be read',
+          // NOT `homeLoadFailedBody`: this screen reads zone anchors, not a
+          // stored day, so "the stored day failed to load" would name the wrong
+          // thing. The generic body says what actually failed.
+          l?.wellnessLoadFailedBody ??
+              'Reading your stored data failed. Nothing was deleted — this is a '
+                  'read that went wrong, not missing data.',
+          fix: l?.homeTryAgain ?? 'Try again',
+          icon: LucideIcons.databaseZap,
+          onFix: () {
+            setState(() => (_loading = true, _failed = false));
+            _load();
+          },
+        ),
       ] else ...[
         _ceiling(p, l, d),
         Section(l?.activityZonesYourZonesSection ?? 'Your zones', _zones(p, l, d)),
@@ -375,14 +397,19 @@ class _ZonesDetailState extends State<ZonesDetail> {
         icon: LucideIcons.heartPulse,
       );
     }
+    // Sessions store the activity key ('trail_running'); show its name.
+    final session = d.ceilingSession == null
+        ? null
+        : _midSentence(
+            activityByName(d.ceilingSession)?.localizedName(l) ??
+                d.ceilingSession!.replaceAll('_', ' '),
+            l);
     final where = [
       if (d.ceilingDate != null)
         l?.activityZonesCeilingOnDate(_prettyDay(d.ceilingDate!, l)) ??
             'on ${_prettyDay(d.ceilingDate!, l)}',
-      if (d.ceilingSession != null)
-        l?.activityZonesCeilingDuringSession(
-                d.ceilingSession!.toLowerCase()) ??
-            'during ${d.ceilingSession!.toLowerCase()}',
+      if (session != null)
+        l?.activityZonesCeilingDuringSession(session) ?? 'during $session',
     ].join(', ');
     return Surface(
       child: Column(
@@ -464,21 +491,21 @@ class _ZonesDetailState extends State<ZonesDetail> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Z${z.zone} · ${z.name}',
+                        'Z${z.zone} · ${localizedText(l, z.name)}',
                         style: F.body.copyWith(color: p.ink),
                       ),
                     ],
                   ),
                 ),
-                Text(
-                  // One beat below the next edge, as [ZoneRows.range] prints
-                  // it, so no bpm sits in two zones.
-                  z.zone == 5 ? '${z.lo}+' : '${z.lo}–${z.hi > z.lo ? z.hi - 1 : z.hi}',
-                  style: F.n17.copyWith(color: p.ink2),
-                ),
                 const SizedBox(width: S.x2),
-                Text(l?.activityZonesBpmUnit ?? 'bpm',
-                    style: F.cap.copyWith(color: p.ink3)),
+                // At large text the range may wrap (after its dash, or
+                // before the unit) instead of overflowing the row. Only
+                // there: flexed at 1x it would take half the row from the
+                // zone name. One Text.rich so the unit stays with its number.
+                if (bigText(context))
+                  Flexible(child: _range(z, p, l))
+                else
+                  _range(z, p, l),
               ],
             ),
           ],
@@ -491,6 +518,26 @@ class _ZonesDetailState extends State<ZonesDetail> {
       ),
     );
   }
+
+  /// One zone's bpm range with its unit, as one run of text.
+  Widget _range(ZoneRow z, P p, AppLocalizations? l) => Text.rich(
+        TextSpan(children: [
+          TextSpan(
+            // One beat below the next edge, as [ZoneRows.range] prints it, so
+            // no bpm sits in two zones.
+            text: z.zone == 5
+                ? '${z.lo}+'
+                : '${z.lo}–${z.hi > z.lo ? z.hi - 1 : z.hi}',
+            style: F.n17.copyWith(color: p.ink2),
+          ),
+          TextSpan(
+            // A no-break space, so the unit never lands on a line of its own.
+            text: ' ${l?.activityZonesBpmUnit ?? 'bpm'}',
+            style: F.cap.copyWith(color: p.ink3),
+          ),
+        ]),
+        textAlign: TextAlign.end,
+      );
 
   /// WHERE THESE EDGES CAME FROM — the whole point of the screen. Three
   /// different claims, three different sentences, never a shared hedge.
@@ -601,3 +648,7 @@ class _ZonesDetailState extends State<ZonesDetail> {
     return '$shape $summary';
   }
 }
+
+// Lowercase only for English; other locales (e.g. German nouns) keep casing.
+String _midSentence(String name, AppLocalizations? l) =>
+    (l == null || l.localeName.startsWith('en')) ? name.toLowerCase() : name;

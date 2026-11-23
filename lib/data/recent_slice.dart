@@ -82,6 +82,10 @@ const Map<String, (SliceKeep, String?, String)> kSliceTables = {
   'baselines': (SliceKeep.all, null, 'personal baselines'),
   'compute_freshness': (SliceKeep.all, null, 'compute bookkeeping'),
   'derive_fingerprint': (SliceKeep.all, null, 'which days changed since they were last scored'),
+  'input_rev': (SliceKeep.all, null, 'per-bucket input revisions'),
+  'session_ceiling_rev': (SliceKeep.all, null, 'session ceiling revisions'),
+  'store_identity': (SliceKeep.none, null, 'local checkpoint store identity'),
+  'day_checkpoint': (SliceKeep.none, null, 'disposable night/cardio checkpoints'),
   'sleep_nap': (SliceKeep.all, null, 'naps'),
   'sleep_override': (SliceKeep.all, null, 'sleep times the user edited'),
   // Workouts and activity: one row each.
@@ -96,6 +100,10 @@ const Map<String, (SliceKeep, String?, String)> kSliceTables = {
   'activity_review_days': (SliceKeep.all, null, 'activity review state'),
   'activity_review_meta': (SliceKeep.all, null, 'activity review state'),
   'breathing_session': (SliceKeep.all, null, 'breathing sessions'),
+  'hyrox_session': (SliceKeep.all, null, 'HYROX sessions'),
+  'hyrox_segment': (SliceKeep.all, null, 'HYROX round segments'),
+  'triathlon_session': (SliceKeep.all, null, 'triathlon sessions'),
+  'triathlon_segment': (SliceKeep.all, null, 'triathlon segments'),
   'exercise_def': (SliceKeep.all, null, 'exercise list'),
   // What the user logs: small.
   'journal': (SliceKeep.all, null, 'journal'),

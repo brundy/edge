@@ -77,6 +77,11 @@ class ImportOutcome {
   /// re-importing corrects the (marker, date) rows it names.
   final int labRows;
 
+  final int prefsRestored;
+  /// Settings rows the backup held but could not be read; skipped.
+  final int prefsRefused;
+  final List<String> needsReentry;
+
   /// Journal or lab CSV lines that were REJECTED, never clamped — "line 12:
   /// note is 40122 characters". Shown up to a cap, because a validation the
   /// user cannot see is a silent drop.
@@ -103,6 +108,9 @@ class ImportOutcome {
     this.archiveBucketsRestored = 0,
     this.journalRows = 0,
     this.labRows = 0,
+    this.prefsRestored = 0,
+    this.prefsRefused = 0,
+    this.needsReentry = const [],
     this.rejectedRows = const [],
     this.error,
     this.rollupError,
@@ -120,6 +128,8 @@ class ImportOutcome {
   /// the gate waits for them instead of moving on to pairing.
   bool get needsReading =>
       lostSomething ||
+      needsReentry.isNotEmpty ||
+      prefsRefused > 0 ||
       rejectedRows.isNotEmpty ||
       readError != null ||
       rollupError != null;
@@ -132,7 +142,8 @@ class ImportOutcome {
       skippedDays == 0 &&
       journalRows == 0 &&
       labRows == 0 &&
-      archiveBucketsRestored == 0;
+      archiveBucketsRestored == 0 &&
+      prefsRestored == 0;
 }
 
 /// Raised when an encrypted backup was picked and the user closed the
@@ -272,6 +283,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   Future<void> _import() async {
     final app = context.read<AppState>();
+    final l = AppLocalizations.of(context);
     FilePickerResult? picked;
     try {
       picked = await FilePicker.platform
@@ -279,7 +291,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     } catch (e) {
       if (mounted) {
         setState(() =>
-            _outcome = ImportOutcome(source: 'File picker', error: '$e'));
+            _outcome = ImportOutcome(
+                source: l?.importSourceFilePicker ?? 'File picker',
+                error: '$e'));
       }
       return;
     }
@@ -299,7 +313,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     });
     try {
       final outcome = await runImport(app, paths,
-          askPassphrase: () => askBackupPassphrase(context));
+          askPassphrase: () =>
+              mounted ? askBackupPassphrase(context) : Future.value(null),
+          l: l);
       if (!mounted) return;
       final hold = await settleOnboardImport(app, outcome);
       if (!mounted) return;
@@ -313,7 +329,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     } catch (e) {
       if (mounted) {
         setState(() =>
-            _outcome = ImportOutcome(source: 'Import', error: '$e'));
+            _outcome = ImportOutcome(
+                source: l?.importSourceImport ?? 'Import',
+                error: '$e'));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -355,6 +373,7 @@ Future<ImportOutcome> runImport(
   AppState app,
   List<String> paths, {
   Future<String?> Function()? askPassphrase,
+  AppLocalizations? l,
 }) async {
   // An encrypted backup is identified by its MAGIC, not its extension: it comes
   // back off iCloud Drive or a mail attachment with whatever name that round
@@ -365,7 +384,8 @@ Future<ImportOutcome> runImport(
   final sources = <String>[];
   var days = 0, workouts = 0, skipped = 0, late = 0, stranded = 0;
   var journalRows = 0;
-  var labRows = 0;
+  var labRows = 0, prefsRestored = 0, prefsRefused = 0;
+  final needsReentry = <String>{};
   final corruptTables = <String>{};
   var archiveSkipped = 0, archiveRestored = 0;
   final rejected = <String>[];
@@ -373,67 +393,104 @@ Future<ImportOutcome> runImport(
   String? cryptoError;
 
   final plain = <String>[];
-  for (final p in paths) {
-    if (!await isEncryptedBackup(p)) {
-      plain.add(p);
-      continue;
-    }
-    if (askPassphrase == null) {
-      cryptoError = 'That file is an encrypted backup. Open it from '
-          'Settings → Your data, where the passphrase can be asked for.';
-      continue;
-    }
-    final pass = await askPassphrase();
-    if (pass == null) {
-      // Shred here, not in the `finally` below. The picker is multi-select, so
-      // an EARLIER encrypted file in the same selection may already be sitting
-      // in the temp directory as the whole health record in plaintext — and
-      // this throw jumps past the try/finally that would normally delete it,
-      // because that try has not been entered yet. Cancelling the second
-      // passphrase prompt used to leave the first backup decrypted on disk.
-      for (final d in decrypted) {
-        try {
-          await File(d).delete();
-        } catch (_) {}
+  // Any throw out of this loop jumps past the try/finally below, which has not
+  // been entered yet. The picker is multi-select, so an EARLIER encrypted file
+  // may already be sitting in the temp directory as the whole health record in
+  // plaintext: cancelling the second prompt, or the prompt throwing because
+  // the screen that asked was closed mid-decrypt, used to leave it on disk.
+  try {
+    for (final p in paths) {
+      if (!await isEncryptedBackup(p)) {
+        plain.add(p);
+        continue;
       }
-      throw PassphraseCancelled();
+      if (askPassphrase == null) {
+        cryptoError = l?.welcomeEncryptedBackupUseSettings ??
+            'That file is an encrypted backup. Open it from '
+                'Settings → Your data, where the passphrase can be asked for.';
+        continue;
+      }
+      final pass = await askPassphrase();
+      if (pass == null) throw PassphraseCancelled();
+      try {
+        decrypted.add(await decryptToTemp(p, pass));
+      } on BackupFormatException catch (e) {
+        // ONE message for a wrong passphrase and a tampered file, because GCM
+        // cannot tell them apart and pretending otherwise would be a guess.
+        cryptoError = e.message;
+      }
     }
-    try {
-      decrypted.add(await decryptToTemp(p, pass));
-    } on BackupFormatException catch (e) {
-      // ONE message for a wrong passphrase and a tampered file, because GCM
-      // cannot tell them apart and pretending otherwise would be a guess.
-      cryptoError = e.message;
+  } catch (_) {
+    // The picker is multi-select, so an EARLIER encrypted file in the same
+    // selection may already be sitting in the temp directory as the whole
+    // health record in plaintext, and any throw here (a cancelled prompt, a
+    // full disk, an evicted source file) jumps past the try/finally below
+    // that would normally delete it. Shred before letting it out.
+    for (final d in decrypted) {
+      try {
+        await File(d).delete();
+      } catch (_) {}
     }
+    rethrow;
   }
 
   // EVERY group runs, not the first one that matches. The picker is
   // multi-select and this used to return inside the winning branch, so a
   // backup selected alongside a vendor CSV imported the backup and threw the
   // CSV away without a word.
-  final db = [...plain.where(_isDbBackup), ...decrypted];
+  final ownDb = <String>{};
   // Raw-vs-vendor is decided by what the file HOLDS, not by what it is called.
   // See [isNoopExport]: routing on the extension sent NOOP's raw-sensor `.csv`
   // to the vendor importer and WHOOP's `.zip` to the NOOP one — both files
   // fine, both refused, both with advice for the other file.
   final raw = <String>[];
   final csv = <String>[];
-  for (final p in plain) {
-    if (_isDbBackup(p)) continue;
-    (await isNoopExport(p) ? raw : csv).add(p);
-  }
+  final db = <String>[];
 
-  if (decrypted.isNotEmpty) sources.add('Encrypted backup');
-  if (plain.any(_isDbBackup)) sources.add('OpenStrap backup');
+  // A file that throws mid-selection is named here and the rest still runs:
+  // rows from earlier files are already durable, so throwing would report a
+  // failed import over history that did land.
+  final fileErrors = <String>[];
+  String nameOf(String p) => p.split(Platform.pathSeparator).last;
   try {
+    // Inside the cleanup boundary: a throw while sniffing must not leave a
+    // decrypted backup in the temp directory.
+    for (final p in plain) {
+      final own = await isEdgeBackup(p);
+      if (own == true) {
+        ownDb.add(p);
+      } else if (own == null) {
+        // Inspection failed: not claimable as ours, and not a NOOP export
+        // either, so the vendor path's generic message is the honest one.
+        csv.add(p);
+      } else {
+        (await isNoopExport(p) ? raw : csv).add(p);
+      }
+    }
+    db.addAll([...plain.where(ownDb.contains), ...decrypted]);
     for (final p in db) {
-      days += await app.importEdgeBackup(p);
+      try {
+        days += await app.importEdgeBackup(p);
+      } catch (e) {
+        fileErrors.add('${nameOf(p)}: $e');
+        continue;
+      }
+      if (ownDb.contains(p)) {
+        final s = l?.importSourceOpenStrapBackup ?? 'OpenStrap backup';
+        if (!sources.contains(s)) sources.add(s);
+      } else {
+        final s = l?.importSourceEncryptedBackup ?? 'Encrypted backup';
+        if (!sources.contains(s)) sources.add(s);
+      }
       // The rows are in and the rollup rebuild threw. AppState's own note:
       // reporting the row count alone claims a success the user does not have
       // — which is exactly what this path did until now.
       rollupError ??= app.importRollupError;
       archiveSkipped += app.lastImportArchiveSkipped;
       archiveRestored += app.lastImportArchiveRestored;
+      prefsRestored += app.lastImportPrefsRestored;
+      prefsRefused += app.lastImportPrefsRefused;
+      needsReentry.addAll(app.lastImportNeedsReentry);
     }
   } finally {
     // The decrypted copy is the whole health record in plaintext. It exists
@@ -446,9 +503,15 @@ Future<ImportOutcome> runImport(
     }
   }
   if (raw.isNotEmpty) {
-    sources.add('Raw sensor export');
     for (final p in raw) {
-      days += await app.importNoopCsv(p);
+      try {
+        days += await app.importNoopCsv(p);
+      } catch (e) {
+        fileErrors.add('${nameOf(p)}: $e');
+        continue;
+      }
+      final rawSrc = l?.importSourceRawSensor ?? 'Raw sensor export';
+      if (!sources.contains(rawSrc)) sources.add(rawSrc);
       final r = app.lastNoopImport;
       if (r != null) {
         late += r.lateRows;
@@ -470,7 +533,13 @@ Future<ImportOutcome> runImport(
     // comes back as `FileSystemException: Failed to decode data using encoding
     // 'utf-8'`, which no catch below was going to turn into advice. The vendor
     // path unwraps archives (and gzip) properly, so hand them straight over.
-    if (await sniffFile(p) != ImportContainer.text) {
+    // An unreadable file is the vendor path's to report (it is caught below
+    // and named); throwing here would lose the counts already landed.
+    ImportContainer? kind;
+    try {
+      kind = await sniffFile(p);
+    } catch (_) {}
+    if (kind != ImportContainer.text) {
       vendor.add(p);
       continue;
     }
@@ -482,7 +551,8 @@ Future<ImportOutcome> runImport(
       // here does it from its AppState method.
       if (r.imported > 0) app.bumpInsights();
       rejected.addAll(r.rejected.map((x) => x.toString()));
-      if (!sources.contains('Journal CSV')) sources.add('Journal CSV');
+      final journal = l?.importSourceJournalCsv ?? 'Journal CSV';
+      if (!sources.contains(journal)) sources.add(journal);
       continue;
     } on JournalCsvFormatException {
       // Not a journal export — fall through and try the lab-results header
@@ -493,7 +563,7 @@ Future<ImportOutcome> runImport(
       // Our own journal or lab export is not something the vendor importer
       // reads, though: it would drop it without a word, so name it instead.
       if (await _isOwnCsvExport(p)) {
-        rejected.add(_notUtf8(p));
+        rejected.add(_notUtf8(p, l));
       } else {
         vendor.add(p);
       }
@@ -504,12 +574,13 @@ Future<ImportOutcome> runImport(
       labRows += r.imported;
       if (r.imported > 0) app.bumpInsights();
       rejected.addAll(r.rejected.map((x) => x.toString()));
-      if (!sources.contains('Lab results CSV')) sources.add('Lab results CSV');
+      final lab = l?.importSourceLabCsv ?? 'Lab results CSV';
+      if (!sources.contains(lab)) sources.add(lab);
     } on LabCsvFormatException {
       vendor.add(p);
     } on FormatException {
       if (await _isOwnCsvExport(p)) {
-        rejected.add(_notUtf8(p));
+        rejected.add(_notUtf8(p, l));
       } else {
         vendor.add(p);
       }
@@ -525,7 +596,7 @@ Future<ImportOutcome> runImport(
     // instead — unless it is the only thing that was picked.
     try {
       days += await app.importWhoopCsvs(vendor);
-      sources.add('Vendor CSV export');
+      sources.add(l?.importSourceVendorCsv ?? 'Vendor CSV export');
       final r = app.lastWhoopImport;
       if (r != null) {
         workouts += r.workouts;
@@ -538,15 +609,23 @@ Future<ImportOutcome> runImport(
           raw.isEmpty &&
           journalRows == 0 &&
           labRows == 0 &&
-          rejected.isEmpty) {
+          rejected.isEmpty &&
+          fileErrors.isEmpty) {
         rethrow;
       }
       readError = '$e';
     }
   }
 
+  final errors = [
+    ...fileErrors,
+    ?readError,
+    ?cryptoError,
+  ];
   return ImportOutcome(
-    source: sources.isEmpty ? 'Nothing selected' : sources.join(' + '),
+    source: sources.isEmpty
+        ? (l?.importSourceNothingSelected ?? 'Nothing selected')
+        : sources.join(' + '),
     days: days,
     workouts: workouts,
     skippedDays: skipped,
@@ -557,11 +636,14 @@ Future<ImportOutcome> runImport(
     archiveBucketsRestored: archiveRestored,
     journalRows: journalRows,
     labRows: labRows,
+    prefsRestored: prefsRestored,
+    prefsRefused: prefsRefused,
+    needsReentry: needsReentry.toList(),
     rejectedRows: rejected,
     rollupError: rollupError,
     // A file that would not decrypt is reported the same way a file that would
     // not parse is: named, alongside whatever else did land.
-    readError: readError ?? cryptoError,
+    readError: errors.isEmpty ? null : errors.join('\n'),
   );
 }
 
@@ -583,9 +665,11 @@ Future<bool> _isOwnCsvExport(String path) async {
   }
 }
 
-String _notUtf8(String path) =>
-    '${path.split(Platform.pathSeparator).last}: not saved as UTF-8 — '
-    'save it as "CSV UTF-8" and import it again';
+String _notUtf8(String path, AppLocalizations? l) {
+  final name = path.split(Platform.pathSeparator).last;
+  return l?.welcomeNotUtf8(name) ??
+      '$name: not saved as UTF-8 — save it as "CSV UTF-8" and import it again';
+}
 
 /// True when [path] starts with the encrypted-backup magic. Four bytes, so a
 /// mis-picked file costs one read and not a key derivation.
@@ -622,19 +706,6 @@ Future<String> decryptToTemp(String path, String passphrase) async {
   await Isolate.run(
       () => decryptBackupFile(File(path), File(dest), passphrase));
   return dest;
-}
-
-bool _isDbBackup(String path) {
-  final p = path.toLowerCase();
-  // `.db.unopenable-<ms>` is what a corrupt-database rebuild quarantines the
-  // old file as, and the rebuilt card points the user straight at it. Matching
-  // only the `.db` suffix handed that SQLite file to the vendor-CSV importer.
-  // `.db.gz` is what the app's own automatic backup writes (auto_backup.dart's
-  // kBackupExtension). Leaving it out sent a user restoring their own backup
-  // down the vendor-CSV path, which is the one import that has to work.
-  return p.endsWith('.db') ||
-      p.endsWith('.db.gz') ||
-      p.contains('.db.unopenable-');
 }
 
 class WelcomeView extends StatelessWidget {
@@ -744,6 +815,40 @@ class ImportReport extends StatelessWidget {
   final ImportOutcome o;
   const ImportReport(this.o, {super.key});
 
+  Widget _prefsSkipped(ImportOutcome o, AppLocalizations? l) => StatusCard(
+    l?.welcomeSettingsSkipped(o.prefsRefused) ??
+        '${o.prefsRefused} setting${o.prefsRefused == 1 ? ' in the backup could not be read and was' : 's in the backup could not be read and were'} skipped',
+    l?.welcomeSettingsSkippedBody ??
+        'Those keep this phone\'s values.',
+    icon: LucideIcons.fileWarning,
+  );
+
+  Widget _keyReentry(AppLocalizations? l, List<String> keys) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    if (keys.contains('coach_api_key')) StatusCard(
+      l?.coachApiKeyLabel ?? 'API key',
+      l?.welcomeCoachKeyReentry ??
+          'Your coach API key stays in secure storage and was not backed up. '
+              'Enter it again in AI settings to use the coach on this phone.',
+      icon: LucideIcons.keyRound,
+    ),
+    if (keys.length > 1) const SizedBox(height: S.x3),
+    if (keys.contains('coach_base_url')) StatusCard(
+      l?.coachBaseUrlLabel ?? 'Base URL',
+      l?.welcomeCoachServerReentry ??
+          'Your custom coach server address was not backed up, because an '
+              'address can hold a key. Enter it again in AI settings.',
+      icon: LucideIcons.keyRound,
+    ),
+    if (keys.contains('coach_chatgpt')) StatusCard(
+      'ChatGPT',
+      l?.welcomeCoachChatGptReentry ??
+          'Your ChatGPT sign-in stays in secure storage and was not backed up. '
+              'Sign in again in AI settings to use the coach on this phone.',
+      icon: LucideIcons.keyRound,
+    ),
+  ]);
+
   @override
   Widget build(BuildContext c) {
     final p = P.of(c);
@@ -764,8 +869,11 @@ class ImportReport extends StatelessWidget {
         // Every row refused is its own answer to "why is it empty?", and it
         // has to survive the empty case or the validation is invisible.
         o.rejectedRows.isNotEmpty
-            ? (l?.welcomeEveryRowRefused(_rejects(o)) ??
-                'Every row was refused: ${_rejects(o)}')
+            ? [
+                l?.welcomeEveryRowRefused(_rejects(o, l)) ??
+                    'Every row was refused: ${_rejects(o, l)}',
+                if (o.readError != null) o.readError!,
+              ].join('\n')
             : o.readError ??
                 (l?.welcomeNothingUsableInFile ??
                     'The file was read but there was nothing in it this app could '
@@ -778,11 +886,13 @@ class ImportReport extends StatelessWidget {
       // can still have skipped archive buckets it could not read. That is the
       // one part of the answer the user can act on, so it is not swallowed
       // by the empty case.
-      if (o.archiveBucketsSkipped == 0) return nothing;
+      if (o.archiveBucketsSkipped == 0 && o.needsReentry.isEmpty && o.prefsRefused == 0) return nothing;
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         nothing,
         const SizedBox(height: S.x3),
-        StatusCard(
+        if (o.needsReentry.isNotEmpty) _keyReentry(l, o.needsReentry),
+        if (o.prefsRefused > 0) _prefsSkipped(o, l),
+        if (o.archiveBucketsSkipped > 0) StatusCard(
           l?.welcomePartOfFileNotUsedTitle ??
               'Part of that file could not be used',
           _archiveSkipped(o, l),
@@ -825,11 +935,15 @@ class ImportReport extends StatelessWidget {
                 '${o.archiveBucketsRestored} day'
                 '${o.archiveBucketsRestored == 1 ? '' : 's'}'
         : null;
-    final headline = [days, journal, labs, workouts, skipped, archive].firstWhere((c) => c != null)!;
+    final settings = o.prefsRestored > 0
+        ? l?.welcomeSettingsRestored(o.prefsRestored) ??
+            '${o.prefsRestored} settings restored'
+        : null;
+    final headline = [days, journal, labs, workouts, skipped, archive, settings].firstWhere((c) => c != null)!;
     // journal is NEVER folded in here — when it isn't the headline, days > 0
     // means it gets its own "N journal days REPLACED" line below instead (a
     // different fact: a journal CSV always replaces, on any day it names).
-    final also = [labs, workouts, skipped, archive].whereType<String>().where((c) => c != headline).toList();
+    final also = [labs, workouts, skipped, archive, settings].whereType<String>().where((c) => c != headline).toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Surface(
         child: Row(children: [
@@ -850,6 +964,14 @@ class ImportReport extends StatelessWidget {
           ),
         ]),
       ),
+      if (o.needsReentry.isNotEmpty) ...[
+        const SizedBox(height: S.x3),
+        _keyReentry(l, o.needsReentry),
+      ],
+      if (o.prefsRefused > 0) ...[
+        const SizedBox(height: S.x3),
+        _prefsSkipped(o, l),
+      ],
       // REJECTED, never clamped. A row outside its declared range is not
       // salvageable by trimming it — that would store a value the user never
       // wrote — so it is refused by line number and the other 300 land.
@@ -859,8 +981,8 @@ class ImportReport extends StatelessWidget {
           l?.welcomeRowsRefused(o.rejectedRows.length) ??
               '${o.rejectedRows.length} '
                   'row${o.rejectedRows.length == 1 ? ' was' : 's were'} refused',
-          l?.welcomeRejectedDetail(_rejects(o)) ??
-              '${_rejects(o)} Nothing was trimmed to fit — fix those lines and '
+          l?.welcomeRejectedDetail(_rejects(o, l)) ??
+              '${_rejects(o, l)} Nothing was trimmed to fit — fix those lines and '
                   'import again.',
           icon: LucideIcons.fileWarning,
         ),
@@ -901,9 +1023,10 @@ class ImportReport extends StatelessWidget {
                   '${o.lateRows} row${o.lateRows == 1 ? '' : 's'} arrived after '
                       'their day had already been scored and closed.',
             if (o.corruptTables.isNotEmpty)
-              '${o.corruptTables.join(', ')} could not be read — SQLite '
-                  'reported the file itself as corrupted for those tables. '
-                  'Every other table imported normally.',
+              l?.welcomeCorruptTables(o.corruptTables.join(', ')) ??
+                  '${o.corruptTables.join(', ')} could not be read — SQLite '
+                      'reported the file itself as corrupted for those tables. '
+                      'Every other table imported normally.',
             if (o.archiveBucketsSkipped > 0) _archiveSkipped(o, l),
           ].join(' '),
           fix: o.corruptTables.isNotEmpty
@@ -931,8 +1054,9 @@ String _archiveSkipped(ImportOutcome o, AppLocalizations? l) {
 
 /// The first few refusals, with a count for the rest. Six is where a
 /// StatusCard stops being read.
-String _rejects(ImportOutcome o) {
+String _rejects(ImportOutcome o, AppLocalizations? l) {
   final shown = o.rejectedRows.take(6).join('; ');
   final more = o.rejectedRows.length - 6;
-  return more > 0 ? '$shown; and $more more.' : '$shown.';
+  if (more <= 0) return '$shown.';
+  return l?.welcomeRejectsMore(shown, more) ?? '$shown; and $more more.';
 }

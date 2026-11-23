@@ -63,6 +63,10 @@ Future<void> _pump(WidgetTester t, SleepData d, {double scale = 1}) async {
   await t.pumpAndSettle();
 }
 
+Finder _rangeText(String plain) => find.byWidgetPredicate((w) =>
+    w is Text &&
+    (w.data ?? '').replaceAll('\u2060', '').replaceAll('\u00A0', ' ') == plain);
+
 void main() {
   testWidgets('a measure inside the middle half of your nights is typical',
       (t) async {
@@ -162,7 +166,7 @@ void main() {
       // showed a count is the contradiction this item exists to remove. Range
       // totals are too wide to sit beside the lanes on a 390pt phone without
       // starving the plot, so the hypnogram leaves them to the table.
-      expect(find.text('20m–2h 20m'), findsNWidgets(2));
+      expect(_rangeText('20m–2h 20m'), findsNWidgets(2));
       // And the share column is gone with the count it was computed from.
       for (final share in const ['52%', '17%', '19%', '13%']) {
         expect(find.text(share), findsNothing);
@@ -196,7 +200,7 @@ void main() {
               tstHistory: _flat(20, 420)));
       // Same 80 minutes, half-width 0.45x = 36m. Narrower than the 60m above,
       // from the night's own confidence rather than one published figure.
-      expect(find.text('44m–1h 56m'), findsNWidgets(2));
+      expect(_rangeText('44m–1h 56m'), findsNWidgets(2));
     });
 
     testWidgets('the deep comparison stops asserting a difference', (t) async {
@@ -468,6 +472,20 @@ void main() {
       expect(stepped.latestDay, '2026-05-20');
       expect(stepped.isLatestNight, isFalse);
     });
+
+    test('today\'s provisional night wins over the held-over one', () async {
+      // #739: Home's Sleep ring is drawn from `sleep_provisional` while the
+      // night drains, so the tap that opens this screen must land on TODAY.
+      // The held-over 2026-05-20 night is not the night the ring showed.
+      final opened = await SleepData.load(_ProvisionalRepo());
+      expect(opened.day, '2026-05-22');
+      expect(opened.latestDay, '2026-05-22');
+
+      // Stepping back to a named night still opens that night.
+      final stepped = await SleepData.load(_ProvisionalRepo(), want: '2026-05-19');
+      expect(stepped.day, '2026-05-19');
+      expect(stepped.latestDay, '2026-05-22');
+    });
   });
 
   group('sleepScrubTempDelta', () {
@@ -705,6 +723,29 @@ void main() {
     expect(find.text('Marked as not sleep'), findsOneWidget);
     expect(find.text('I was asleep'), findsNothing);
   });
+}
+
+/// `getToday` holding the 2026-05-20 night over while TODAY's own night is
+/// still draining (#638): both nights are in the payload at once.
+class _ProvisionalRepo extends _HeldOverRepo {
+  @override
+  Future<Map<String, dynamic>> getToday() async => {
+        'status': {
+          'today_day': '2026-05-22',
+          'showing_prior_overnight': true,
+          'overnight_day': '2026-05-20',
+          'recovery_state': 'night_in_progress',
+        },
+        'sleep_provisional': {
+          'duration_min': {
+            'value': 360,
+            'confidence': .8,
+            'tier': 'ESTIMATE',
+            'unit': 'min',
+          },
+          'provisional': true,
+        },
+      };
 }
 
 /// `getToday` holding the 2026-05-20 night over, with older nights on disk.

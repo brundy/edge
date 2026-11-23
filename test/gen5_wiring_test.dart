@@ -349,6 +349,34 @@ void main() {
       expect(engine.offloadSnapshot['high_freq_requested'], isFalse);
     });
 
+    test('a failed EXIT keeps the mode claimed so the next call retries',
+        () async {
+      var writesOk = true;
+      final exits = <int>[];
+      final engine = BleEngine(onRecord: (_, _) async {}, onState: (_) {});
+      engine.debugInstallFakeLink(onWrite: (frame) async {
+        final p = parseFrame(frame);
+        if (p != null && p.valid && p.inner[2] == Cmd.exitHighFreqSync) {
+          exits.add(1);
+        }
+        return writesOk;
+      });
+      await engine.applyHighFreqWakeWindow(
+        enabled: true,
+        targetWake: DateTime.now().add(const Duration(hours: 1)),
+      );
+      expect(engine.offloadSnapshot['high_freq_requested'], isTrue);
+
+      writesOk = false;
+      await engine.applyHighFreqWakeWindow(enabled: false, targetWake: null);
+      expect(engine.offloadSnapshot['high_freq_requested'], isTrue);
+
+      writesOk = true;
+      await engine.applyHighFreqWakeWindow(enabled: false, targetWake: null);
+      expect(exits, hasLength(2), reason: 'the EXIT went out again');
+      expect(engine.offloadSnapshot['high_freq_requested'], isFalse);
+    });
+
     test('INIT no longer re-sends the hello — it belongs to connect setup',
         () async {
       // The pinned order is hello FIRST, during setup, so its timestamp can
@@ -496,6 +524,7 @@ void main() {
 
   _events();
   _bootstrap();
+  _firmwareLifetime();
   _burstOrdering();
 }
 
@@ -769,7 +798,11 @@ bool _runOfficial(
 /// A revision-1 gen5 hello body, parsed by
 /// the real protocol decoder so the timestamp and charge bit under test are the
 /// ones a band would actually produce.
-Uint8List _gen5HelloBody({required int tsSeconds, bool charging = false}) {
+Uint8List _gen5HelloBody({
+  required int tsSeconds,
+  bool charging = false,
+  List<int> firmware = const [50, 40, 1],
+}) {
   final body = Uint8List(Gen5HelloInfo.semanticBodyLen);
   final v = ByteData.sublistView(body);
   body[0] = 1; // hello revision
@@ -781,20 +814,29 @@ Uint8List _gen5HelloBody({required int tsSeconds, bool charging = false}) {
     body[14 + i] = serial.codeUnitAt(i);
   }
   v.setUint32(87, 82, Endian.little); // optical discriminator ⇒ WHOOP 5
-  body[91] = 50;
-  body[92] = 40;
-  body[93] = 1; // firmware 50.40.1
+  for (var i = 0; i < firmware.length; i++) {
+    body[91 + i] = firmware[i]; // default 50.40.1
+  }
   body[102] = 1; // on wrist
   return body;
 }
 
-Decoded _helloReply(int seq, {required int tsSeconds, bool charging = false}) =>
+Decoded _helloReply(
+  int seq, {
+  required int tsSeconds,
+  bool charging = false,
+  List<int> firmware = const [50, 40, 1],
+}) =>
     Decoded('cmd_response', {
       'opcode': Cmd.getHello,
       'req_seq': seq,
       'cmd_status': CommandAwaiter.statusSuccess,
       'gen5_hello': Gen5HelloInfo.parse(
-        _gen5HelloBody(tsSeconds: tsSeconds, charging: charging),
+        _gen5HelloBody(
+          tsSeconds: tsSeconds,
+          charging: charging,
+          firmware: firmware,
+        ),
       )!,
     });
 
@@ -827,6 +869,50 @@ bool _runBootstrap(
   link.engine.debugBootstrapAfterRegistration().then((v) => ok = v);
   async.elapse(elapse);
   return ok ?? false;
+}
+
+/// The firmware version is what one link's HELLO said. If it outlived the
+/// link, a gen4 band connected next would be named a 50.43 firmware lock.
+void _firmwareLifetime() {
+  group('firmware belongs to the link that read it', () {
+    test('a 50.43 hello sets it, a disconnect clears it, and a gen4 never '
+        'inherits the lock', () {
+      fakeAsync((async) {
+        final link = _BootstrapLink();
+        link.replyTo = (seq, op) => switch (op) {
+              Cmd.getHello => _helloReply(seq,
+                  tsSeconds: _wallNow(), firmware: const [50, 43, 2, 0]),
+              Cmd.getCustomAdvertisingName => _nameReply(seq),
+              _ => null,
+            };
+        expect(_runBootstrap(link, async), isTrue);
+        expect(link.engine.state.firmware, '50.43.2.0');
+        expect(
+          bandStatusFor(
+            connection: 'connected',
+            strapNeedsReboot: true,
+            bandFirmware: link.engine.state.firmware,
+          ).condition,
+          BandCondition.firmwareLocked,
+          reason: 'sanity: the same flags on the gen5 itself name the lock',
+        );
+
+        link.engine.disconnect();
+        async.flushMicrotasks();
+        expect(link.engine.state.firmware, isNull);
+
+        // The next band is a gen4: same flags, same engine, no HELLO of its own.
+        expect(
+          bandStatusFor(
+            connection: 'connected',
+            strapNeedsReboot: true,
+            bandFirmware: link.engine.state.firmware,
+          ).condition,
+          BandCondition.strapUnresponsive,
+        );
+      });
+    });
+  });
 }
 
 void _bootstrap() {

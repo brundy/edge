@@ -27,8 +27,8 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/date_text.dart';
 import '../../l10n/decimal_text.dart';
 import '../../models/metric.dart' show whyFromNote;
-import '../screens/home_screen.dart' show repoOf;
-import '../screens/metric_detail.dart' show detailScaffold;
+import '../screens/home_screen.dart' show asOfText, repoOf;
+import '../screens/metric_detail.dart' show dayNavRow, detailScaffold;
 import '../ui2.dart';
 import 'catalogue.dart' show zonesWhy;
 import 'zones.dart' show ZonesDetail;
@@ -72,10 +72,19 @@ class DayStrainData {
 
   final int? peakHr, wornMin, coveragePct;
 
+  /// When [wornMin] and [coveragePct] were last computed, if an earlier
+  /// derive's wear was carried forward (#450). Null when they are current.
+  final int? wearAsOf;
+
   /// WHY the day has no strain, as the bundle said it — never a sentence
   /// written on this screen. Null means nothing came back with the absence, and
   /// the screen then says exactly that.
   final String? note;
+
+  /// The days that derived, NEWEST FIRST, for the day stepper. Empty when the
+  /// screen was handed its data (goldens) or the list could not be read; with
+  /// fewer than two the stepper draws nothing.
+  final List<String> days;
 
   const DayStrainData({
     this.day,
@@ -89,10 +98,15 @@ class DayStrainData {
     this.peakHr,
     this.wornMin,
     this.coveragePct,
+    this.wearAsOf,
     this.note,
+    this.days = const [],
   });
 
   bool get hasCurve => curve.any((v) => v != null);
+
+  /// The local label of the day this screen shows (today when [day] is null).
+  String get shownDay => day == null ? todayLabel() : dayLabelOf(day!);
 
   /// Lays the curve's epoch-second points onto the fixed 00:00–24:00 axis,
   /// one slot per WALL-CLOCK minute of the first point's local day.
@@ -122,11 +136,27 @@ class DayStrainData {
   /// [forDay] is the label the caller is looking at; null means today. Home's
   /// day switcher passes it, so a past day's strain ring opens that day's
   /// curve rather than today's.
+  ///
+  /// [days] is the stepper's list from an earlier load; passing it skips
+  /// re-reading every derived day on each step.
   static Future<DayStrainData> load(LocalRepository repo,
-      {String? forDay}) async {
+      {String? forDay, List<String>? days}) async {
     final asked = forDay ?? todayLabel();
+    // The stepper's days, read beside the strain rather than before it. A
+    // failed read costs the stepper, never the screen.
+    Future<List<String>> readDays() async {
+      if (days != null) return days;
+      try {
+        return await repo.availableDays();
+      } catch (_) {
+        return const [];
+      }
+    }
+
+    final daysRead = readDays();
     final s = await repo.getDayStrain(asked);
-    if (s.isEmpty) return const DayStrainData();
+    final stepDays = await daysRead;
+    if (s.isEmpty) return DayStrainData(days: stepDays);
 
     final pts = <(int, double)>[
       for (final e in (s['curve'] as List? ?? const []))
@@ -174,9 +204,11 @@ class DayStrainData {
       peakHr: hr is Map ? (hr['max'] as num?)?.toInt() : null,
       wornMin: (wear['worn_min'] as num?)?.toInt(),
       coveragePct: (wear['coverage_pct'] as num?)?.toInt(),
+      wearAsOf: (wear['as_of'] as num?)?.toInt(),
       // The headline absence's reason, at the top level of the payload — the
       // same string as `absent.strain`.
       note: s['note'] as String?,
+      days: stepDays,
     );
   }
 }
@@ -198,9 +230,24 @@ class _DayStrainDetailState extends State<DayStrainDetail> {
   DayStrainData? _d;
   bool _loading = true;
 
+  /// The day being shown, as a label; null is today. Starts as the caller's
+  /// and moves with the stepper.
+  String? _day;
+
+  /// The day whose data `_d` holds. A step that cannot be read returns here,
+  /// not to the day the stepper named before it, which may itself have been
+  /// overtaken before it loaded.
+  String? _shownDay;
+
+  // A quick second tap on the stepper starts a second load; the first can
+  // finish last and must not paint the old day under the new label.
+  int _loadToken = 0;
+
   @override
   void initState() {
     super.initState();
+    _day = widget.day;
+    _shownDay = widget.day;
     if (widget.data != null) {
       _d = widget.data;
       _loading = false;
@@ -210,17 +257,37 @@ class _DayStrainDetailState extends State<DayStrainDetail> {
   }
 
   Future<void> _load() async {
+    final token = ++_loadToken;
     final repo = repoOf(context);
     if (repo == null) {
       if (mounted) setState(() => _loading = false);
       return;
     }
     try {
-      final d = await DayStrainData.load(repo, forDay: widget.day);
-      if (mounted) setState(() => (_d = d, _loading = false));
+      final day = _day;
+      // The stepper's list doesn't change between steps; reuse it unless the
+      // first read came back empty.
+      final known = _d?.days;
+      final d = await DayStrainData.load(repo,
+          forDay: day, days: known == null || known.isEmpty ? null : known);
+      if (mounted && token == _loadToken) {
+        setState(() => (_d = d, _shownDay = day, _loading = false));
+      }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      // A step that could not be read stays on the day whose data is still
+      // on screen, so the stepper never names a day the curve is not.
+      if (mounted && token == _loadToken) {
+        setState(() => (_day = _shownDay, _loading = false));
+      }
     }
+  }
+
+  void _goDay(String day) {
+    setState(() {
+      _day = day;
+      _loading = true;
+    });
+    _load();
   }
 
   @override
@@ -232,7 +299,9 @@ class _DayStrainDetailState extends State<DayStrainDetail> {
     // The date the drawn day IS. `getDayStrain` serves the last settled bundle
     // while today is still deriving, and a screen headed "Today" over
     // yesterday's trace is the whole reason this is read off the curve.
-    final sub = day == null
+    // Same rule as Day Steps: the stepper names the day, so the nav bar only
+    // does when there is no stepper.
+    final sub = day == null || d.days.length >= 2
         ? ''
         : dayLabelOf(day) == todayLabel()
         ? (l?.dayStrainToday ?? 'TODAY')
@@ -242,7 +311,10 @@ class _DayStrainDetailState extends State<DayStrainDetail> {
       c,
       l?.dayStrainTitle ?? 'Day strain',
       [
-        if (_loading && _d == null) ...[
+        ...dayNavRow(_day ?? d.shownDay, d.days, _goDay),
+        // While a step loads, the previous day's curve must not sit under
+        // the new day's name.
+        if (_loading) ...[
           const SizedBox(height: S.x8),
           const Center(child: CircularProgressIndicator()),
         ] else ...[
@@ -328,7 +400,17 @@ class _DayStrainDetailState extends State<DayStrainDetail> {
               if (d.peakHr != null)
                 (l?.dayStrainPeakHr ?? 'Peak HR', '${d.peakHr} bpm', C.red),
               if (d.wornMin != null)
-                (l?.dayStrainWorn ?? 'Worn', '${d.wornMin} min', C.teal),
+                // #450: a carried figure says where it stops, or a frozen
+                // morning reads as the whole day so far.
+                (
+                  d.wearAsOf == null
+                      ? (l?.dayStrainWorn ?? 'Worn')
+                      : (l?.dayStrainWornAsOf(
+                              asOfText(d.wearAsOf!, d.shownDay, l)) ??
+                          'Worn as of ${asOfText(d.wearAsOf!, d.shownDay, l)}'),
+                  '${d.wornMin} min',
+                  C.teal,
+                ),
             ]),
           ],
         ]),

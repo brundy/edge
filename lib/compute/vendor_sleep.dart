@@ -47,6 +47,68 @@ const String kOurRingNightSource = 'hr_5min_stager';
 /// ('auto_fallback'), not the device's.
 const String kHrWindowNightSource = 'hr_5min_window';
 
+/// The point list a night is drawn and read from: each epoch's stage from its
+/// start, closed by a final point at wake. A stretch no epoch covers gets an
+/// `unobserved` boundary where the epoch before it ends, so a reader of the
+/// list never carries that epoch's stage across the hole.
+List<Map<String, Object?>> vendorHypnogram(
+    List<VendorEpoch> epochs, int wakeSec) {
+  final out = <Map<String, Object?>>[];
+  for (var i = 0; i < epochs.length; i++) {
+    final e = epochs[i];
+    out.add({'t': e.startSec, 'stage': e.stage});
+    final next = i + 1 < epochs.length ? epochs[i + 1].startSec : wakeSec;
+    if (next > e.endSec) out.add({'t': e.endSec, 'stage': 'unobserved'});
+  }
+  final last = epochs.last;
+  out.add({
+    't': wakeSec,
+    'stage': last.endSec < wakeSec ? 'unobserved' : last.stage,
+  });
+  return out;
+}
+
+/// Seconds per stage over a night's epochs — the unit every minute figure is
+/// built on.
+///
+/// Sum FIRST. Two neighbouring epochs can each be under a minute (30 s light +
+/// 30 s deep) and still make one, so a minute is only lost if the flooring
+/// happens before the addition. Non-positive spans are skipped rather than
+/// subtracting from a stage's total.
+Map<String, int> vendorStageSeconds(List<VendorEpoch> epochs) {
+  final secs = <String, int>{};
+  for (final e in epochs) {
+    final span = e.endSec - e.startSec;
+    if (span <= 0) continue;
+    secs[e.stage] = (secs[e.stage] ?? 0) + span;
+  }
+  return secs;
+}
+
+/// Whole minutes per stage, for the per-stage table.
+///
+/// Floored per stage ON PURPOSE: a stage whose own total is under a minute
+/// reads 0 m rather than claiming a minute it did not hold. The night's total
+/// is [vendorSleepMinutes], which sums the seconds first.
+Map<String, int> vendorStageMinutes(List<VendorEpoch> epochs) => {
+      for (final e in vendorStageSeconds(epochs).entries)
+        e.key: e.value ~/ 60,
+    };
+
+/// Whole minutes ASLEEP (every stage except wake) over a night.
+///
+/// The non-wake SECONDS are summed before the one `~/ 60`. Flooring each stage
+/// first drops a minute that 30 s light + 30 s deep really did contribute, so
+/// `duration_min` read short against the night's own window. Awake is excluded
+/// because this is time asleep, not time in bed.
+int vendorSleepMinutes(List<VendorEpoch> epochs) {
+  final secs = vendorStageSeconds(epochs);
+  return secs.entries
+          .where((e) => e.key != 'wake')
+          .fold<int>(0, (s, e) => s + e.value) ~/
+      60;
+}
+
 /// One night of one device's epochs, as `vendor_sleep_epoch` groups them.
 class VendorNight {
   final String deviceId;
@@ -89,15 +151,26 @@ bool vendorEdgesAgree(int aOn, int aOff, int bOn, int bOff) =>
     (aOn - bOn).abs() <= kVendorEdgeToleranceSec &&
     (aOff - bOff).abs() <= kVendorEdgeToleranceSec;
 
+/// Longest hole between two of our rows that still counts as covered time.
+/// Matches the sparsest substrate cadence we take (15-min HR on some bands).
+const int kVendorCoverGapSec = 15 * 60;
+
 /// Whether our own substrate ([ourTsSec], sorted epoch seconds of the rows
 /// admitted to derivation) saw less than half of [n]. Such a night is
 /// UNCLAIMED: nothing of ours can stage it or contradict it, so the device's
-/// own night is the only one there is.
+/// own night is the only one there is. Seen time is the sum of the gaps
+/// between consecutive rows inside the night, holes over
+/// [kVendorCoverGapSec] excluded, so a 1-per-minute or 5-minute substrate is
+/// measured in seconds like a 1 Hz one.
 bool vendorNightUnclaimed(VendorNight n, List<int> ourTsSec) {
   var seen = 0;
+  int? prev;
   for (final t in ourTsSec) {
+    if (t < n.onsetSec) continue;
+    final end = t < n.offsetSec ? t : n.offsetSec;
+    if (prev != null && end - prev <= kVendorCoverGapSec) seen += end - prev;
     if (t >= n.offsetSec) break;
-    if (t >= n.onsetSec) seen++;
+    prev = t;
   }
   return seen * 2 < n.offsetSec - n.onsetSec;
 }

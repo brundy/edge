@@ -207,6 +207,8 @@ class AlarmScreen extends StatelessWidget {
           onBand(app.setScheduleDay(weekday: weekday, enabled: enabled)),
       onSetDayTime: (weekday, hour, minute) => onBand(
           app.setScheduleDay(weekday: weekday, hour: hour, minute: minute)),
+      onApplyTimeToAllDays: (hour, minute) =>
+          onBand(app.setWakeTimeAllDays(hour: hour, minute: minute)),
       onSetSmartWindow: (weekday, minutes) => onBand(
           app.setScheduleDay(weekday: weekday, smartWindowMinutes: minutes)),
       onTest: app.testAlarmBuzz,
@@ -238,6 +240,10 @@ class AlarmScreenView extends StatelessWidget {
   final Future<void> Function(int weekday, bool enabled)? onToggleDay;
   final Future<void> Function(int weekday, int hour, int minute)?
       onSetDayTime;
+
+  /// Copy one wake time to every weekday at once — offered right after a day's
+  /// time is set, so "same time every day" is one tap, not seven.
+  final Future<void> Function(int hour, int minute)? onApplyTimeToAllDays;
   final Future<void> Function(int weekday, int minutes)? onSetSmartWindow;
   final Future<void> Function()? onTest, onCancel;
 
@@ -251,6 +257,7 @@ class AlarmScreenView extends StatelessWidget {
     this.schedule = const [],
     this.onToggleDay,
     this.onSetDayTime,
+    this.onApplyTimeToAllDays,
     this.onSetSmartWindow,
     this.onTest,
     this.onCancel,
@@ -342,10 +349,13 @@ class AlarmScreenView extends StatelessWidget {
                             value: _hhmmOf(day.hour, day.minute),
                             chevron: false,
                             onTap: () => _pickDayTime(c, day)),
-                        SetRow(LucideIcons.moon, C.purple, 'Smart wake',
+                        SetRow(LucideIcons.moon, C.purple,
+                            uiText(c, 'Smart wake window'),
                             value: day.smartWindowMinutes == 0
                                 ? (l?.stateOff ?? 'Off')
-                                : '${day.smartWindowMinutes} min early',
+                                : (l?.supplementSmartWindowMinutes(
+                                        day.smartWindowMinutes) ??
+                                    '${day.smartWindowMinutes} min before wake time'),
                             chevron: false,
                             onTap: () => _pickSmartWindow(c, day)),
                       ],
@@ -358,7 +368,7 @@ class AlarmScreenView extends StatelessWidget {
                         color: C.blue,
                         soft: true,
                         onTap: () => _run(
-                            c, onTest, l?.alarmBuzzingTheBand ?? 'Buzzing the band')),
+                            c, onTest, l?.alarmBuzzingTheBand ?? 'Buzz sent to the band')),
                     const SizedBox(height: S.x3),
                   ],
                   if (at != null || anyDayEnabled)
@@ -383,10 +393,27 @@ class AlarmScreenView extends StatelessWidget {
       initialTime: TimeOfDay(hour: day.hour, minute: day.minute),
     );
     if (picked == null || !c.mounted) return;
-    await _run(
-        c,
-        () => onSetDayTime!(day.weekday, picked.hour, picked.minute),
-        AppLocalizations.of(c)?.alarmSentToBand ?? 'Alarm sent to the band');
+    final l = AppLocalizations.of(c);
+    try {
+      await onSetDayTime!(day.weekday, picked.hour, picked.minute);
+    } catch (e) {
+      if (c.mounted) _say(c, '$e'.replaceFirst('Exception: ', ''));
+      return;
+    }
+    if (!c.mounted) return;
+    // The day's time landed: offer to copy it to every other day, so the
+    // common "one wake time all week" case is one tap, not seven. A pure
+    // convenience on top of a completed write — not an action the user must
+    // notice to get what they just asked for.
+    _say(c, l?.alarmSentToBand ?? 'Alarm sent to the band',
+        action: onApplyTimeToAllDays == null
+            ? null
+            : SnackBarAction(
+                label: l?.alarmAllDays ?? 'All days',
+                onPressed: () => _run(
+                    c,
+                    () => onApplyTimeToAllDays!(picked.hour, picked.minute),
+                    l?.alarmCopiedToAllDays ?? 'Wake time copied to every day')));
   }
 
   /// Off, or how many minutes before [day]'s wake time the band may buzz
@@ -444,8 +471,16 @@ class AlarmScreenView extends StatelessWidget {
     }
   }
 
-  static void _say(BuildContext c, String msg) =>
-      ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text(msg)));
+  /// Replaces what this screen said before, shown or still queued, instead of
+  /// stacking behind it: repeat taps would otherwise queue one 4-second
+  /// snackbar each and keep an old result on screen long after it stopped
+  /// being true. Only while this screen is on top — a result that lands after
+  /// the user moved on must not wipe another screen's message.
+  static void _say(BuildContext c, String msg, {SnackBarAction? action}) {
+    final messenger = ScaffoldMessenger.of(c);
+    if (ModalRoute.of(c)?.isCurrent ?? true) messenger.clearSnackBars();
+    messenger.showSnackBar(SnackBar(content: Text(msg), action: action));
+  }
 
   static String _hhmm(DateTime d) => _hhmmOf(d.hour, d.minute);
 
@@ -466,7 +501,8 @@ class AlarmScreenView extends StatelessWidget {
   static String _whichDay(BuildContext c, DateTime d, DateTime now) {
     final l = AppLocalizations.of(c);
     final days = calendarDaysBetween(now, d);
-    if (days < 0) {
+    // same calendar day but already passed is spent too, not "later today"
+    if (days < 0 || !d.isAfter(now)) {
       return l?.alarmInThePast ??
           'In the past — it has already fired or been missed';
     }

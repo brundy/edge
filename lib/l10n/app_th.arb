@@ -20,6 +20,28 @@
   "@languageSystemDefault": {
     "description": "Option in the language picker that follows the OS locale."
   },
+  "alarmSavedNotOnBand": "บันทึกแล้ว แต่สายรัดยังไม่ได้รับ ระบบจะส่งอีกครั้งในการซิงค์ครั้งถัดไป",
+  "coachChatgptUsingPlanShort": "กำลังใช้แพ็กเกจ ChatGPT",
+  "coachChatgptSharingNotAllowed": "ลงชื่อเข้าใช้แล้ว แต่ไม่ได้อนุญาตให้ใช้แพ็กเกจ ChatGPT แตะ \"ดำเนินการต่อด้วย ChatGPT\" อีกครั้ง แล้วอนุญาตให้ใช้แพ็กเกจของคุณที่นี่",
+  "coachChatgptSignedOut": "ออกจากระบบ ChatGPT แล้ว",
+  "coachChatgptSignOutUnconfirmed": "ออกจากระบบที่นี่แล้ว แต่ ChatGPT ไม่ได้ยืนยัน คุณยังยกเลิกการเชื่อมต่อ OpenStrap ได้ในการตั้งค่า ChatGPT",
+  "coachChatgptWelcomeTitle": "คุณกำลังใช้แพ็กเกจ ChatGPT ของคุณ",
+  "coachChatgptWelcomeBody": "การใช้งานที่เข้าเกณฑ์ในแอปนี้จะใช้แพ็กเกจ ChatGPT ของคุณ จัดการการใช้งานได้ในการตั้งค่า ChatGPT",
+  "coachChatgptGotIt": "เข้าใจแล้ว",
+  "coachChatgptUseTitle": "ใช้แพ็กเกจ ChatGPT ของคุณ",
+  "coachChatgptUsingTitle": "กำลังใช้แพ็กเกจ ChatGPT ของคุณ",
+  "coachChatgptNotAllowedTitle": "ไม่ได้อนุญาตให้ใช้แพ็กเกจ",
+  "coachChatgptBlurb": "ทำคำขอ AI ที่เข้าเกณฑ์ในแอปนี้ด้วยปริมาณการใช้งานที่รวมอยู่ในแพ็กเกจ ChatGPT หรือยอดเครดิตของคุณ OpenStrap ไม่เคยเรียกเก็บเงินสำหรับส่วนนี้",
+  "coachChatgptCancelSignIn": "ยกเลิกการลงชื่อเข้าใช้",
+  "coachChatgptContinue": "ดำเนินการต่อด้วย ChatGPT",
+  "coachChatgptManageUsage": "จัดการการใช้งาน",
+  "coachChatgptSignOut": "ออกจากระบบ ChatGPT",
+  "coachChatgptPrivacy": "คำถามของคุณและแถวข้อมูลที่โค้ชอ่านจะถูกส่งไปยัง OpenAI ภายใต้บัญชี ChatGPT ของคุณ ซึ่งการควบคุมข้อมูลของ ChatGPT รวมถึงการฝึกโมเดล อาจมีผล ตรวจสอบได้ในการตั้งค่า ChatGPT ดูว่าส่งอะไรไปบ้างได้ที่ \"ข้อมูลที่ส่ง\"",
+  "coachChatgptTermsTitle": "ก่อนลงชื่อเข้าใช้",
+  "coachChatgptTermsBody": "การลงชื่อเข้าใช้จะใช้บัญชีและแพ็กเกจ ChatGPT ของคุณเอง การใช้งานที่นี่อยู่ภายใต้ข้อกำหนดการใช้งานและนโยบายการใช้งานของ OpenAI โปรดอ่านก่อนดำเนินการต่อ",
+  "coachChatgptTermsLink": "ข้อกำหนดการใช้งานของ OpenAI",
+  "coachChatgptPoliciesLink": "นโยบายการใช้งานของ OpenAI",
+  "coachChatgptTermsAccept": "อ่านแล้ว ดำเนินการต่อ",
   "actionCancel": "ยกเลิก",
   "@actionCancel": {
     "description": "Generic Cancel button."
@@ -905,6 +927,8 @@
     "description": "Row title."
   },
   "devicesLastData": "ข้อมูลล่าสุด",
+  "devicesTimeUnknown": "ไม่ทราบเวลา",
+  "devicesClockNotSetSub": "สายรัดบันทึกข้อมูลแล้ว แต่ยังไม่ได้ตั้งนาฬิกา",
   "@devicesLastData": {
     "description": "Row title."
   },
@@ -944,6 +968,14 @@
   "@devicesBatteryPack": {
     "description": "Row title: the charge left in the external battery pack sitting on the band."
   },
+  "devicesBatteryUnderAnHourLeft": "เหลือไม่ถึงหนึ่งชั่วโมง",
+  "devicesBatteryHoursLeft": "เหลือประมาณ {hours} ชม.",
+  "devicesBatteryDaysLeft": "เหลือประมาณ {days} วัน",
+  "devicesChargesLogged": "{n, plural, other{บันทึกการชาร์จ {n} ครั้ง}}",
+  "devicesChargeUpToMv": "สูงสุด {mv} mV",
+  "devicesCalibrationSub": "ค่าที่ขึ้นกับเซนเซอร์ใช้ค่าคงที่ของสายรัดนี้เอง สายรัดสองเส้นจึงอาจได้ระดับต่างกันแม้สรีรวิทยาเหมือนกัน",
+  "devicesCalibrationNotStated": "ยังไม่ระบุ",
+  "devicesCalibrationNotStatedSub": "สายรัดนี้ยังไม่บอกว่าเป็นรุ่นใด และวันที่นำเข้าหรือวันเก่าจะไม่มีวันบอก ค่าที่ขึ้นกับเซนเซอร์จะงดแสดงแทนการยืมตัวเลขของสายรัดอื่น",
   "devicesBatteryPackSub": "สายรัดรายงานประมาณทุก 10 นาที",
   "@devicesBatteryPackSub": {
     "description": "Row sub under the battery-pack charge: where the number comes from and how often it updates."
@@ -973,6 +1005,36 @@
     "description": "Row title."
   },
   "devicesFindItByFeel": "หาตำแหน่งจากแรงสั่น",
+  "devicesInstallImage": "ติดตั้งอิมเมจ",
+  "devicesInstallImageSub": "ใช้ด้วยความเสี่ยงของคุณเอง",
+  "flashWarning": "การติดตั้งอิมเมจที่คุณจัดหามาเองอาจทำให้สายรัดเสียหายถาวร หมดประกัน และใช้งานไม่ได้ และไม่สามารถยกเลิกได้จากแอปนี้ OpenStrap ไม่ได้จัด ตรวจสอบ หรือรับรองอิมเมจใด ๆ และ OpenStrap กับผู้ร่วมพัฒนาไม่รับผิดชอบต่อความสูญเสียหรือความเสียหายใด ๆ คุณทำสิ่งนี้ด้วยความเสี่ยงของคุณเองทั้งหมด",
+  "flashAccept": "ฉันเข้าใจและยอมรับความเสี่ยง",
+  "flashFileInfo": "{name}\n{bytes} ไบต์\nsha256 {sha}",
+  "flashChoose": "เลือกไฟล์อิมเมจ",
+  "flashChooseAnother": "เลือกไฟล์อื่น",
+  "flashSend": "ส่งไปยังสายรัด",
+  "flashStop": "หยุด",
+  "flashProgress": "ส่งแล้ว {done} จาก {total} บล็อก เปิดแอปค้างไว้และวางสายรัดไว้ใกล้ ๆ",
+  "flashCommitting": "กำลังส่งการยืนยัน…",
+  "flashCommitted": "สายรัดยอมรับอิมเมจแล้ว แต่นั่นไม่ได้ยืนยันว่ากำลังทำงานอยู่ ตรวจสอบเวอร์ชันเฟิร์มแวร์ของสายรัดหลังจากรีสตาร์ต",
+  "flashCommitUnknown": "ส่งการยืนยันแล้ว แต่สายรัดไม่ตอบกลับ อาจถูกนำไปใช้แล้วหรือยังไม่ได้ใช้ก็ได้ อย่าลองอีกครั้ง ตรวจสอบเวอร์ชันเฟิร์มแวร์ของสายรัดหลังจากรีสตาร์ต",
+  "flashBlockNoImage": "เลือกไฟล์อิมเมจก่อน",
+  "flashBlockTooLarge": "ไฟล์นี้ใหญ่เกินกว่าจะเป็นอิมเมจ",
+  "flashBlockNoLink": "เชื่อมต่อ WHOOP 5 และรอให้การซิงก์ที่กำลังทำอยู่เสร็จก่อน",
+  "flashBlockBatteryUnknown": "ไม่ทราบระดับแบตเตอรี่ รอให้อ่านค่าก่อน",
+  "flashBlockBatteryLow": "แบตเตอรี่เหลือ {pct}% ชาร์จให้ถึงอย่างน้อย {min}% ก่อน",
+  "flashFailTakeover": "ไม่สามารถควบคุมการเชื่อมต่อได้",
+  "flashFailStart": "สายรัดไม่ยอมรับการเริ่มอัปเดต",
+  "flashFailData": "สายรัดปฏิเสธข้อมูลที่ไบต์ {offset} ยังไม่มีอะไรถูกยืนยัน",
+  "flashFailVerify": "สายรัดไม่ได้ตรวจสอบอิมเมจ ยังไม่มีอะไรถูกยืนยัน",
+  "flashFailCancelled": "ยกเลิกแล้ว ยังไม่มีอะไรถูกยืนยัน",
+  "flashFailCommitRejected": "สายรัดไม่ยอมรับการยืนยัน",
+  "flashPickUnreadable": "ไม่สามารถอ่านไฟล์นั้นได้",
+  "flashConfirmTitle": "ติดตั้งอิมเมจนี้หรือไม่?",
+  "flashConfirmBody": "สายรัดได้รับไฟล์และตรวจสอบแล้ว จะไม่มีการติดตั้งใด ๆ จนกว่าคุณจะกดยืนยัน และไม่สามารถย้อนกลับได้\n\n{name}\nsha256 {sha}",
+  "flashConfirmSure": "ยืนยัน",
+  "flashConfirmCancel": "ยกเลิก",
+  "flashAcknowledge": "ฉันตรวจสอบเวอร์ชันเฟิร์มแวร์แล้ว อนุญาตให้ติดตั้งอีกครั้ง",
   "@devicesFindItByFeel": {
     "description": "Row sub."
   },
@@ -1076,6 +1138,8 @@
   "@devicePickerBlurbMiband234": {
     "description": "Category row subtitle for a Mi Band 2/3."
   },
+  "devicePickerBlurbGarmin": "นาฬิกา Garmin ซิงค์อัตราการเต้นหัวใจ ก้าว การนอน และ HRV ยังอยู่ระหว่างทดลอง",
+  "devicePickerNoMatch": "ไม่มีอุปกรณ์ใกล้เคียงที่ตรงกับการค้นหานี้",
   "devicePickerBlurbColmi": "แหวน Colmi ซิงค์อัตราการเต้นหัวใจ ระยะการนอน ก้าว SpO2, HRV และความเครียด ค่าที่แหวนคำนวณเองจะระบุว่าเป็นของ Colmi ยังอยู่ระหว่างทดลอง",
   "@devicePickerBlurbColmi": {
     "description": "Category row subtitle for a Colmi smart ring."
@@ -1943,9 +2007,9 @@
   "@napsWokeUpHelp": {
     "description": "Time picker helper text for logging when a manual nap ended."
   },
-  "napsInvalidWindow": "การงีบต้องยาว 5 นาทีถึง 6 ชั่วโมง หากนานกว่านั้นถือเป็นการนอนหลักและควรอยู่ในคืนนั้นเพื่ออ่านระยะการนอน",
+  "napsInvalidWindow": "การงีบต้องยาว 5 นาทีถึง 3 ชั่วโมง หากนานกว่านั้นถือเป็นการนอนหลักและควรอยู่ในคืนนั้นเพื่ออ่านระยะการนอน",
   "@napsInvalidWindow": {
-    "description": "Validation error when a manually logged nap window is outside 5 minutes to 6 hours."
+    "description": "Validation error when a manually logged nap window is outside 5 minutes to 3 hours."
   },
   "napsOverlap": "เวลาทับซ้อนกับการงีบที่มีอยู่ในวันนี้ โปรดลบรายการเดิมก่อนเพื่อไม่นับชั่วโมงซ้ำ",
   "@napsOverlap": {
@@ -5589,6 +5653,9 @@
       }
     }
   },
+  "investigateMethodHrvRmssd": "ค่าเฉลี่ยของ RMSSD จากทุกช่วง 5 นาทีของช่วงการนอนที่ตรวจพบ ซึ่งมีผลต่างต่อเนื่องที่สะอาดอย่างน้อย 20 ค่า โดยตัดจังหวะที่อยู่นอกช่วง 300–2000 ms และจังหวะที่ห่างจากค่ามัธยฐานในบริเวณนั้นเกิน 20% ออกก่อน ในคืนที่จังหวะการเต้นดูมีสัญญาณรบกวน จะนับเฉพาะช่วงที่ผ่านการตรวจความคลาดเคลื่อนด้วยตัวเอง หรืออยู่บนแนวการหายใจที่สม่ำเสมอ ช่วงหรือคืนที่จังหวะรวมกันแล้วนานกว่าเวลาที่ผ่านไปจริงจะไม่ถูกนับ คืนที่เก่ากว่าซึ่งไม่มีข้อมูลจังหวะดิบแล้วจะคงค่าที่ได้จากวิธีนี้เวอร์ชันก่อนหน้า ค่านี้มาจากชีพจร จึงเป็น PRV: เป็นข้อมูลจริงและใช้ดูแนวโน้มได้ แต่ไม่ใช่ HRV จาก ECG",
+  "investigateMethodRespRate": "อัตราการหายใจที่ได้จากภาวะหัวใจเต้นไม่สม่ำเสมอตามการหายใจ ซึ่งเป็นการเปลี่ยนแปลงเป็นจังหวะที่การหายใจทำให้เกิดกับเวลาของการเต้นของหัวใจ จุดสูงสุดของสเปกตรัมหาได้จากช่วงห้านาทีของจังหวะที่สะอาดซึ่งซ้อนทับกัน (Lomb–Scargle บนเวลาจริงของการเต้น) และค่าของคืนนั้นคือค่ามัธยฐาน ซึ่งจะแสดงเฉพาะเมื่อช่วงส่วนใหญ่ให้ผลตรงกัน เมื่ออัตราการเต้นของหัวใจขณะหลับอยู่ราว 48 bpm หรือต่ำกว่า จังหวะจะช้าเกินกว่าจะแยกการหายใจปกติได้ และจะไม่แสดงค่า",
+  "investigateMethodHrvStability": "ภายในคืนเดียว: ส่วนเบี่ยงเบนมาตรฐานของช่วงเวลาระหว่างจังหวะการเต้นหลังแก้ไขสัญญาณรบกวน (SDNN) คิดเป็นร้อยละของค่าเฉลี่ย กราฟแสดงว่าค่ารายคืนนี้เปลี่ยนไปอย่างไรในแต่ละคืน ไม่ใช่ค่าสัมประสิทธิ์การแปรผันระหว่างคืน",
   "metricDetailSlotWithValue": "{day} {value} {unit}",
   "@metricDetailSlotWithValue": {
     "description": "Screen-reader readout for a chart slot with a value, when scrubbing the trend line.",
@@ -5668,6 +5735,10 @@
       }
     }
   },
+  "chartPanelLatest": "ล่าสุด",
+  "chartPanelSelected": "ที่เลือก",
+  "chartPanelSevenDayAvg": "ค่าเฉลี่ย 7 วัน",
+  "chartPanelVsAvg": "เทียบค่าเฉลี่ย",
   "metricDetailNoRecordLabel": "ไม่มีข้อมูลบันทึก",
   "@metricDetailNoRecordLabel": {
     "description": "Value text shown in the touched-day row when that day has no record."
@@ -7213,7 +7284,7 @@
   "@homeDriverTemp": {
     "description": "Readiness driver name: skin temperature, shown in the Why? row on Home."
   },
-  "homeDbRebuiltTitle": "สร้างฐานข้อมูลใหม่เพื่อให้แอปเริ่มทำงาน",
+  "homeDbRebuiltTitle": "สร้างฐานข้อมูลของคุณใหม่แล้ว",
   "@homeDbRebuiltTitle": {
     "description": "Title of the card shown when the local database had to be rebuilt to start the app."
   },
@@ -7255,15 +7326,15 @@
   "@homeWorkoutHoldTitle": {
     "description": "Title of the card shown on Home while a workout session is live and derivation is paused."
   },
-  "homeWorkoutHoldBody": "พักการประมวลผลวันนี้ไว้ขณะออกกำลังกาย สายรัดยังบันทึกอยู่ จบการออกกำลังกายจากแถบด้านล่างเพื่อให้ข้อมูลวันนี้เติมเข้ามา",
+  "homeWorkoutHoldBody": "ข้อมูลวันนี้จะเติมเข้ามาเมื่อคุณจบการออกกำลังกาย",
   "@homeWorkoutHoldBody": {
     "description": "Body of the card shown on Home while a workout session is live and derivation is paused."
   },
-  "homeInsightsRebuildingTitle": "กำลังสร้างข้อสังเกตข้ามวันใหม่",
+  "homeInsightsRebuildingTitle": "กำลังอัปเดตแนวโน้มของคุณ",
   "@homeInsightsRebuildingTitle": {
     "description": "Title of the card shown when the cross-day insights rollup was withheld rather than shown."
   },
-  "homeInsightsRebuildingAlgoVersion": "อัปเดตล่าสุดเปลี่ยนวิธีคำนวณข้อมูลเหล่านี้",
+  "homeInsightsRebuildingAlgoVersion": "กำลังอัปเดตหลังแอปอัปเดตล่าสุด",
   "@homeInsightsRebuildingAlgoVersion": {
     "description": "Reason the cross-day rollup is being rebuilt: the algorithm version changed."
   },
@@ -7288,10 +7359,6 @@
   "homeSyncBand": "ซิงค์สายรัด",
   "@homeSyncBand": {
     "description": "Call-to-action button label: sync the band."
-  },
-  "homeWhyLabel": "เพราะอะไร?",
-  "@homeWhyLabel": {
-    "description": "Short label introducing the readiness driver list on Home."
   },
   "homeCalibrating": "กำลังเรียนรู้ช่วงปกติของคุณ",
   "@homeCalibrating": {
@@ -7321,7 +7388,7 @@
       }
     }
   },
-  "homeGapNoReason": "ไม่มีข้อมูลระบุว่าเหตุใดจึงไม่มีค่านี้",
+  "homeGapNoReason": "ไม่มีการบันทึกเหตุผล",
   "@homeGapNoReason": {
     "description": "Fallback reason shown when a ring is empty and nothing explains why."
   },
@@ -7349,23 +7416,123 @@
   "@homeSleepGapFallback": {
     "description": "Fallback reason the sleep ring is empty: no night long enough to score."
   },
+  "homeSleepPctOf": "{pct}% ของ {target}",
+  "@homeSleepPctOf": {
+    "description": "Sleep ring subtitle once a night is scored: percent of the learned sleep need.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String",
+        "example": "8h 00m"
+      }
+    }
+  },
+  "homeSleepPctOfDefault": "{pct}% ของ {target} (เป้าหมายเริ่มต้น)",
+  "@homeSleepPctOfDefault": {
+    "description": "Sleep ring subtitle once a night is scored, when no need has been learned yet: percent of the 8 h default target, labelled as a default.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String",
+        "example": "8h 00m"
+      }
+    }
+  },
+  "homeSleepPctCompact": "{pct}% ของ {target}",
+  "@homeSleepPctCompact": {
+    "description": "Short sleep caption against a learned target.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSleepPctDefaultCompact": "{pct}% ของ {target} · เป้าหมายเริ่มต้น",
+  "@homeSleepPctDefaultCompact": {
+    "description": "Short sleep caption that keeps an explicit default-target qualifier.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSleepPctDefaultTight": "{pct}% ของ {target} เริ่มต้น",
+  "@homeSleepPctDefaultTight": {
+    "description": "Tightest sleep caption when the target is the default: still names the target as the default.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWhyRecoveryTitle": "การฟื้นตัวต่ำ",
+  "@homeWhyRecoveryTitle": {
+    "description": "Title of the Home card row that explains a low recovery score."
+  },
+  "homeWhyRecoveryPlain": "การฟื้นตัว {score} จาก 100",
+  "@homeWhyRecoveryPlain": {
+    "description": "Body of the low-recovery row when no input is known to drag the score: just the score out of 100.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "homeWhySleepTitle": "นอนน้อยกว่าที่ต้องการ",
+  "@homeWhySleepTitle": {
+    "description": "Title of the Home card row shown when sleep is well short of the person's need."
+  },
+  "homeWhySleepBody": "การนอนที่คำนวณคะแนนได้ต่ำกว่าที่คุณต้องการ",
+  "@homeWhySleepBody": {
+    "description": "Body of the short-sleep row when the time asleep or the need is not available to quote."
+  },
+  "homeWhySleepDetail": "นอนหลับ {asleep} น้อยกว่าที่คุณต้องการ {need} อยู่ {gap}",
+  "@homeWhySleepDetail": {
+    "description": "Body of the short-sleep row: time asleep and how far under the need it was.",
+    "placeholders": {
+      "asleep": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      },
+      "need": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWhyStrainTitle": "ความหนักเกินเป้าหมาย",
+  "@homeWhyStrainTitle": {
+    "description": "Title of the Home card row shown when strain is above today's target range."
+  },
+  "homeWhyStrainBody": "ความหนัก {strain} เกินเป้าหมายของวันนี้ที่ {range}",
+  "@homeWhyStrainBody": {
+    "description": "Body of the high-strain row: today's strain and the target range.",
+    "placeholders": {
+      "strain": {
+        "type": "String"
+      },
+      "range": {
+        "type": "String"
+      }
+    }
+  },
   "homeStrainOf21": "จาก 21",
   "@homeStrainOf21": {
     "description": "Strain ring subtitle: out of the fixed 21-point scale."
-  },
-  "homeSleepNoTarget": "ยังไม่มีเป้าหมาย",
-  "@homeSleepNoTarget": {
-    "description": "Sleep ring subtitle when no computed sleep-need target exists yet."
-  },
-  "homeOfSpan": "จาก {duration}",
-  "@homeOfSpan": {
-    "description": "Sleep ring subtitle: duration measured against a computed sleep-need target.",
-    "placeholders": {
-      "duration": {
-        "type": "String",
-        "example": "7h 45m"
-      }
-    }
   },
   "homeLoadFailedTitle": "อ่านข้อมูลวันนี้ไม่ได้",
   "@homeLoadFailedTitle": {
@@ -7416,6 +7583,7 @@
     }
   },
   "homeSyncedNever": "ยังไม่มีข้อมูลสายรัด",
+  "homeSyncedTimeUnknown": "มีข้อมูลสายรัด แต่ยังไม่ได้ตั้งนาฬิกา",
   "@homeSyncedNever": {
     "description": "Home header line when no record has ever been banked from a band."
   },
@@ -7455,7 +7623,7 @@
   "@homeNothingTodayTitle": {
     "description": "Title shown when there is history but nothing recorded for today."
   },
-  "homeNothingTodayBody": "คืนล่าสุดที่แอปคำนวณคะแนนคือ {day} ยังไม่มีข้อมูลเข้ามาหลังจากนั้น",
+  "homeNothingTodayBody": "คืนล่าสุดที่คำนวณคะแนน: {day}",
   "@homeNothingTodayBody": {
     "description": "Body shown when there is history but nothing recorded for today, naming the last scored night.",
     "placeholders": {
@@ -7491,7 +7659,7 @@
       }
     }
   },
-  "homeReadinessNoReason": "ไม่มีข้อมูลระบุเหตุผล",
+  "homeReadinessNoReason": "ไม่มีการบันทึกเหตุผล",
   "@homeReadinessNoReason": {
     "description": "Fallback body of the readiness-not-scored card when no reason is recorded."
   },
@@ -7541,29 +7709,17 @@
       }
     }
   },
-  "homeIllnessBodyNoZ": "อัตราการเต้นหัวใจขณะพักสูงกว่าปกติในหลายคืนล่าสุด ติดตามสัญญาณเดียว จึงแสดงรูปแบบ ไม่ใช่สาเหตุ",
+  "homeIllnessBodyNoZ": "ข้อมูลช่วงคืนล่าสุดแสดงอัตราการเต้นหัวใจขณะพักสูงกว่าปกติ เป็นรูปแบบ ไม่ใช่สาเหตุ",
   "@homeIllnessBodyNoZ": {
     "description": "Illness watch body text when no standardised-deviation figure is available."
   },
-  "homeIllnessBodyAbove": "หลายคืนล่าสุดแสดงอัตราการเต้นหัวใจขณะพักสูงกว่าปกติ คืนนั้นสูงกว่าอยู่ {z} เท่าของความผันผวนระหว่างคืน เป็นรูปแบบ ไม่ใช่สาเหตุ",
+  "homeIllnessBodyAbove": "ข้อมูลช่วงคืนล่าสุดแสดงอัตราการเต้นหัวใจขณะพักสูงกว่าปกติ คืนนั้นก็สูงกว่าเช่นกัน เป็นรูปแบบ ไม่ใช่สาเหตุ",
   "@homeIllnessBodyAbove": {
-    "description": "Illness watch body text when the flagged night's heart rate sat above baseline, with the deviation amount.",
-    "placeholders": {
-      "z": {
-        "type": "String",
-        "example": "1.8"
-      }
-    }
+    "description": "Illness watch body text when the flagged night's heart rate sat above baseline, with the deviation amount."
   },
-  "homeIllnessBodyBelow": "หลายคืนล่าสุดรวมกันแสดงอัตราการเต้นหัวใจขณะพักสูงกว่าปกติ แม้คืนนั้นเพียงคืนเดียวจะต่ำกว่าอยู่ {z} เท่าของความผันผวนระหว่างคืน เป็นรูปแบบ ไม่ใช่สาเหตุ",
+  "homeIllnessBodyBelow": "ข้อมูลช่วงคืนล่าสุดรวมกันแสดงอัตราการเต้นหัวใจขณะพักสูงกว่าปกติ แม้คืนนั้นเพียงคืนเดียวจะต่ำกว่า เป็นรูปแบบ ไม่ใช่สาเหตุ",
   "@homeIllnessBodyBelow": {
-    "description": "Illness watch body text when the flagged night's heart rate sat below baseline, with the deviation amount.",
-    "placeholders": {
-      "z": {
-        "type": "String",
-        "example": "1.8"
-      }
-    }
+    "description": "Illness watch body text when the flagged night's heart rate sat below baseline, with the deviation amount."
   },
   "homeIllnessAdvice": "ควรสังเกตหากเป็นต่อเนื่องเกินสองสามวัน",
   "@homeIllnessAdvice": {
@@ -8568,6 +8724,7 @@
     "description": "Shown after the user set their own sleep window and the band recorded it, but staging found no sleep in it."
   },
   "sleepDetailCorrectionUnavailable": "ข้อมูลบันทึกรายละเอียดของคืนนี้ไม่ได้อยู่ในโทรศัพท์แล้ว จึงแก้ไขการนอนไม่ได้",
+  "sleepDetailCorrectionNoRecordings": "คืนนี้ไม่มีข้อมูลบันทึกรายละเอียดในโทรศัพท์ จึงแก้ไขการนอนของคืนนี้ไม่ได้",
   "sleepDetailCorrectionEveningPruned": "ข้อมูลช่วงเย็นก่อนคืนนี้ไม่ได้อยู่ในโทรศัพท์แล้ว จึงใช้ได้เฉพาะเวลาเข้านอนหลังเที่ยงคืน หรือ “ไม่ใช่การนอน”",
   "@sleepDetailCorrectionEveningPruned": {
     "description": "Shown on the oldest night still kept, or after a correction there was refused: the evening part of the night has been pruned, so a bedtime before midnight, confirming the detected times, or reverting to automatic cannot be applied."
@@ -9645,6 +9802,7 @@
   "@activityPickerRecent": {
     "description": "Section heading over the recent-activities row"
   },
+  "activityPickerMostDone": "ใช้บ่อยที่สุด",
   "activityPickerCalorieEstimatesTitle": "ตัวเลขแคลอรีเป็นค่าประมาณ",
   "@activityPickerCalorieEstimatesTitle": {
     "description": "Status card title explaining that calorie figures are estimates"
@@ -10460,7 +10618,7 @@
   },
   "activitySummaryHardMinutesNote": "{min} นาทีที่เกิน 80% ของค่าสูงสุดของคุณ",
   "@activitySummaryHardMinutesNote": {
-    "description": "Heart-rate chart footnote naming minutes spent above 80% of max heart rate",
+    "description": "Heart-rate chart footnote naming minutes spent in heart-rate zones 4 and 5",
     "placeholders": {
       "min": {
         "type": "int"
@@ -10475,7 +10633,7 @@
   "@activitySummaryTopSet": {
     "description": "Section title above the heaviest logged set on a strength session"
   },
-  "activitySummaryOneRepMax": "ประมาณ 1RM {kg} กก.",
+  "activitySummaryOneRepMax": "ประมาณ 1RM {value} {unit, select, lb{ปอนด์} other{กก.}}",
   "@activitySummaryOneRepMax": {
     "description": "Estimated one-rep-max caption under the top set exercise name",
     "placeholders": {
@@ -11480,6 +11638,30 @@
   "@settingsClockFormatRowTitle": {
     "description": "Settings row title cycling the 12/24-hour clock format"
   },
+  "settingsUnitsMetric": "เมตริก",
+  "@settingsUnitsMetric": {
+    "description": "Units value: metric"
+  },
+  "settingsUnitsImperial": "อิมพีเรียล",
+  "@settingsUnitsImperial": {
+    "description": "Units value: imperial"
+  },
+  "settingsAppearanceLight": "สว่าง",
+  "@settingsAppearanceLight": {
+    "description": "Appearance value: light theme"
+  },
+  "settingsAppearanceDark": "มืด",
+  "@settingsAppearanceDark": {
+    "description": "Appearance value: dark theme"
+  },
+  "settingsBackupDaily": "ทุกวัน",
+  "@settingsBackupDaily": {
+    "description": "Automatic backup frequency: once a day"
+  },
+  "settingsBackupWeekly": "ทุกสัปดาห์",
+  "@settingsBackupWeekly": {
+    "description": "Automatic backup frequency: once a week"
+  },
   "settingsClockFormatSystem": "ตามระบบ",
   "@settingsClockFormatSystem": {
     "description": "Clock format value: follow the operating system setting"
@@ -11491,6 +11673,10 @@
   "settingsClockFormat12h": "12 ชั่วโมง",
   "@settingsClockFormat12h": {
     "description": "Clock format value: 12-hour clock with AM/PM (e.g. 7:30 PM)"
+  },
+  "settingsAppearanceSystem": "ตามระบบ",
+  "@settingsAppearanceSystem": {
+    "description": "Appearance value: follow the operating system light/dark setting"
   },
   "settingsCycleTrackingRowTitle": "ติดตามรอบเดือน",
   "@settingsCycleTrackingRowTitle": {
@@ -12397,7 +12583,7 @@
   "@ecgTitle": {
     "description": "WHOOP MG ECG: ECG"
   },
-  "ecgHeartScreener": "Heart Screener",
+  "ecgHeartScreener": "ตรวจคัดกรองหัวใจ",
   "@ecgHeartScreener": {
     "description": "WHOOP MG ECG: Heart Screener"
   },
@@ -12747,7 +12933,7 @@
   "activityStart": "เริ่ม",
   "activityEnd": "จบ",
   "activityCheckTimes": "ตรวจสอบเวลา",
-  "activityNapWindow": "เลือกช่วงเวลาที่ผ่านมา ความยาว 5 นาทีถึง 6 ชั่วโมง",
+  "activityNapWindow": "เลือกช่วงเวลาที่ผ่านมา ความยาว 5 นาทีถึง 3 ชั่วโมง",
   "activityEditNap": "แก้ไขการงีบ",
   "activityEditWorkout": "แก้ไขการออกกำลังกาย",
   "activityNapAlerts": "การงีบที่ตรวจพบ",
@@ -14413,7 +14599,7 @@
   "presentationS": "วิ",
   "presentationV": "µV",
   "presentationReadsTheRingDirectlyNoAccountNoKeyExchange": "อ่านจากแหวนโดยตรง ไม่ต้องมีบัญชีหรือแลกเปลี่ยนคีย์",
-  "presentationPebble2OrPebble2SEOnlyPairsOnly": "เฉพาะ Pebble 2 หรือ Pebble 2 SE ขณะนี้จับคู่ได้เท่านั้น ยังไม่อ่านหรือเก็บข้อมูล",
+  "presentationPebble2OrPebble2SEOnlyPairsOnly": "เฉพาะ Pebble 2 หรือ Pebble 2 SE การรองรับยังอยู่ในขั้นทดลอง: ซิงค์และบันทึกจำนวนก้าวกับการนอนหลับ รวมถึงอัตราการเต้นของหัวใจบน Pebble 2 รุ่น SE ไม่มีเซ็นเซอร์วัดอัตราการเต้นของหัวใจ",
   "presentationTheOriginalFossilSkagenHybridSmartwatchNotTheNewer": "นาฬิกาไฮบริด Fossil/Skagen รุ่นดั้งเดิม ไม่ใช่ Hybrid HR รุ่นใหม่ จับคู่และเชื่อมต่อได้ แต่ยังไม่คำนวณค่าจากข้อมูล",
   "presentationABudgetActivityBandPairsAndBanksItsRaw": "สายรัดกิจกรรมราคาประหยัด จับคู่และเก็บข้อมูลดิบได้ แต่ยังไม่คำนวณค่า",
   "presentationPairsAndBanksItsRawDataNothingIsDecoded": "จับคู่และเก็บข้อมูลดิบได้ ยังไม่ถอดรหัส",
@@ -15541,7 +15727,7 @@
       }
     }
   },
-  "homeCoachSetUpChip": "ถามเกี่ยวกับข้อมูลของคุณ: ตั้งค่าโค้ช",
+  "homeCoachSetUpChip": "ตั้งค่าโค้ช",
   "@homeCoachSetUpChip": {
     "description": "Today tab chip when no coach model is configured."
   },
@@ -16335,5 +16521,843 @@
         "type": "int"
       }
     }
-  }
+  },
+  "welcomeCoachKeyReentry": "คีย์ API ของโค้ชยังอยู่ในพื้นที่จัดเก็บที่ปลอดภัยและไม่ได้รวมอยู่ในข้อมูลสำรอง โปรดป้อนคีย์อีกครั้งในการตั้งค่า AI เพื่อใช้โค้ชบนโทรศัพท์เครื่องนี้",
+  "welcomeSettingsSkipped": "{n, plural, other{อ่านการตั้งค่า {n} รายการในข้อมูลสำรองไม่ได้และข้ามไป}}",
+  "@welcomeSettingsSkipped": {
+    "description": "Import report: settings rows in the backup that could not be read",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "welcomeSettingsSkippedBody": "รายการเหล่านั้นใช้ค่าของโทรศัพท์เครื่องนี้ต่อ",
+  "welcomeCoachChatGptReentry": "ข้อมูลการลงชื่อเข้าใช้ ChatGPT ยังอยู่ในพื้นที่จัดเก็บที่ปลอดภัยและไม่ได้รวมอยู่ในข้อมูลสำรอง โปรดลงชื่อเข้าใช้อีกครั้งในการตั้งค่า AI เพื่อใช้โค้ชบนโทรศัพท์เครื่องนี้",
+  "welcomeCoachServerReentry": "ที่อยู่เซิร์ฟเวอร์โค้ชที่คุณกำหนดเองไม่ได้ถูกสำรองไว้ เพราะที่อยู่อาจมีคีย์อยู่ด้วย ป้อนอีกครั้งในการตั้งค่า AI",
+  "welcomeSettingsRestored": "กู้คืนการตั้งค่าแล้ว {n} รายการ",
+  "@welcomeSettingsRestored": {
+    "description": "Import report: number of restored app preferences",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "strengthCustomWeight": "น้ำหนักที่กำหนดเอง",
+  "strengthEnterValue": "ป้อนค่า",
+  "strengthInvalidNumber": "ตัวเลขไม่ถูกต้อง",
+  "strengthLoadRangeKg": "ต้องอยู่ระหว่าง 0–500 กก.",
+  "strengthLoadRangeLb": "ต้องอยู่ระหว่าง 0–1100 ปอนด์",
+  "strengthRepsRange": "ต้องอยู่ระหว่าง 1–200 ครั้ง",
+  "strengthEditSet": "แก้ไขเซ็ต",
+  "strengthDeleteSet": "ลบเซ็ต",
+  "strengthDeleteSetConfirm": "ลบเซ็ตนี้หรือไม่?",
+  "strengthBodyweight": "น้ำหนักตัว",
+  "strengthDelete": "ลบ",
+  "strengthSaveFailed": "ไม่สามารถบันทึกการเปลี่ยนแปลงได้",
+  "whoopFirmwareWarningTitle": "ผู้ใช้ WHOOP: อย่าเชื่อมต่อกับแอป WHOOP อีก",
+  "whoopFirmwareWarningAction": "หากคุณใช้ OpenStrap หรือแอปโอเพนซอร์สอื่น หรือวางแผนจะเปลี่ยนไปใช้ในภายหลัง อย่าเชื่อมต่อสายรัดกับแอป WHOOP อย่างเป็นทางการอีก แอปอาจติดตั้งอัปเดตเฟิร์มแวร์โดยอัตโนมัติ ให้ถอนการติดตั้งหรือปิดใช้งานแอป WHOOP เพื่อไม่ให้แอปอัปเดตสายรัดของคุณ",
+  "whoopFirmwareWarningDetails": "มีรายงานเกี่ยวกับเฟิร์มแวร์ WHOOP 5.0 / MG เวอร์ชัน 50.43.1.0 และ 50.43.2.0 ว่าเข้าถึงข้อมูลไม่ได้ บลูทูธอาจยังเชื่อมต่อได้ OpenStrap ไม่สามารถออกโทเค็นสมาชิกที่ WHOOP ลงนามซึ่งจำเป็นต่อการปลดล็อกสายรัดที่ได้รับผลกระทบ เรากำลังหาทางแก้ไข แต่ยังไม่มีวิธีแก้ในตอนนี้",
+  "napAutoLogTitle": "บันทึกการงีบที่ชัดเจนโดยอัตโนมัติ",
+  "napAutoLogSub": "การงีบที่ตรวจพบและมีหลักฐานชัดเจนจะถูกเพิ่มโดยไม่ถาม คุณยังแก้ไขหรือลบได้",
+  "napAutoLogSaveFailed": "บันทึกการตั้งค่าไม่สำเร็จ ลองอีกครั้ง",
+  "pairBandNotSensor": "อุปกรณ์นั้นคือ {label} ซึ่งเป็นสายรัด ไม่ใช่เซ็นเซอร์ธรรมดา ไม่ได้บันทึกอะไรไว้",
+  "@pairBandNotSensor": {
+    "description": "Shown when a device picked as a plain sensor turns out to be a band. Nothing was saved. {label} is the band’s name.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "bandStatusFirmwareLockedTitle": "เฟิร์มแวร์ของสายรัดน่าจะกำลังกักข้อมูลไว้",
+  "bandStatusFirmwareLockedReason": "สายรัดนี้ใช้เฟิร์มแวร์ WHOOP 50.43 ซึ่งอาจเชื่อมต่อและตอบสนองแอปได้ แต่อาจไม่ส่งข้อมูลที่บันทึกไว้หรืออัตราการเต้นของหัวใจแบบสด จนกว่าจะมีโทเค็นสมาชิกที่ WHOOP ลงนามอยู่บนสายรัด นี่อาจเป็นสาเหตุหนึ่งที่ไม่มีข้อมูลเข้ามา OpenStrap ไม่สามารถออกโทเค็นนั้นได้ ข้อมูลทั้งหมดที่บันทึกไว้ที่นี่แล้วยังปลอดภัย",
+  "bandStatusFirmwareLockedFix": "หากเป็นที่เฟิร์มแวร์ แอปแก้ไขเรื่องนี้ไม่ได้ และข้อความนี้จะหายไปเองเมื่อสายรัดส่งข้อมูลที่บันทึกไว้อีกครั้ง",
+  "pairResetWhoop5Step1": "ถอดสายรัดออกจากข้อมือ แล้วรอจนไฟสีเขียวดับ",
+  "@pairResetWhoop5Step1": {
+    "description": "Reset help for WHOOP 5.0 / MG, step 1."
+  },
+  "pairResetWhoop5Step2": "จับสายรัดที่ด้านข้าง แล้วใช้สองนิ้วแตะด้านบนแรงๆ จนเหลือแต่ไฟสีน้ำเงินกะพริบ ถ้าไฟสีน้ำเงินและสีขาวขึ้นพร้อมกัน ให้แตะต่อจนเหลือแต่สีน้ำเงิน",
+  "@pairResetWhoop5Step2": {
+    "description": "Reset help for WHOOP 5.0 / MG, step 2: the tap procedure."
+  },
+  "pairResetWhoop5Step3": "ถ้ามีแอป WHOOP ในโทรศัพท์เครื่องนี้ ให้บังคับปิดแอป",
+  "@pairResetWhoop5Step3": {
+    "description": "Reset help for WHOOP 5.0 / MG, step 3."
+  },
+  "pairResetWhoop5Step4": "กลับมาที่นี่แล้วลองอีกครั้ง",
+  "@pairResetWhoop5Step4": {
+    "description": "Reset help for WHOOP 5.0 / MG, step 4."
+  },
+  "pairResetGenericStep1": "เปิดแอปของผู้ผลิต แล้วลบอุปกรณ์นี้ออกจากแอป",
+  "@pairResetGenericStep1": {
+    "description": "General reset help for a device, step 1."
+  },
+  "pairResetGenericStep2": "ในการตั้งค่า Bluetooth ของโทรศัพท์ หาอุปกรณ์นี้แล้วเลือกลืม",
+  "@pairResetGenericStep2": {
+    "description": "General reset help for a device, step 2."
+  },
+  "pairResetGenericStep3": "รีสตาร์ทอุปกรณ์ ถือไว้ใกล้โทรศัพท์เครื่องนี้ แล้วลองอีกครั้ง",
+  "@pairResetGenericStep3": {
+    "description": "General reset help for a device, step 3."
+  },
+  "pairResetGenericNote": "นี่เป็นคำแนะนำทั่วไป เรายังไม่ได้ตรวจสอบขั้นตอนที่ถูกต้องสำหรับอุปกรณ์นี้",
+  "@pairResetGenericNote": {
+    "description": "Shown above the general reset steps for a device whose own steps have not been checked yet."
+  },
+  "pairResetOfficialLink": "เปิดหน้าช่วยเหลือของผู้ผลิต",
+  "@pairResetOfficialLink": {
+    "description": "Link text opening the maker’s own help page in the browser."
+  },
+  "pairResetTitleBand": "สายรัดของคุณจับคู่อยู่กับที่อื่น",
+  "@pairResetTitleBand": {
+    "description": "Title of the screen shown when pairing a band did not finish: it is probably still paired with another phone or app."
+  },
+  "pairResetTitleRing": "แหวนของคุณจับคู่อยู่กับที่อื่น",
+  "@pairResetTitleRing": {
+    "description": "Same screen as the band title, for a ring."
+  },
+  "pairResetBody": "จับคู่ {name} ไม่สำเร็จ อุปกรณ์อาจยังเชื่อมต่ออยู่กับโทรศัพท์หรือแอปอื่น",
+  "@pairResetBody": {
+    "description": "Body under the pairing-did-not-finish title. {name} is the device’s name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairResetHeading": "วิธีรีเซ็ต",
+  "@pairResetHeading": {
+    "description": "Heading above the numbered reset steps."
+  },
+  "pairResetWhoopTakeover": "การจับคู่ที่นี่จะตัดการเชื่อมต่อจากแอป WHOOP",
+  "@pairResetWhoopTakeover": {
+    "description": "Shown for WHOOP devices: a WHOOP keeps one connection, so pairing here takes it from the WHOOP app."
+  },
+  "pairResetOfficialSub": "{host} · เปิดในเบราว์เซอร์",
+  "@pairResetOfficialSub": {
+    "description": "Second line of the maker’s-help-page row. {host} is the website’s host name.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "pairLinkOpenFailed": "เปิดลิงก์ไม่ได้ ที่อยู่คือ {url}",
+  "@pairLinkOpenFailed": {
+    "description": "Snackbar when a help link could not be opened. {url} is the address, so the user can open it by hand.",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "pairPickDifferentBand": "เลือกสายรัดอื่น",
+  "@pairPickDifferentBand": {
+    "description": "Button that goes back to the list of bands."
+  },
+  "pairThisIsWhoop": "นี่คือสายรัด WHOOP",
+  "@pairThisIsWhoop": {
+    "description": "Sheet title for a WHOOP found by the scan."
+  },
+  "pairThisIsRing": "นี่คือแหวน",
+  "@pairThisIsRing": {
+    "description": "Sheet title for a ring."
+  },
+  "pairThisIsWatch": "นี่คือนาฬิกา",
+  "@pairThisIsWatch": {
+    "description": "Sheet title for a watch."
+  },
+  "pairThisIsFitnessBand": "นี่คือสายรัดฟิตเนส",
+  "@pairThisIsFitnessBand": {
+    "description": "Sheet title for a fitness band (Mi Band)."
+  },
+  "pairThisIsStrap": "นี่คือสายวัดชีพจร",
+  "@pairThisIsStrap": {
+    "description": "Sheet title for a heart-rate chest strap."
+  },
+  "pairThisIsSensor": "นี่คือเซนเซอร์วัดชีพจร",
+  "@pairThisIsSensor": {
+    "description": "Sheet title for a heart-rate armband or other heart-rate sensor."
+  },
+  "pairTroubleTitle": "เชื่อมต่อไม่ได้ใช่ไหม",
+  "@pairTroubleTitle": {
+    "description": "Heading of the always-open help card on the pairing screen."
+  },
+  "pairTroubleBody": "ตั้งสายรัดเป็นโหมดจับคู่ แล้วลองอีกครั้ง ยังไม่ได้อยู่ใช่ไหม ถามเราได้",
+  "@pairTroubleBody": {
+    "description": "Body of the help card."
+  },
+  "pairTroubleModeLink": "โหมดจับคู่ของ {device}",
+  "@pairTroubleModeLink": {
+    "description": "Link to the maker’s page on putting {device} in pairing mode.",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "pairTroubleDiscord": "ถามใน Discord",
+  "@pairTroubleDiscord": {
+    "description": "Link to the project’s Discord."
+  },
+  "pairTroubleDiscordSub": "ชุมชน OpenStrap",
+  "@pairTroubleDiscordSub": {
+    "description": "Line under the Discord link."
+  },
+  "pairModeTitle": "ตั้งให้อยู่ในโหมดจับคู่",
+  "@pairModeTitle": {
+    "description": "Heading of the pairing-mode steps on a device sheet."
+  },
+  "pairModeNoSite": "อุปกรณ์ทั่วไปที่ไม่มีผู้ผลิตรายเดียว จึงไม่มีขั้นตอนจากผู้ผลิต",
+  "@pairModeNoSite": {
+    "description": "Shown instead of steps for a generic device with no maker’s page."
+  },
+  "pairOuraExistingKeyGuidance": "ใช้แอป Oura อยู่แล้วใช่ไหม คงการจับคู่แหวนในแอปนั้นไว้ แล้วจับคู่ด้วยคีย์เดิมของแหวน ข้ามขั้นตอนรีเซ็ตด้านล่าง รีเซ็ตเฉพาะเมื่อต้องการคีย์ใหม่เท่านั้น",
+  "pairAddDevice": "เพิ่มอุปกรณ์",
+  "@pairAddDevice": {
+    "description": "Label of the button that starts adding a device (band or sensor is decided after the scan)."
+  },
+  "pairKindAll": "ทั้งหมด",
+  "@pairKindAll": {
+    "description": "Filter pill that shows every device in the list."
+  },
+  "pairKindStrap": "สายคาดอกและสายรัดต้นแขน",
+  "@pairKindStrap": {
+    "description": "Filter pill: heart-rate straps and armbands."
+  },
+  "pairKindRing": "แหวน",
+  "@pairKindRing": {
+    "description": "Filter pill for smart rings."
+  },
+  "pairKindWatch": "นาฬิกา",
+  "@pairKindWatch": {
+    "description": "Filter pill for watches."
+  },
+  "pairGoBack": "ย้อนกลับ",
+  "@pairGoBack": {
+    "description": "Link that closes a confirm sheet without pairing."
+  },
+  "pairAddDeviceSub": "แหวน นาฬิกา และสายวัดชีพจร",
+  "@pairAddDeviceSub": {
+    "description": "Line under the Add a device row in Settings."
+  },
+  "pairAddDeviceSubtitle": "แต่ละอุปกรณ์จะบอกว่าเหมาะกับแบบไหน: ทุกวัน หรือเฉพาะตอนออกกำลังกาย",
+  "@pairAddDeviceSubtitle": {
+    "description": "Lead of the Add a device screen."
+  },
+  "pairBandFoundBody": "ใช้ทุกวันได้ข้อมูลมากกว่าใช้เฉพาะตอนออกกำลังกายมาก คุณต้องการแบบไหน",
+  "@pairBandFoundBody": {
+    "description": "WHOOP sheet lead when no band is paired yet."
+  },
+  "pairBandFoundBodyHasBand": "คุณมีสายรัดอยู่แล้ว ใช้เป็นสายรัดหลักได้ทีละหนึ่งเส้นเท่านั้น",
+  "@pairBandFoundBodyHasBand": {
+    "description": "WHOOP sheet lead when a band is already paired."
+  },
+  "pairIdentifiedBody": "อุปกรณ์นี้ดูเหมือนสายคาดวัดหัวใจ แต่เมื่อเชื่อมต่อแล้วกลับระบุตัวเองว่าเป็น {label} ไม่ได้บันทึกอะไรไว้",
+  "@pairIdentifiedBody": {
+    "description": "Body of the sheet shown when a device picked as a sensor identifies itself as a band after connecting. Nothing was saved.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pairAsMyBand": "จับคู่เป็นสายรัดของฉัน",
+  "@pairAsMyBand": {
+    "description": "Button that pairs the device as the user’s main band."
+  },
+  "pairSecondaryPaired": "จับคู่แล้วสำหรับใช้เฉพาะตอนออกกำลังกาย",
+  "@pairSecondaryPaired": {
+    "description": "Shown after a device is paired for workouts only."
+  },
+  "pairBandNow": "สายรัดปัจจุบันของคุณ: {name} ข้อมูลของคุณยังอยู่เมื่อเปลี่ยน",
+  "@pairBandNow": {
+    "description": "Note under the table when a band is already paired. {name} is that band’s name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairReplaceBand": "จับคู่สายรัดนี้ แล้วจึงตัดการเชื่อมต่อ {name}",
+  "@pairReplaceBand": {
+    "description": "Main button when a band is already paired: unpair it and pair the tapped one. {name} is the paired band’s name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairReplaceConfirmTitle": "แทนที่ {name} หลังจากสายรัดนี้เชื่อมต่อสำเร็จหรือไม่",
+  "@pairReplaceConfirmTitle": {
+    "description": "Confirm dialog before replacing the band. {name} is the paired band’s name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairReplaceConfirmBody": "หากตั้งค่าล้มเหลวหรือยกเลิก สายรัดเดิมจะยังคงจับคู่ ข้อมูลที่บันทึกไว้ในโทรศัพท์เครื่องนี้แล้วจะยังอยู่ ส่วนข้อมูลที่ยังไม่ได้ซิงก์ที่ค้างอยู่บนสายรัดเดิมจะไม่ถูกซิงก์มายังโทรศัพท์เครื่องนี้หลังการเปลี่ยน",
+  "@pairReplaceConfirmBody": {
+    "description": "Confirm dialog body: replacing the band keeps the data."
+  },
+  "pairReplaceConfirmYes": "จับคู่สายรัดใหม่",
+  "@pairReplaceConfirmYes": {
+    "description": "Confirm dialog button: unpair the old band and pair the new one."
+  },
+  "pairCurrentBandFallback": "สายรัดของคุณ",
+  "@pairCurrentBandFallback": {
+    "description": "Stands in for the paired band’s name when it has none, inside a sentence."
+  },
+  "pairWearableLead": "อุปกรณ์นี้เติมข้อมูลการนอน การฟื้นตัว และอัตราการเต้นของหัวใจให้แต่ละวันได้",
+  "@pairWearableLead": {
+    "description": "Sheet lead for a ring or watch."
+  },
+  "pairWearableNote": "เติมวันที่ไม่มี WHOOP ของคุณ ยังเป็นฟีเจอร์ทดลอง จึงต้องเปิดเองในอุปกรณ์",
+  "@pairWearableNote": {
+    "description": "Note under a ring’s or watch’s table on the pairing sheet. “Devices” is the device list in Settings."
+  },
+  "pairStrapLead": "เพิ่มอัตราการเต้นของหัวใจขณะออกกำลังกาย ไม่บันทึกการนอน การฟื้นตัว หรือความหนักรายวัน",
+  "@pairStrapLead": {
+    "description": "Sheet lead for a heart-rate strap or sensor."
+  },
+  "pairStrapNote": "เปิด “ใช้ระหว่างออกกำลังกาย” เพื่อบันทึกอัตราการเต้นของหัวใจระหว่างออกกำลังกาย",
+  "@pairStrapNote": {
+    "description": "Note under a strap’s table: both workout rows need the switch. Quotes deviceUseWorkoutsTitle."
+  },
+  "pairDeviceNamed": "จับคู่ {name}",
+  "@pairDeviceNamed": {
+    "description": "Main button on a ring’s, watch’s or strap’s sheet. {name} is the device.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairUseForWorkouts": "ใช้เฉพาะตอนออกกำลังกาย",
+  "@pairUseForWorkouts": {
+    "description": "Text link on a WHOOP sheet: keep it for workouts only, not as the main band."
+  },
+  "pairReplaceUnpairFailed": "จับคู่สายรัดใหม่แล้ว แต่ลบสายรัดเดิมไม่สำเร็จ",
+  "@pairReplaceUnpairFailed": {
+    "description": "Shown when unpairing the old band failed during “Unpair (your band) and pair this one”; nothing else ran."
+  },
+  "pairWearableLeadPebble": "Pebble 2 เติมข้อมูลการนอนและอัตราการเต้นของหัวใจให้แต่ละวันได้ Pebble 2 SE แสดงข้อมูลการนอนและจำนวนก้าวที่นาฬิกาบันทึกเอง รุ่นนี้ไม่มีเซ็นเซอร์วัดอัตราการเต้นของหัวใจ แอปจึงคำนวณภาระร่างกายรายวันหรือประเมินการฟื้นตัวจากข้อมูลของรุ่นนี้ไม่ได้",
+  "pairMainBandWhoopOnly": "สายรัดหลัก: WHOOP 4.0 หรือ WHOOP 5.0/MG เท่านั้น อุปกรณ์อื่นเพิ่มเป็นอุปกรณ์เสริมได้",
+  "@pairMainBandWhoopOnly": {
+    "description": "Plain statement on the pairing screens: only WHOOP can be the main band; other devices are added as additional devices."
+  },
+  "pairBandTitle": "จับคู่สายรัดของคุณ",
+  "@pairBandTitle": {
+    "description": "Title of the first-run list of bands."
+  },
+  "pairBandSubtitle": "เลือกอันที่คุณสวมอยู่ เราจะค้นหาในบริเวณใกล้เคียง",
+  "@pairBandSubtitle": {
+    "description": "Subtitle of the first-run list of bands."
+  },
+  "pairStrapOnlyLink": "ฉันมีแค่สายคาดวัดหัวใจ",
+  "@pairStrapOnlyLink": {
+    "description": "Text link under the band list for someone with only a heart-rate strap."
+  },
+  "pairWhoopRowLine": "การนอน การฟื้นตัว ความหนัก อัตราการเต้นของหัวใจ และอื่นๆ",
+  "@pairWhoopRowLine": {
+    "description": "Line under each WHOOP on the first-run list."
+  },
+  "pairSetUpTitle": "ตั้งค่า",
+  "@pairSetUpTitle": {
+    "description": "Top bar title of the first-run pairing screen."
+  },
+  "capLabelSleep": "การนอน",
+  "@capLabelSleep": {
+    "description": "Name of a thing a device sends: sleep."
+  },
+  "capLabelRecovery": "การฟื้นตัว",
+  "@capLabelRecovery": {
+    "description": "Name of a thing a device sends: the morning recovery score."
+  },
+  "capLabelStrain": "ความหนัก",
+  "@capLabelStrain": {
+    "description": "Name of a thing a device sends: strain."
+  },
+  "capLabelHrv": "ความแปรปรวนของอัตราการเต้นหัวใจ",
+  "@capLabelHrv": {
+    "description": "Name of a thing a device sends: heart-rate variability."
+  },
+  "capLabelSkinTemperature": "อุณหภูมิผิว",
+  "@capLabelSkinTemperature": {
+    "description": "Name of a thing a device sends: skin temperature."
+  },
+  "capLabelBloodOxygen": "ออกซิเจนในเลือด",
+  "@capLabelBloodOxygen": {
+    "description": "Name of a thing a device sends: blood oxygen (only a device’s own reading)."
+  },
+  "capLabelWorkoutHeartRate": "อัตราการเต้นหัวใจขณะออกกำลังกาย",
+  "@capLabelWorkoutHeartRate": {
+    "description": "Table row: heart rate during a workout."
+  },
+  "capLabelWorkoutBeatToBeat": "ช่วงเวลาระหว่างจังหวะหัวใจขณะออกกำลังกาย",
+  "@capLabelWorkoutBeatToBeat": {
+    "description": "Table row: beat-to-beat timing during a workout."
+  },
+  "capLabelSteps": "ก้าว",
+  "@capLabelSteps": {
+    "description": "Name of a thing a device sends: steps."
+  },
+  "capReasonSkinTempNights": "หลังจากผ่านไปสองสามคืน",
+  "@capReasonSkinTempNights": {
+    "description": "Caption under Skin temperature: it needs a few nights first."
+  },
+  "capReasonEstimated": "เป็นค่าประมาณ ไม่ใช่ค่าที่วัดได้โดยตรง",
+  "@capReasonEstimated": {
+    "description": "Why a value is conditional: it is an estimate, not a direct reading."
+  },
+  "capReasonEarly": "ค่าประมาณช่วงแรก จะแม่นยำขึ้นในช่วงสัปดาห์แรกๆ",
+  "@capReasonEarly": {
+    "description": "Why a value is conditional: it is an early estimate that firms up over the first weeks."
+  },
+  "capVendorReported": "ค่าที่อุปกรณ์วัดเอง",
+  "@capVendorReported": {
+    "description": "Tag on a value that is the device’s own reading, not calculated by this app."
+  },
+  "slotSendsHeading": "ส่ง",
+  "@slotSendsHeading": {
+    "description": "Heading above the list of what a device sends."
+  },
+  "slotDoesntSendHeading": "ไม่ส่ง",
+  "@slotDoesntSendHeading": {
+    "description": "Heading above the list of what a secondary sensor does not send."
+  },
+  "pairSectionTitle": "จับคู่อุปกรณ์",
+  "@pairSectionTitle": {
+    "description": "Heading of the section in My sources that holds pairing."
+  },
+  "pairCardBandBody": "เฉพาะ WHOOP 4.0 หรือ WHOOP 5.0/MG การนอน การฟื้นตัว และความหนัก ตลอดวัน",
+  "@pairCardBandBody": {
+    "description": "Body of the Your band card in Settings."
+  },
+  "pairUnpairBand": "ยกเลิกการจับคู่สายรัด",
+  "@pairUnpairBand": {
+    "description": "Red outline button that starts forgetting the paired band (a confirm dialog follows)."
+  },
+  "capLabelHeartRate": "อัตราการเต้นของหัวใจและขณะพัก",
+  "@capLabelHeartRate": {
+    "description": "Table row: heart rate and resting heart rate, as one capability."
+  },
+  "capLabelRespiration": "การหายใจ",
+  "@capLabelRespiration": {
+    "description": "Table row: breathing rate."
+  },
+  "capReasonFirstNights": "เป็นค่าประมาณใน 14 คืนแรก",
+  "@capReasonFirstNights": {
+    "description": "Caption under Recovery for a ring or watch: its recovery is an estimate until 14 nights of baseline."
+  },
+  "capReasonOwnStagesRing": "จากระยะการนอนที่แหวนบันทึกเอง",
+  "@capReasonOwnStagesRing": {
+    "description": "Caption under Sleep for a ring: the sleep stages are the ring’s own."
+  },
+  "capReasonOwnStages": "จากระยะการนอนที่อุปกรณ์บันทึกเอง",
+  "@capReasonOwnStages": {
+    "description": "Caption under Sleep for a watch or fitness band: the sleep stages are the device’s own."
+  },
+  "capReasonLiveSessions": "ระหว่างเซสชันสด",
+  "@capReasonLiveSessions": {
+    "description": "Caption under Steps for WHOOP 4: it counts steps only while the app has a live connection."
+  },
+  "slotEveryDay": "ทุกวัน",
+  "@slotEveryDay": {
+    "description": "Column and chip: the device is used every day (the main band, or the ring/watch that fills days)."
+  },
+  "slotWorkoutsOnly": "เฉพาะตอนออกกำลังกาย",
+  "@slotWorkoutsOnly": {
+    "description": "Column and chip: the device is used only during workouts."
+  },
+  "pairWearableCardNote": "เติมวันที่ไม่มี WHOOP ของคุณ ยังเป็นฟีเจอร์ทดลอง จึงต้องเปิดเองด้านล่าง",
+  "@pairWearableCardNote": {
+    "description": "Note under a ring’s or watch’s table on its device page; the switch is below it."
+  },
+  "pairWhatItSends": "สิ่งที่ส่งมา",
+  "@pairWhatItSends": {
+    "description": "Heading above the table on a device page."
+  },
+  "capReasonUnconfirmed": "หากอุปกรณ์นี้ส่งข้อมูลนี้ ยังไม่ได้ยืนยัน",
+  "@capReasonUnconfirmed": {
+    "description": "Caption under a row the device may or may not send; nobody has confirmed it does."
+  },
+  "capReasonPebble2Only": "เฉพาะ Pebble 2 รุ่น 2 SE ไม่มีเซ็นเซอร์วัดอัตราการเต้นของหัวใจ",
+  "capReasonPebble2OnlyEstimated": "เฉพาะ Pebble 2 และเป็นค่าประมาณ ไม่ใช่ค่าที่วัดได้โดยตรง รุ่น 2 SE ไม่มีเซ็นเซอร์วัดอัตราการเต้นของหัวใจ",
+  "slotColumnReason": "{column}: {reason}",
+  "@slotColumnReason": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "slotCapabilityStatus": "{capability}, {column}: {status}",
+  "@slotCapabilityStatus": {
+    "placeholders": {
+      "capability": {
+        "type": "String"
+      },
+      "column": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "pairSearchDevices": "ค้นหาอุปกรณ์",
+  "pairPrimaryCannotBeSensor": "นี่คือสายรัดหลักของคุณอยู่แล้ว จึงไม่สามารถจับคู่เป็นเซ็นเซอร์ออกกำลังกายด้วยได้",
+  "capReasonSkinTempProvisional": "ค่าประมาณที่ยังเป็นข้อมูลเบื้องต้น ต้องมีข้อมูลหลายคืน",
+  "pairReplaceMyBand": "เปลี่ยนสายรัดของฉัน",
+  "dayStepsWhoop4NoCounter": "WHOOP 4.0 ไม่มีตัวนับก้าวในตัว จึงนับก้าวได้เฉพาะตอนที่แอปนี้กำลังรับข้อมูลสดจากสายรัดเท่านั้น",
+  "healthWearNotUpdatedSince": "ไม่ได้อัปเดตตั้งแต่ {time}",
+  "dayStrainWornAsOf": "สวมใส่ ข้อมูล ณ {time}",
+  "guideTapMarker": "แตะ",
+  "guideScrollMarker": "เลื่อน",
+  "guideStepOf": "ขั้นตอนที่ {step} จาก {total}",
+  "guideDontSeeIt": "ไม่เห็นหรือ?",
+  "guideExit": "ออกจากคำแนะนำ",
+  "guideExitLabel": "ออกจากคู่มือ",
+  "guideOffPathTitle": "คุณออกนอกเส้นทางแล้ว",
+  "guideOffPathBody": "หน้าจอนี้ไม่ได้อยู่ในคู่มือ",
+  "guideBackToGuide": "กลับไปที่คู่มือ",
+  "guideDoneTitle": "เสร็จแล้ว",
+  "guideDoneBody": "นั่นคือขั้นตอนสุดท้าย",
+  "guideTargetProxy": "เป้าหมายของคู่มือ: {caption}",
+  "guideTapsBack": "{count, plural, other{{count} แตะเพื่อกลับ}}",
+  "@guideTapsBack": {
+    "description": "Number of taps (navigation hops) back to the active guide step, shown beside the off-path text.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "guideTabProxy": "กลับไปที่แท็บ {tab}",
+  "@guideTabProxy": {
+    "description": "Screen-reader label of the highlighted tab-bar tab while a guide runs: the step is on that tab.",
+    "placeholders": {
+      "tab": {
+        "type": "String",
+        "description": "The tab's name, as the tab bar prints it."
+      }
+    }
+  },
+  "guideBackProxy": "กลับไปที่คำแนะนำ",
+  "@guideBackProxy": {
+    "description": "Screen-reader label of the highlighted control that leads back to the guide's path while the user is off the path."
+  },
+  "guideMoveCardUp": "ย้ายการ์ดคำแนะนำขึ้น",
+  "@guideMoveCardUp": {
+    "description": "Screen-reader action on the guide's step card: move the card up the screen (the alternative to dragging it)."
+  },
+  "guideMoveCardDown": "ย้ายการ์ดคำแนะนำลง",
+  "@guideMoveCardDown": {
+    "description": "Screen-reader action on the guide's step card: move the card down the screen (the alternative to dragging it)."
+  },
+  "guideTapOneOf": "แตะรายการใดรายการหนึ่ง",
+  "guideExpandAccordion": "ขยาย {title}",
+  "@guideExpandAccordion": {
+    "description": "Guide hop asking the wearer to open a collapsed section",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSleepHmmRowTitle": "การแบ่งระยะการนอนแบบทดลอง (HMM)",
+  "@settingsSleepHmmRowTitle": {
+    "description": "Title of the experimental HMM sleep staging toggle in Settings."
+  },
+  "settingsSleepHmmRowSub": "อัลกอริทึมเพื่อการวิจัย ไม่ใช่อุปกรณ์การแพทย์ ปิดไว้โดยค่าเริ่มต้น",
+  "@settingsSleepHmmRowSub": {
+    "description": "Subtitle of the experimental HMM sleep staging toggle in Settings."
+  },
+  "guideStepUnavailable": "ขณะนี้ไม่สามารถแสดงขั้นตอนนี้ได้",
+  "guideNoVariantBody": "คู่มือนี้ยังไม่รองรับสายรัดของคุณ รองรับ: {bands}",
+  "guideHrZonesTitle": "หาโซนอัตราการเต้นหัวใจของคุณได้ที่ไหน",
+  "guideHrZonesIntro": "หน้าจอโซนอัตราการเต้นหัวใจอยู่หลังคะแนน{score}ของคุณ ใช้เพียงสามการแตะ",
+  "guideHrZonesStep1": "ที่แท็บ **{tab}** แตะวง **{ring}**",
+  "guideHrZonesStep2": "เลื่อนลงไปที่ **{section}** แล้วแตะ **{action}** ทางขวา",
+  "guideHrZonesStep3": "ในหน้าจอ **{screen}** ให้แตะ **{link}** หรือ **{editLink}** หากคุณบันทึกโซนของตัวเองไว้แล้ว",
+  "guideHrZonesAltTitle": "อีกเส้นทางหนึ่ง",
+  "guideHrZonesAltBody": "เปิดแท็บ **{tab}** แล้วแตะ **{link}** จากนั้นทำตามขั้นตอนที่ 2 และ 3",
+  "guideHrZonesMissingTitle": "ไม่เห็น \"{section}\" ใช่ไหม",
+  "guideHrZonesMissingBody": "จะแสดงเมื่อสายรัดบันทึกอัตราการเต้นหัวใจของวันนั้นแล้วและคำนวณโซนของคุณได้ หากสวมสักพักแล้วยังไม่แสดง ให้เพิ่มอายุของคุณในโปรไฟล์",
+  "@guideNoVariantBody": {
+    "description": "Shown instead of a guide's steps when the guide has no version for the user's band. {bands} is a list of band names such as WHOOP 4 / WHOOP 5; brand names are not translated.",
+    "placeholders": {
+      "bands": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesIntro": {
+    "description": "One line under the guide title. {score} is the in-app name of the Strain ring on the Today tab.",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesStep1": {
+    "description": "Step 1 caption. The words between ** ** are shown in bold and must be the in-app labels, passed in: {tab} is the Today tab name, {ring} the Strain ring name.",
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      },
+      "ring": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesStep2": {
+    "description": "Step 2 caption. Bold words are in-app labels: {section} is the 'Time in zones' heading, {action} the link on its right ('How these are set').",
+    "placeholders": {
+      "section": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesStep3": {
+    "description": "Step 3 caption. The screen title and both button labels are quoted verbatim; Edit appears after saving manual zones.",
+    "placeholders": {
+      "screen": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      },
+      "editLink": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesAltBody": {
+    "description": "Footer card body. Bold words are in-app labels: {tab} is the Activity tab name, {link} the 'Today's strain' link.",
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "@guideHrZonesMissingTitle": {
+    "description": "Footer card title: the user cannot see the 'Time in zones' section. {section} is that section's in-app heading.",
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
+  "guidePickBand": "คุณใช้สายรัดรุ่นไหน",
+  "helpEmpty": "ยังไม่มีคู่มือสำหรับสายรัดของคุณ",
+  "guideAnotherWayInTitle": "อีกเส้นทางหนึ่ง",
+  "guideAlarmTitle": "ตั้งปลุกหรือกำหนดเวลาต่างกันในแต่ละวันได้ที่ไหน",
+  "guideAlarmStep1": "ที่แท็บ **{tab}** เลื่อนลงไปที่ **{section}** แล้วแตะ **{row}**",
+  "guideAlarmStep2": "ใต้ **{group}** แตะที่วันที่ปิดอยู่เพื่อเปิดใช้ เช่น **{day}** การแตะวันที่เปิดอยู่แล้วจะเป็นการปิดวันนั้น",
+  "guideAlarmStep3": "จากนั้นแตะ **{wake}** ใต้วันนั้นแล้วเลือกเวลา แต่ละวันตั้งเวลาต่างกันได้",
+  "guideAlarmAltBody": "เปิด **{profile}** แล้วไปที่ **{settings}** จากนั้น **{band}** และ **{alarm}**",
+  "guideAlarmMissingTitle": "ไม่เห็น \"{group}\" ใช่ไหม",
+  "guideAlarmMissingBody": "**{group}** จะแสดงเฉพาะเมื่อสายรัดเชื่อมต่ออยู่ วางสายรัดไว้ใกล้โทรศัพท์ รอให้เชื่อมต่อ แล้วลองดูอีกครั้ง",
+  "guideAddNapTitle": "บันทึกการงีบด้วยตัวเองได้ที่ไหน",
+  "guideAddNapStep1": "ที่แท็บ **{tab}** แตะ **{naps}** ใต้คืนล่าสุดของคุณ",
+  "guideAddNapStep2": "แตะ **{log}** แอปจะถามสองอย่างคือ **{fell}** แล้วตามด้วย **{woke}** เลือกเวลาทั้งสอง",
+  "guideAddNapFoundTitle": "การงีบที่สายรัดตรวจพบ",
+  "guideAddNapFoundBody": "การงีบที่สายรัดตรวจพบจะอยู่ในหน้าจอเดียวกัน หากรายการไหนไม่ถูกต้อง ให้แตะ **{notNap}** ข้างรายการนั้น",
+  "guideAddNapRulesTitle": "บันทึกการงีบไม่ได้ใช่ไหม",
+  "guideAddNapRulesBody": "การงีบต้องยาวระหว่าง {minMinutes} นาทีถึง {maxHours} ชั่วโมง ต้องจบไปแล้ว และต้องไม่ทับกับการงีบอื่นหรือการนอนหลักของคุณ",
+  "@guideAddNapRulesBody": {
+    "description": "Footer card body: nap limits come from the shared form validation caps.",
+    "placeholders": {
+      "minMinutes": {
+        "type": "String"
+      },
+      "maxHours": {
+        "type": "String"
+      }
+    }
+  },
+  "guideRemoveTitle": "ลบการงีบหรือการออกกำลังกายที่ไม่จริงได้ที่ไหน",
+  "guideRemoveStep1": "ที่แท็บ **{tab}** แตะการ์ด **{card}** การ์ดนี้จะแสดงเฉพาะเมื่อมีรายการรอคำตอบจากคุณ",
+  "guideRemoveStep2": "แตะ **{notNap}** หรือ **{notWorkout}** สำหรับรายการที่ไม่เกิดขึ้นจริง ส่วนที่ไฮไลต์แสดงตัวเลือก",
+  "guideRemoveSavedTitle": "บันทึกไปแล้วหรือ",
+  "guideRemoveSavedBody": "เปิดแท็บ **{sleep}** แล้วแตะ **{naps}** แตะ **{notNap}** ที่การงีบที่สายรัดพบ หรือ **{delete}** ที่การงีบที่คุณบันทึกเอง",
+  "guideRemoveMissingTitle": "ไม่เห็น \"{card}\" ใช่ไหม",
+  "guideRemoveMissingBody": "การ์ดจะอยู่เฉพาะเมื่อมีรายการรอคำตอบจากคุณ เมื่อตอบแล้ว ให้ดูการงีบที่ **{sleep}** > **{naps}** และการออกกำลังกายที่ **{activity}** > **{history}**",
+  "guideFixTimesTitle": "แก้เวลานอนของคุณได้ที่ไหน",
+  "guideFixTimesStep1": "ที่แท็บ **{tab}** แตะ **{change}** ใต้คืนล่าสุดของคุณ ปุ่มจะเขียนว่า **{set}** จนกว่าคุณจะตั้งเวลาเอง แอปจะถามว่าคุณเข้านอนกี่โมง แล้วลุกจากเตียงกี่โมง",
+  "guideFixTimesStep2": "หากต้องการยกเลิกการเปลี่ยนแปลง ให้แตะ **{back}** คืนนั้นจะกลับไปเป็นเวลาที่แอปตรวจพบ",
+  "guideFixTimesBackTitle": "ไม่เห็น \"{back}\" ใช่ไหม",
+  "guideFixTimesBackBody": "**{back}** จะแสดงหลังจากคุณตั้งหรือยืนยันเวลาเอง และเมื่อยังเก็บข้อมูลบันทึกของคืนนั้นไว้ครบทั้งคืนเท่านั้น",
+  "guideFixTimesAskTitle": "ตัวเลือกเวลาถามอะไร",
+  "guideFixTimesAskBody": "ถามเวลาที่คุณเข้านอนก่อน แล้วจึงถามเวลาที่ลุกจากเตียง จากนั้นแอปจะคำนวณคืนนั้นใหม่จากสองเวลานี้",
+  "guideDeleteTitle": "ลบการออกกำลังกายได้ที่ไหน",
+  "guideDeleteStep1": "ที่แท็บ **{tab}** เปิด **{history}**",
+  "guideDeleteStep2": "แตะถังขยะที่ท้ายแถวของรายการ (**{label}**) แล้วยืนยัน",
+  "guideDeleteWhatTitle": "การลบทำอะไร",
+  "guideDeleteWhatBody": "รายการออกกำลังกายจะหายไปจากแอป หากมีสำเนาในแอปสุขภาพของโทรศัพท์ สำเนานั้นจะยังอยู่เหมือนเดิม",
+  "guideDeleteNoneTitle": "ไม่เห็นถังขยะให้แตะใช่ไหม",
+  "guideDeleteNoneBody": "หากหน้าประวัติแสดงว่า **{none}** แสดงว่ายังไม่มีอะไรให้ลบ **{start}** หรือ **{log}** ใช้เพิ่มรายการได้",
+  "guideStartTitle": "เริ่มและหยุดการออกกำลังกายได้ที่ไหน",
+  "guideStartStep1": "ที่แท็บ **{tab}** แตะการ์ด **{card}**",
+  "guideStartStep2": "หากิจกรรมของคุณ: พิมพ์ใน **{search}** หรือแตะเลือกจากรายการ",
+  "guideStartStep3": "ตรวจรายละเอียด แล้วแตะ **{start}**",
+  "guideStartStep4": "หากต้องการหยุด ให้แตะสี่เหลี่ยมสีแดง (**{finish}**) คุณจะไปที่สรุปการออกกำลังกายของคุณ",
+  "guideStartNoBandTitle": "ไม่ได้เชื่อมต่อสายรัดใช่ไหม",
+  "guideStartNoBandBody": "คุณยังเริ่มการออกกำลังกายได้ สายรัดที่ไม่ได้เชื่อมต่อจะไม่ส่งอัตราการเต้นหัวใจ แต่เซ็นเซอร์วัดอัตราการเต้นหัวใจอื่นที่เชื่อมต่ออยู่สามารถส่งข้อมูลได้",
+  "guideStartPauseTitle": "ต้องการพักไหม",
+  "guideStartPauseBody": "แตะ **{pause}** เพื่อหยุดเวลา และแตะ **{resume}** เพื่อทำต่อ",
+  "guideLogPastTitle": "บันทึกการออกกำลังกายที่ลืมบันทึกได้ที่ไหน",
+  "guideLogPastStep1": "ที่แท็บ **{tab}** เปิด **{history}**",
+  "guideLogPastStep2": "เลื่อนลงไปล่างสุดแล้วแตะ **{log}**",
+  "guideLogPastStep3": "เลือกกิจกรรม กรอกเวลาใน **{when}** แล้วแตะ **{logIt}**",
+  "guideLogPastScoreTitle": "จะได้คะแนนไหม",
+  "guideLogPastScoreBody": "หากสายรัดบันทึกอัตราการเต้นหัวใจของคุณในช่วงเวลานั้นไว้ และโปรไฟล์ของคุณมีอายุและเพศ การออกกำลังกายจะได้คะแนนจากข้อมูลนั้น หากไม่มี จะบันทึกโดยไม่มีคะแนน",
+  "guideLogPastMissingTitle": "ไม่เห็น \"{log}\" ใช่ไหม",
+  "guideLogPastMissingBody": "อยู่ล่างสุดของ **{history}** ต่อจากรายการของคุณ เลื่อนลงไปให้สุด",
+  "guideSearchOrPick": "ค้นหาหรือเลือก",
+  "guideAddNapMissingTitle": "ไม่เห็น **{naps}**?",
+  "guideAddNapMissingBody": "**{naps}** อยู่ใต้ข้อมูลคืนนั้น เลื่อนลงเพื่อหาปุ่มนี้",
+  "@guideAddNapMissingTitle": {
+    "description": "Footer card title (the \"Don't see it?\" help): the Naps button is not visible. {naps} is its in-app name.",
+    "placeholders": {
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      }
+    }
+  },
+  "@guideAddNapMissingBody": {
+    "description": "Footer card body: scroll below the night to find the Naps button.",
+    "placeholders": {
+      "naps": {
+        "type": "String",
+        "description": "Name of the Naps button"
+      }
+    }
+  },
+  "guideRemoveStep2Still": "แต่ละรายการมี **{notNap}** / **{notWorkout}** ของตัวเอง ให้แตะที่การงีบหรือการออกกำลังกายที่ไม่ได้เกิดขึ้นจริง เส้นกรอบระบุรายการแรก",
+  "@guideRemoveStep2Still": {
+    "description": "Step 2 caption. Bold words are the in-app buttons for a nap and for a workout.",
+    "placeholders": {
+      "notNap": {
+        "type": "String",
+        "description": "Name of the Not a nap button"
+      },
+      "notWorkout": {
+        "type": "String",
+        "description": "Name of the Not a workout button"
+      }
+    }
+  },
+  "profileHelpRow": "วิธีใช้",
+  "helpLookingForSomething": "กำลังมองหาอะไรอยู่ไหม?",
+  "helpAllGuides": "คู่มือทั้งหมด",
+  "helpTopicEmpty": "ยังไม่มีคู่มือสำหรับแท็บนี้",
+  "importSourceEncryptedBackup": "ข้อมูลสำรองที่เข้ารหัส",
+  "importSourceOpenStrapBackup": "ข้อมูลสำรอง OpenStrap",
+  "importSourceRawSensor": "ไฟล์ส่งออกข้อมูลดิบจากเซ็นเซอร์",
+  "importSourceVendorCsv": "ไฟล์ CSV ที่ส่งออกจากผู้ผลิต",
+  "importSourceJournalCsv": "CSV บันทึกประจำวัน",
+  "importSourceLabCsv": "CSV ผลตรวจทางห้องแล็บ",
+  "importSourceFilePicker": "ตัวเลือกไฟล์",
+  "importSourceImport": "การนำเข้า",
+  "importSourceNothingSelected": "ไม่ได้เลือกอะไร",
+  "welcomeEncryptedBackupUseSettings": "ไฟล์นี้เป็นข้อมูลสำรองที่เข้ารหัส เปิดจาก การตั้งค่า → ข้อมูลของคุณ ซึ่งจะถามรหัสผ่านได้",
+  "welcomeNotUtf8": "{file}: ไม่ได้บันทึกเป็น UTF-8 ให้บันทึกเป็น \"CSV UTF-8\" แล้วนำเข้าอีกครั้ง",
+  "welcomeCorruptTables": "อ่าน {tables} ไม่ได้ SQLite รายงานว่าไฟล์เสียหายในตารางเหล่านั้น ตารางอื่นทั้งหมดนำเข้าได้ตามปกติ",
+  "welcomeRejectsMore": "{shown}; และอีก {count} รายการ",
+  "notifLookbackFlaggedBody": "สัปดาห์นี้มีการแจ้งเตือน: {items} ดูรายละเอียดได้ที่สุขภาพ",
+  "@notifLookbackFlaggedBody": {
+    "description": "Weekly lookback notification body listing the week's flags; {items} is a comma-separated list of the flag phrases below.",
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "notifLookbackIllness": "อัตราการเต้นของหัวใจขณะพักสูงขึ้น ×{count}",
+  "@notifLookbackIllness": {
+    "description": "Weekly lookback flag phrase: nights with raised resting heart rate.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackAnomaly": "สรีรวิทยาผิดปกติ ×{count}",
+  "@notifLookbackAnomaly": {
+    "description": "Weekly lookback flag phrase: nights with unusual physiology.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackTemp": "อุณหภูมิผิวสูงขึ้น ×{count}",
+  "@notifLookbackTemp": {
+    "description": "Weekly lookback flag phrase: nights with elevated skin temperature.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackRhrHigherBody": "ช่วงปลายสัปดาห์อัตราการเต้นของหัวใจขณะพักสูงกว่าช่วงต้นสัปดาห์ประมาณ {bpm} bpm",
+  "@notifLookbackRhrHigherBody": {
+    "description": "Weekly lookback notification body: resting heart rate drifted up over the week.",
+    "placeholders": {
+      "bpm": {
+        "type": "int"
+      }
+    }
+  },
+  "notifLookbackRhrLowerBody": "ช่วงปลายสัปดาห์อัตราการเต้นของหัวใจขณะพักต่ำกว่าช่วงต้นสัปดาห์ประมาณ {bpm} bpm",
+  "@notifLookbackRhrLowerBody": {
+    "description": "Weekly lookback notification body: resting heart rate drifted down over the week.",
+    "placeholders": {
+      "bpm": {
+        "type": "int"
+      }
+    }
+  },
+  "notifSyncStaleBody": "ไม่มีข้อมูลใหม่มาประมาณ {hours} ชั่วโมงแล้ว เปิด OpenStrap เพื่อเชื่อมต่อใหม่ การซิงค์เบื้องหลังอาจหยุดทำงาน",
+  "@notifSyncStaleBody": {
+    "description": "OS notification body when the band has not synced for several hours.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "coachAppleTitle": "Apple Intelligence บน iPhone เครื่องนี้",
+  "coachAppleSub": "ต้องใช้ iOS 26 และเปิด Apple Intelligence ไม่ต้องใช้คีย์",
+  "coachAppleChecking": "กำลังตรวจสอบ Apple Intelligence…",
+  "coachAppleOnNote": "โค้ช สรุป และบันทึกประจำวันจะใช้โมเดลขนาดเล็กของ Apple บนอุปกรณ์ โดยตอบจากข้อมูลสองสัปดาห์ล่าสุดของคุณและบันทึกอะไรแทนคุณไม่ได้ ปิดไว้หากต้องการใช้โมเดลที่ใหญ่กว่า",
+  "coachAppleReady": "พร้อมแล้ว",
+  "coachAppleNotEnabled": "เปิด Apple Intelligence ในการตั้งค่าเพื่อใช้โมเดลบนอุปกรณ์",
+  "coachAppleNotReady": "โมเดลบนอุปกรณ์ของ Apple ยังดาวน์โหลดไม่เสร็จ ลองอีกครั้งภายหลัง",
+  "coachAppleNotEligible": "iPhone เครื่องนี้ใช้โมเดลบนอุปกรณ์ของ Apple ไม่ได้",
+  "coachAppleUnsupported": "ต้องใช้ iPhone ที่มี Apple Intelligence บน iOS 26 ขึ้นไป",
+  "coachAppleFailed": "โมเดลบนอุปกรณ์ของ Apple ตอบไม่ได้ ลองอีกครั้ง",
+  "coachAppleTooLong": "ข้อความนี้ยาวเกินไปสำหรับโมเดลบนอุปกรณ์ของ Apple เริ่มแชตใหม่หรือถามให้สั้นลง",
+  "coachAppleDeclined": "โมเดลบนอุปกรณ์ของ Apple ปฏิเสธที่จะตอบเรื่องนี้ ลองถามด้วยคำอื่น",
+  "coachAppleTimeout": "โมเดลบนอุปกรณ์ของ Apple ใช้เวลาตอบนานเกินไป ลองอีกครั้งหรือถามให้สั้นลง",
+  "coachAppleNoEcg": "โมเดลบนอุปกรณ์ของ Apple อ่านคลื่น ECG ไม่ได้ หากต้องการวิเคราะห์การวัดนี้ ให้ปิด Apple Intelligence ในการตั้งค่า AI ของโค้ชแล้วใช้โมเดลอื่น",
+  "aiBriefingUnknownBody": "บันทึกนี้ถูกบันทึกไว้ก่อนที่แอปจะเริ่มจดว่าสรุปถูกส่งไปที่ใด จึงบอกไม่ได้ว่าตัวเลขเหล่านี้ถูกส่งไปที่ใด",
+  "alarmAllDays": "ทุกวัน",
+  "alarmCopiedToAllDays": "คัดลอกเวลาตื่นไปทุกวันแล้ว"
 }

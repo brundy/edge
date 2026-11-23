@@ -27,6 +27,20 @@ import '../ui2/screens/home_screen.dart' as ring show readinessBand;
 import 'briefing.dart';
 import 'nightly_sweep.dart';
 
+/// Where a briefing's request went, as stored on the [Briefing]: Apple's
+/// on-device pseudo-base, or the endpoint's scheme, host and port ONLY. A
+/// custom base URL can carry an access key in its path or query, and saved
+/// briefings travel in backups, so nothing past the host is kept. Null when
+/// the endpoint has no host, which the screen then reports as unknown.
+String? briefingEndpointOf(CoachConfig config) {
+  if (config.usesApple) return kAppleOnDeviceBase;
+  final u = Uri.tryParse(config.apiBase.trim());
+  if (u == null || u.host.isEmpty) return null;
+  // Built with Uri so an IPv6 host keeps its brackets (http://[::1]:11434).
+  return Uri(scheme: u.scheme, host: u.host, port: u.hasPort ? u.port : null)
+      .toString();
+}
+
 /// Injectable one-shot completion (tests pass a fake; production defaults to
 /// [CoachEngine.completeText] — the shared BYOK plumbing).
 typedef BriefingComplete = Future<String> Function({
@@ -120,13 +134,27 @@ Future<Map<String, dynamic>> collectBriefingInputs(
             ? daily['readiness']
             : null,
         round: 0);
+    // While today's night is still building, Today shows the PREVIOUS night's
+    // RHR, HRV and sleep. Those must not reach the model as this morning's.
+    // Same ownNight rule as todayHeadlineOf: only showing_prior_overnight says
+    // Today is serving a held-over night.
+    final status = _map(t['status']);
+    final ownNight = status?['showing_prior_overnight'] != true;
+    if (!ownNight) {
+      withheld.addAll(const [
+        'resting_hr (last night not in yet)',
+        'hrv_rmssd (last night not in yet)',
+        'sleep (last night not in yet)',
+      ]);
+      out[kWithheldKey] = withheld;
+      return out;
+    }
     take('resting_hr', daily['resting_hr'], round: 0);
     final hrv = _map(t['hrv']);
     take('hrv_rmssd', hrv?['rmssd'], round: 1);
 
-    // The overnight bundle Today is showing (may be yesterday's sleep if this
-    // day hasn't derived yet) — same source of truth as the Sleep screen.
-    final status = _map(t['status']);
+    // The overnight bundle Today is showing — same source of truth as the
+    // Sleep screen.
     final sleepDay =
         (status?['overnight_day'] as String?) ?? todayLabel(now);
     Map<String, dynamic>? ds;
@@ -185,6 +213,13 @@ Future<Map<String, dynamic>> collectBriefingInputs(
     );
   }
   return out;
+}
+
+/// True when a morning briefing was built while last night was still building,
+/// so it is a stopgap that should be redone once the night is ready.
+bool briefingIsProvisional(Map<String, dynamic>? inputs) {
+  final w = inputs?[kWithheldKey];
+  return w is List && w.any((e) => e.toString().contains('last night not in yet'));
 }
 
 /// The metrics the sweep looks at, keyed by the name [LocalRepository.getChart]
@@ -529,12 +564,17 @@ class BriefingEngine {
         period: period,
         oneLiner: kNothingStoodOut,
         breakdownMd: '',
-        generatedAtMs: effectiveNow.millisecondsSinceEpoch,
+        generatedAtMs: (wallNow ?? effectiveNow).millisecondsSinceEpoch,
         inputs: const {},
       );
       BriefingStore.write(b);
       return b;
     }
+    // Where the request goes, read in the same synchronous run as the request
+    // itself (postChat reads the config before its first await): a provider
+    // switched while the model is answering must not relabel this briefing.
+    final sentTo = briefingEndpointOf(config);
+    final sentModel = config.model;
     final raw = await (complete ??
         (({required String system, required String user}) =>
             CoachEngine.completeText(
@@ -551,9 +591,17 @@ class BriefingEngine {
       period: period,
       oneLiner: parsed.oneLiner,
       breakdownMd: parsed.breakdownMd,
-      generatedAtMs: effectiveNow.millisecondsSinceEpoch,
+      generatedAtMs: (wallNow ?? effectiveNow).millisecondsSinceEpoch,
       inputs: inputs,
+      endpoint: sentTo,
+      model: sentModel,
     );
+    // An older request must not overwrite a complete briefing a newer one
+    // already stored while this one waited on the model.
+    if (briefingIsProvisional(inputs)) {
+      final cur = BriefingStore.read(period, day: day);
+      if (cur != null && !briefingIsProvisional(cur.inputs)) return cur;
+    }
     BriefingStore.write(b);
     return b;
   }

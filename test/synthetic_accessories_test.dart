@@ -53,6 +53,17 @@ Future<Map<String, dynamic>> _scalars() async =>
             as Map)['scalars'] as Map)
         .cast<String, dynamic>();
 
+/// A scale answers the clock read with UTC wall time at [nowSec]; without an
+/// answer the adapter treats the clock as unknown and stamps at arrival.
+Map<String, List<int>> scaleClockAt(int nowSec) {
+  final t = DateTime.fromMillisecondsSinceEpoch(nowSec * 1000, isUtc: true);
+  return {
+    kCurrentTimeChar: [
+      t.year & 0xff, t.year >> 8, t.month, t.day, t.hour, t.minute, t.second,
+    ],
+  };
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
@@ -160,7 +171,10 @@ void main() {
     Future<num> kcal() async => (await _scalars())['calories'] as num;
 
     await LocalDb.upsertDevice(id: _scale, adapterId: 'miscale_bc');
-    final at = DateTime.utc(2026, 10, 4, 6, 55, 10);
+    // A morning weighing on the LOCAL day, sent on the UTC clock the session
+    // sets the scale to. `DateTime.utc(…6, 55)` was the evening before
+    // at UTC−7 and further west, so the day held no weighing at all.
+    final at = DateTime(2026, 10, 4, 6, 55, 10).toUtc();
     final dt = [
       at.year & 0xff, at.year >> 8, at.month, at.day, at.hour, at.minute,
       at.second,
@@ -170,6 +184,7 @@ void main() {
     await SessionLink.miScaleComposition.ingestForTest(
       _scale,
       nowSeconds: () => SyntheticDay.sec(DateTime(2026, 10, 4, 22, 30)),
+      reads: scaleClockAt(SyntheticDay.sec(DateTime(2026, 10, 4, 22, 30))),
       pushes: [
         (kMiScaleBodyCompositionChar,
             [0x02, 0x22, ...dt, ohm & 0xff, ohm >> 8, raw & 0xff, raw >> 8]),
@@ -254,6 +269,7 @@ void main() {
     await SessionLink.miScaleComposition.ingestForTest(
       _scale,
       nowSeconds: () => SyntheticDay.sec(DateTime(2026, 10, 4, 22, 30)),
+      reads: scaleClockAt(SyntheticDay.sec(DateTime(2026, 10, 4, 22, 30))),
       pushes: [
         (kMiScaleBodyCompositionChar, [
           0x02, 0x22, later.year & 0xff, later.year >> 8, later.month,
